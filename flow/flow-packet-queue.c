@@ -1,0 +1,716 @@
+/* -*- Mode: C; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+
+/* flow-packet-queue.c - A FlowPacket queue that can do partial dequeues.
+ *
+ * Copyright (C) 2006 Hans Petter Jansson
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the
+ * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ * Boston, MA 02111-1307, USA.
+ *
+ * Authors: Hans Petter Jansson <hpj@copyleft.no>
+ */
+
+#include "config.h"
+#include "flow-gobject-util.h"
+#include "flow-packet-queue.h"
+#include <string.h>  /* memcpy */
+
+/* Because we special-case the first packet pushed to an
+ * otherwise empty queue, we need the following three helpers
+ * to simplify the push/pop logic.
+ *
+ * The special casing saves us having to allocate a GList node
+ * in the common case where a single packet is pushed and then
+ * immediately popped. This happens because elements may not
+ * process on a per-packet basis, so we always queue to input
+ * pads.
+ *
+ * For more details, see flow-input-pad.c. */
+
+static inline FlowPacket *
+peek_packet (FlowPacketQueue *packet_queue)
+{
+  FlowPacket *packet;
+
+  packet = packet_queue->first_packet;
+  if (packet)
+    return packet;
+
+  return g_queue_peek_head (packet_queue->queue);
+}
+
+static inline FlowPacket *
+pop_packet (FlowPacketQueue *packet_queue)
+{
+  FlowPacket *packet;
+
+  packet = packet_queue->first_packet;
+
+  if (packet)
+  {
+    packet_queue->first_packet = NULL;
+    return packet;
+  }
+
+  return g_queue_pop_head (packet_queue->queue);
+}
+
+static inline void
+push_packet (FlowPacketQueue *packet_queue, FlowPacket *packet)
+{
+  if (!packet_queue->queue->head && !packet_queue->first_packet)
+  {
+    packet_queue->first_packet = packet;
+    return;
+  }
+
+  g_queue_push_tail (packet_queue->queue, packet);
+}
+
+static void
+consolidate_partial_packet (FlowPacketQueue *packet_queue)
+{
+  FlowPacket *packet;
+  FlowPacket *new_packet;
+  guint8     *data;
+
+  if (packet_queue->packet_position == 0)
+    return;
+
+  packet = peek_packet (packet_queue);
+  g_assert (flow_packet_get_format (packet) == FLOW_PACKET_FORMAT_BUFFER);
+
+  data = flow_packet_get_data (packet) + packet_queue->packet_position;
+
+  new_packet = flow_packet_new (FLOW_PACKET_FORMAT_BUFFER, data,
+                                flow_packet_get_size (packet) - packet_queue->packet_position);
+  flow_packet_free (packet);
+
+  if (packet_queue->first_packet == packet)
+    packet_queue->first_packet = new_packet;
+  else
+    packet_queue->queue->head->data = new_packet;
+
+  packet_queue->packet_position = 0;
+}
+
+static void
+clear_queue (FlowPacketQueue *packet_queue)
+{
+  FlowPacket *packet;
+
+  packet = packet_queue->first_packet;
+  if (packet)
+  {
+    flow_packet_free (packet);
+    packet_queue->first_packet = NULL;
+  }
+
+  while ((packet = g_queue_pop_head (packet_queue->queue)))
+  {
+    flow_packet_free (packet);
+  }
+}
+
+/* --- FlowPacketQueue properties --- */
+
+FLOW_GOBJECT_PROPERTIES_BEGIN (flow_packet_queue)
+FLOW_GOBJECT_PROPERTIES_END   ()
+
+/* --- FlowPacketQueue definition --- */
+
+FLOW_GOBJECT_MAKE_IMPL        (flow_packet_queue, FlowPacketQueue, G_TYPE_OBJECT, 0)
+
+static void
+flow_packet_queue_type_init (GType type)
+{
+}
+
+static void
+flow_packet_queue_class_init (FlowPacketQueueClass *klass)
+{
+}
+
+static void
+flow_packet_queue_init (FlowPacketQueue *packet_queue)
+{
+  packet_queue->queue = g_queue_new ();
+}
+
+static void
+flow_packet_queue_construct (FlowPacketQueue *packet_queue)
+{
+}
+
+static void
+flow_packet_queue_dispose (FlowPacketQueue *packet_queue)
+{
+}
+
+static void
+flow_packet_queue_finalize (FlowPacketQueue *packet_queue)
+{
+  clear_queue (packet_queue);
+  g_queue_free (packet_queue->queue);
+}
+
+/* --- FlowPacketQueue public API --- */
+
+/**
+ * flow_packet_queue_new:
+ * 
+ * Creates a new packet queue.
+ * 
+ * Return value: A new #FlowPacketQueue.
+ **/
+FlowPacketQueue *
+flow_packet_queue_new (void)
+{
+  return g_object_new (FLOW_TYPE_PACKET_QUEUE, NULL);
+}
+
+guint
+flow_packet_queue_get_length_packets (FlowPacketQueue *packet_queue)
+{
+  guint length;
+
+  g_return_val_if_fail (FLOW_IS_PACKET_QUEUE (packet_queue), 0);
+
+  length = packet_queue->queue->length;
+  if (packet_queue->first_packet)
+    length++;
+
+  return length;
+}
+
+guint
+flow_packet_queue_get_length_bytes (FlowPacketQueue *packet_queue)
+{
+  g_return_val_if_fail (FLOW_IS_PACKET_QUEUE (packet_queue), 0);
+
+  return packet_queue->bytes_in_queue - packet_queue->packet_position;
+}
+
+guint
+flow_packet_queue_get_length_data_bytes (FlowPacketQueue *packet_queue)
+{
+  g_return_val_if_fail (FLOW_IS_PACKET_QUEUE (packet_queue), 0);
+
+  return packet_queue->data_bytes_in_queue - packet_queue->packet_position;
+}
+
+/**
+ * flow_packet_queue_push_packet:
+ * 
+ * @packet_queue: A packet queue.
+ * @packet:       A packet.
+ * 
+ * Pushes @packet onto @packet_queue. Packets are popped in the order they were
+ * pushed (first in, first out).
+ **/
+void
+flow_packet_queue_push_packet (FlowPacketQueue *packet_queue, FlowPacket *packet)
+{
+  guint packet_size;
+
+  g_return_if_fail (FLOW_IS_PACKET_QUEUE (packet_queue));
+  g_return_if_fail (packet != NULL);
+
+  if (flow_packet_get_format (packet) == FLOW_PACKET_FORMAT_BUFFER &&
+      flow_packet_get_size (packet) == 0)
+  {
+    flow_packet_free (packet);
+    return;
+  }
+
+  push_packet (packet_queue, packet);
+
+  packet_size = flow_packet_get_size (packet);
+  packet_queue->bytes_in_queue += packet_size;
+
+  if (flow_packet_get_format (packet) == FLOW_PACKET_FORMAT_BUFFER)
+    packet_queue->data_bytes_in_queue += packet_size;
+}
+
+/**
+ * flow_packet_queue_push_bytes:
+ * 
+ * @packet_queue: A packet queue.
+ * @src:          A pointer to the data to push.
+ * @n:            Number of bytes to push from @src.
+ * 
+ * This convenience function creates a new packet containing a copy of
+ * @n bytes starting at @src, and pushes it onto @packet_queue. Packets are
+ * popped in the order they were pushed (first in, first out).
+ **/
+void
+flow_packet_queue_push_bytes (FlowPacketQueue *packet_queue, gconstpointer src, guint n)
+{
+  FlowPacket *packet;
+
+  g_return_if_fail (FLOW_IS_PACKET_QUEUE (packet_queue));
+  g_return_if_fail (src != NULL);
+
+  if (n == 0)
+    return;
+
+  packet = flow_packet_new (FLOW_PACKET_FORMAT_BUFFER, (gpointer) src, n);
+  push_packet (packet_queue, packet);
+
+  packet_queue->bytes_in_queue      += n;
+  packet_queue->data_bytes_in_queue += n;
+}
+
+/**
+ * flow_packet_queue_pop_packet:
+ * 
+ * @packet_queue: A packet queue.
+ * 
+ * Pops the next packet from @packet_queue. If flow_packet_queue_pop_bytes ()
+ * was called previously, resulting in a partially popped packet, a new packet
+ * is created and returned, containing the remainder of that's packet data.
+ * 
+ * Return value: A packet, or %NULL if the queue is empty.
+ **/
+FlowPacket *
+flow_packet_queue_pop_packet (FlowPacketQueue *packet_queue)
+{
+  FlowPacket       *packet;
+  FlowPacket       *new_packet;
+  FlowPacketFormat  packet_format;
+  guint             packet_len;
+  guint             new_packet_len;
+
+  g_return_val_if_fail (FLOW_IS_PACKET_QUEUE (packet_queue), NULL);
+
+  packet = pop_packet (packet_queue);
+  if (!packet)
+    return NULL;
+
+  packet_len    = flow_packet_get_size (packet);
+  packet_format = flow_packet_get_format (packet);
+
+  if (packet_queue->packet_position == 0)
+  {
+    packet_queue->bytes_in_queue -= packet_len;
+
+    if (packet_format == FLOW_PACKET_FORMAT_BUFFER)
+      packet_queue->data_bytes_in_queue -= packet_len;
+
+    return packet;
+  }
+
+  /* We're at an odd intra-packet position. Need to fake a packet. This will only happen
+   * if the user mixes calls to pop_packet() and pop_bytes(). */
+
+  g_assert (packet_format == FLOW_PACKET_FORMAT_BUFFER);
+
+  new_packet_len = packet_len - packet_queue->packet_position;
+  new_packet = flow_packet_new (FLOW_PACKET_FORMAT_BUFFER,
+                                (guint8 *) flow_packet_get_data (packet) + packet_queue->packet_position,
+                                new_packet_len);
+
+  flow_packet_free (packet);
+  packet_queue->packet_position = 0;
+  packet_queue->bytes_in_queue      -= new_packet_len;
+  packet_queue->data_bytes_in_queue -= new_packet_len;
+
+  return new_packet;
+}
+
+/**
+ * flow_packet_queue_pop_bytes:
+ * 
+ * @packet_queue: A packet queue.
+ * @dest:         A pointer at which to store the data, or %NULL to discard.
+ * @n:            Number of bytes to pop from @packet_queue.
+ * 
+ * This convenience function pops an arbitrary amount of data from @packet_queue,
+ * spanning or partially processing packets if necessary. It will only process
+ * contiguous #FLOW_PACKET_FORMAT_BUFFER packets, and refuses to span other
+ * packet types. If @packet_queue does not have @n contiguous bytes immediately
+ * available, the function does nothing and returns %FALSE.
+ * 
+ * Return value: %TRUE if the request could be satisfied, %FALSE otherwise.
+ **/
+gboolean
+flow_packet_queue_pop_bytes (FlowPacketQueue *packet_queue, gpointer dest, guint n)
+{
+  FlowPacket *packet;
+  guint       n_contiguous_bytes; 
+  guint8     *p;
+  GList      *l;
+  guint       i;
+
+  g_return_val_if_fail (FLOW_IS_PACKET_QUEUE (packet_queue), FALSE);
+
+  if (n == 0)
+    return TRUE;
+
+  /* Quick check, make sure we have enough data overall */
+
+  if (n > packet_queue->data_bytes_in_queue)
+    return FALSE;
+
+  /* Make sure we have enough contiguous data */
+
+  packet = peek_packet (packet_queue);
+  n_contiguous_bytes = flow_packet_get_size (packet) - packet_queue->packet_position;
+
+  l = packet_queue->queue->head;
+  if (!packet_queue->first_packet && l)
+    l = g_list_next (l);
+
+  for ( ; n_contiguous_bytes < n; l = g_list_next (l))
+  {
+    if (!l)
+      return FALSE;
+
+    packet = l->data;
+    if (flow_packet_get_format (packet) != FLOW_PACKET_FORMAT_BUFFER)
+      return FALSE;
+
+    n_contiguous_bytes += flow_packet_get_size (packet);
+  }
+
+  /* Dequeue */
+
+  for (p = dest, i = n; i; )
+  {
+    guint8     *data;
+    guint       packet_len;
+    guint       increment;
+
+    packet = peek_packet (packet_queue);
+    g_assert (packet != NULL);
+
+    data = flow_packet_get_data (packet);
+
+    packet_len = flow_packet_get_size (packet);
+    increment  = packet_len - packet_queue->packet_position;
+    increment  = MIN (increment, i);
+
+    if (dest)
+      memcpy (p, data + packet_queue->packet_position, increment);
+
+    i                             -= increment;
+    p                             += increment;
+    packet_queue->packet_position += increment;
+
+    if (packet_queue->packet_position == packet_len)
+    {
+      packet = pop_packet (packet_queue);
+      flow_packet_free (packet);
+
+      packet_queue->packet_position = 0;
+    }
+  }
+
+  packet_queue->bytes_in_queue      -= n;
+  packet_queue->data_bytes_in_queue -= n;
+  return TRUE;
+}
+
+gboolean
+flow_packet_queue_peek_packet (FlowPacketQueue *packet_queue, FlowPacket **packet_out, guint *offset_out)
+{
+  FlowPacket *packet;
+
+  g_return_val_if_fail (FLOW_IS_PACKET_QUEUE (packet_queue), FALSE);
+
+  packet = peek_packet (packet_queue);
+  if (!packet)
+    return FALSE;
+
+  if (packet_out)
+    *packet_out = packet;
+  if (offset_out)
+    *offset_out = packet_queue->packet_position;
+
+  return TRUE;
+}
+
+void
+flow_packet_queue_peek_packets (FlowPacketQueue *packet_queue, FlowPacket **packets_out, guint *n_packets_out)
+{
+  FlowPacket *packet;
+  GList      *l;
+  guint       n;
+  guint       i;
+
+  g_return_if_fail (FLOW_IS_PACKET_QUEUE (packet_queue));
+  g_return_if_fail (packets_out != NULL);
+  g_return_if_fail (n_packets_out != NULL);
+
+  if (*n_packets_out == 0)
+    return;
+
+  consolidate_partial_packet (packet_queue);
+  n = *n_packets_out;
+
+  packet = peek_packet (packet_queue);
+  if (!packet)
+  {
+    *n_packets_out = 0;
+    return;
+  }
+
+  packets_out [0] = packet;
+
+  l = packet_queue->queue->head;
+  if (!packet_queue->first_packet && l)
+    l = l->next;
+
+  for (i = 1; i < n && l; i++, l = l->next)
+    packets_out [i] = l->data;
+
+  *n_packets_out = i;
+}
+
+gboolean
+flow_packet_queue_drop_packet (FlowPacketQueue *packet_queue)
+{
+  FlowPacket *packet;
+
+  g_return_val_if_fail (FLOW_IS_PACKET_QUEUE (packet_queue), FALSE);
+
+  packet = pop_packet (packet_queue);
+  if (!packet)
+    return FALSE;
+
+  if (flow_packet_get_format (packet) == FLOW_PACKET_FORMAT_BUFFER)
+  {
+    guint dropped_bytes = flow_packet_get_size (packet) - packet_queue->packet_position;
+
+    packet_queue->packet_position = 0;
+    packet_queue->bytes_in_queue      -= dropped_bytes;
+    packet_queue->data_bytes_in_queue -= dropped_bytes;
+  }
+
+  flow_packet_free (packet);
+  return TRUE;
+}
+
+void
+flow_packet_queue_steal (FlowPacketQueue *packet_queue, guint n_packets, guint n_bytes, guint n_data_bytes)
+{
+  g_return_if_fail (FLOW_IS_PACKET_QUEUE (packet_queue));
+
+  if (n_bytes > packet_queue->bytes_in_queue)
+  {
+    g_warning ("Tried to steal more bytes than available!");
+    packet_queue->bytes_in_queue = 0;
+  }
+  else
+  {
+    packet_queue->bytes_in_queue -= n_bytes;
+  }
+
+  if (n_data_bytes > packet_queue->data_bytes_in_queue)
+  {
+    g_warning ("Tried to steal more data bytes than available!");
+    packet_queue->data_bytes_in_queue = 0;
+  }
+  else
+  {
+    packet_queue->data_bytes_in_queue -= n_data_bytes;
+  }
+
+  packet_queue->packet_position = 0;
+
+  while (n_packets--)
+  {
+    FlowPacket *packet = pop_packet (packet_queue);
+
+    if (!packet)
+    {
+      g_warning ("Tried to steal more packets than available!");
+      return;
+    }
+  }
+}
+
+/**
+ * flow_packet_queue_peek_first_object:
+ * 
+ * @packet_queue: A packet queue.
+ * 
+ * This convenience function finds the first packet in @packet_queue
+ * not of format #FLOW_PACKET_FORMAT_BUFFER and returns it to you,
+ * without removing it from the queue.
+ * 
+ * When using flow_packet_queue_pop_bytes (), you may encounter the
+ * situation where you have a few bytes of buffer data, followed by
+ * an object indicating a status change, followed by more buffer data.
+ * 
+ * Processing the object out of order lets you determine if it
+ * represents a serious condition (say, EOF) forcing you to discard the
+ * preceding (incomplete) data sequence and reset your state machine
+ * before processing the subsequent data.
+ * 
+ * Return value: The first packet containing an object, or %NULL
+ *               if none could be found. The packet still belongs to
+ *               the queue and may not be freed.
+ **/
+FlowPacket *
+flow_packet_queue_peek_first_object (FlowPacketQueue *packet_queue)
+{
+  FlowPacket *packet;
+  GList      *l;
+
+  g_return_val_if_fail (FLOW_IS_PACKET_QUEUE (packet_queue), NULL);
+
+  /* Special-case first packet (see top of file) */
+
+  packet = peek_packet (packet_queue);
+  if (!packet)
+    return NULL;
+
+  if (flow_packet_get_format (packet) != FLOW_PACKET_FORMAT_BUFFER)
+    return packet;
+
+  /* Do rest of queue */
+
+  l = packet_queue->queue->head;
+  if (!packet_queue->first_packet && l)
+    l = g_list_next (l);
+
+  for ( ; l; l = g_list_next (l))
+  {
+    packet = l->data;
+
+    if (flow_packet_get_format (packet) != FLOW_PACKET_FORMAT_BUFFER)
+      break;
+  }
+
+  if (!l)
+    return NULL;
+
+  return packet;
+}
+
+/**
+ * flow_packet_queue_pop_first_object:
+ * 
+ * @packet_queue: A packet queue.
+ * 
+ * This convenience function finds the first packet in @packet_queue
+ * not of format #FLOW_PACKET_FORMAT_BUFFER and returns it to you,
+ * removing it from the queue.
+ * 
+ * Useful for removing an obstruction to flow_packet_queue_pop_bytes ().
+ * 
+ * See the documentation for flow_packet_queue_peek_first_object ()
+ * for a detailed discussion.
+ * 
+ * Return value: The first packet containing an object, or %NULL
+ *               if none could be found.
+ **/
+FlowPacket *
+flow_packet_queue_pop_first_object (FlowPacketQueue *packet_queue)
+{
+  FlowPacket *packet;
+  GList      *l;
+
+  g_return_val_if_fail (FLOW_IS_PACKET_QUEUE (packet_queue), NULL);
+
+  /* Special-case first packet (see top of file) */
+
+  packet = peek_packet (packet_queue);
+  if (!packet)
+    return NULL;
+
+  if (flow_packet_get_format (packet) != FLOW_PACKET_FORMAT_BUFFER)
+  {
+    pop_packet (packet_queue);
+    packet_queue->bytes_in_queue -= flow_packet_get_size (packet);
+    return packet;
+  }
+
+  /* Do rest of queue */
+
+  l = packet_queue->queue->head;
+  if (!packet_queue->first_packet && l)
+    l = g_list_next (l);
+
+  for ( ; l; l = g_list_next (l))
+  {
+    packet = l->data;
+
+    if (flow_packet_get_format (packet) != FLOW_PACKET_FORMAT_BUFFER)
+      break;
+  }
+
+  if (!l)
+    return NULL;
+
+  packet_queue->bytes_in_queue -= flow_packet_get_size (packet);
+  g_queue_delete_link (packet_queue->queue, l);
+
+  return packet;
+}
+
+/**
+ * flow_packet_queue_skip_past_first_object:
+ * 
+ * @packet_queue: A packet queue.
+ * 
+ * This convenience function frees and removes pending packets in
+ * @packet_queue, up to and including the first packet not of format
+ * #FLOW_PACKET_FORMAT_BUFFER. If no such packet is found, the whole
+ * queue is emptied.
+ * 
+ * Useful for re-synchronizing a stream for flow_packet_queue_pop_bytes ().
+ * 
+ * See the documentation for flow_packet_queue_peek_first_object ()
+ * for a detailed discussion.
+ * 
+ * Return value: %TRUE if an object was encountered, %FALSE otherwise.
+ **/
+gboolean
+flow_packet_queue_skip_past_first_object (FlowPacketQueue *packet_queue)
+{
+  FlowPacket *packet;
+ 
+  g_return_val_if_fail (FLOW_IS_PACKET_QUEUE (packet_queue), FALSE);
+
+  while ((packet = pop_packet (packet_queue)))
+  {
+    FlowPacketFormat format = flow_packet_get_format (packet);
+
+    flow_packet_free (packet);
+
+    if (format != FLOW_PACKET_FORMAT_BUFFER)
+      break;
+  }
+
+  return packet ? TRUE : FALSE;
+}
+
+/**
+ * flow_packet_queue_clear:
+ * 
+ * @packet_queue: A packet queue.
+ * 
+ * Frees and removes all pending packets from @packet_queue.
+ **/
+void
+flow_packet_queue_clear (FlowPacketQueue *packet_queue)
+{
+  g_return_if_fail (FLOW_IS_PACKET_QUEUE (packet_queue));
+
+  clear_queue (packet_queue);
+}
+

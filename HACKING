@@ -1,0 +1,185 @@
+Hacking Flow
+============
+
+These are basic hacking instructions for Flow.
+
+Contact
+-------
+
+Hans Petter Jansson <hpj@copyleft.no>
+
+Also see the AUTHORS file and individual authors in the source code headers
+themselves.
+
+Legal
+-----
+
+Our policy, in brief:
+
+Flow is LGPL. Any contributions to Flow must also fall under the LGPL. Authors
+retain the copyright to significant contributions. For minor modifications
+contributed to the Flow mainline, copyright shall be assigned to the original
+author of the code being modified.
+
+Source Code Structure
+---------------------
+
+A bottom-up overview of the source code, or "where to start looking". The code
+resides in the "flow" directory.
+
+1) Basic utilities and building blocks:
+
+ - flow-util.[ch]
+ - flow-gobject-util.[ch]
+
+   Platform-independent utility functions and boilerplate.
+
+ - flow-common.c
+ - flow-common-impl-*.[ch]
+
+   Provides platform-specific utilities used by other -impl files in the
+   project. flow-common.c is just a stub that selects and #includes an impl to
+   compile. Note that flow-common-impl-*.h is the only platform-specific
+   header file. It is not installed - it is only #included in other -impl
+   files.
+
+ - flow-ip-addr.[ch]
+ - flow-ip-addr-impl-*.c
+ - flow-ip-service.[ch]
+
+   These objects store addresses of IP traffic endpoints. FlowIPAddr stores
+   an IP address (v4 or v6) only. FlowIPService extends that by adding
+   optional port number and quality of service (QoS) information.
+
+   One of the "impl" files is chosen based on the platform you're compiling
+   for and #included in flow-ip-addr.c.
+
+ - flow-ip-resolver.[ch]
+ - flow-ip-resolver-impl-*.c
+
+   An asynchronous resolver that can map DNS names to IP addresses and vice
+   versa.
+
+   One of the "impl" files is chosen based on the platform you're compiling
+   for and #included in flow-ip-resolver.c.
+
+2) Fundamental I/O:
+
+ - flow-packet.[ch]
+ - flow-packet-queue.[ch]
+
+   The basic packet structure used to pass stream data and events among
+   elements, and an object for efficient queuing of such packets. The queue
+   allows for partial-packet data dequeues.
+
+ - flow-shunt.[ch]
+ - flow-shunt-impl-*.c
+
+   Asynchronous, platform-agnostic I/O units that map to platform services like
+   files, TCP/UDP sockets, external programs and processes, and worker threads.
+   They communicate through callbacks, using FlowPackets. Shunts cannot be
+   reused once the stream is closed.
+
+   One of the "impl" files is chosen based on the platform you're compiling
+   for and #included in flow-shunt.c.
+
+3) Stream processing:
+
+ - flow-element.[ch]
+
+   Abstract class for stream processing elements. A stream consists of
+   FlowPackets.
+
+ - flow-pad.[ch]
+ - flow-input-pad.[ch]
+ - flow-output-pad.[ch]
+
+   Connection points for elements. Processing chains are formed by connecting
+   one element's output pad to another's input pad.
+
+ - flow-emitter.[ch]
+ - flow-collector.[ch]
+ - flow-simplex-element.[ch]
+ - flow-duplex-element.[ch]
+ - flow-mux.[ch]
+ - flow-demux.[ch]
+
+   Abstract classes for various types of element, providing default policies
+   and common ways to address pads. An emitter has a single output pad, a
+   collector has a single input pad, a simplex element has one input and one
+   output pad, etc.
+
+ - flow-destructor.[ch]
+
+   A fully implemented collector element that destroys all packets passed to
+   it. Useful for terminating an output pad whose output you're not interested
+   in (if you don't terminate, output can pile up on the pad).
+
+ - flow-connector.[ch]
+
+   Abstract class for connection-oriented elements. Manages a single connection
+   at a time, and can be reused.
+
+ - flow-tcp-connector.[ch]
+
+   Fully implemented connector for TCP/IP streams.
+
+ - flow-event.[ch]
+
+   Abstract class for events passed in-line in streams. Events carry
+   information like "stream begin", "stream end", "flush", errors, etc. They
+   can generate a human-readable description of themselves for debug,
+   logging and other display purposes.
+
+ - flow-detailed-event.[ch]
+
+   Fully implemented events that carry a list of event domains and codes, as
+   well as an (optional) human-readable description of the event. Each event
+   may carry multiple event codes describing the same event with different
+   levels of specificity, so it may match e.g. either "stream end" or "TCP
+   connection closed on remote end". This simplifies element code.
+
+ - flow-anonymous-event.[ch]
+
+   An event that carries an untyped gpointer and a destroy notification
+   callback, which is called when the event is finalized. Used in connection
+   listener shunts to deliver shunts representing new connections to the
+   stream layer. Avoid using this in your element implementations.
+
+ - flow-position.[ch]
+
+   Indicates that the position of the stream has changed, or should change.
+   This translates to a seek on connected files.
+
+ - flow-segment-request.[ch]
+
+   Requests that a data segment be read, starting at the current position, from
+   a connected file.
+
+ - flow-pipeline.[ch]
+
+   Contains/manages a number of FlowElements connected a certain way. Similar
+   to GStreamer's GstBin.
+
+4) Prefab pipelines:
+
+[TODO]
+
+Unit Tests
+----------
+
+Unit tests reside in the "test" directory, and are named "test-*", where *
+represents an element or aspect of the library. A notable exception is
+"test-common.c" which contains common utilities for the tests and should be
+#included in every test.
+
+Tests are self-documenting: You can pass --help to any test and get a list of
+the arguments it takes.
+
+Tests are uniform: All tests take the same arguments.
+
+There is also a script, "stress.sh", which runs the tests listed in
+"tests.list" repeatedly, until interrupted by user. Any tests that failed have
+their verbose output saved to a log file called "stress-failure-N.log", where
+N is a number starting at 0. This can usefully be left running overnight (or
+longer!) to detect rare bugs caused by race conditions or memory corruption.

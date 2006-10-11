@@ -1,0 +1,72 @@
+Name:            @PACKAGE@
+Version:         @VERSION@
+# Release:         0.hpj.1
+
+Summary:         Asynchronous networking library
+Copyright:       LGPL
+Group:           Networking/Library
+URL:             http://hp.cl.no/proj/flow/
+Packager:        Hans Petter Jansson <hpj@copyleft.no>
+
+Source:          %{name}-%{version}.tar.gz
+BuildRoot:       /var/tmp/%{name}-%{version}-root
+Requires:        glib2 >= @GLIB_REQUIRED@
+BuildRequires:   glib2-devel >= @GLIB_REQUIRED@
+
+%description
+A library for asynchronous networking and data processing
+based on a simple network flow model.
+
+Comments and questions should be sent to <hpj@copyleft.no>.
+
+%prep
+%setup
+
+%build
+
+%ifarch alpha
+    MYARCH_FLAGS="--host=alpha-redhat-linux"
+%endif
+
+# Needed for snapshot releases.
+MYCFLAGS="$RPM_OPT_FLAGS"
+
+if [ ! -f configure ]; then
+    CFLAGS="$MYCFLAGS" ./autogen.sh $MYARCH_FLAGS \
+	--enable-more-warnings --prefix=%{_prefix} \
+	--sysconfdir=%{_sysconfdir} \
+	--mandir=%{_mandir} --libdir=%{_libdir} \
+	--includedir=%{_includedir} --bindir=%{_bindir}
+fi
+
+CFLAGS="$MYCFLAGS" ./configure $MYARCH_FLAGS --enable-more-warnings \
+    --prefix=%{_prefix} \
+    --sysconfdir=%{_sysconfdir} --mandir=%{_mandir} \
+    --libdir=%{_libdir} --includedir=%{_includedir} \
+    --bindir=%{_bindir} 
+
+make
+
+%install
+rm -rf $RPM_BUILD_ROOT
+make -k sysconfdir=$RPM_BUILD_ROOT%{_sysconfdir} \
+    prefix=$RPM_BUILD_ROOT%{_prefix} mandir=$RPM_BUILD_ROOT%{_mandir} \
+    libdir=$RPM_BUILD_ROOT%{_libdir} bindir=$RPM_BUILD_ROOT\%{_bindir} \
+    includedir=$RPM_BUILD_ROOT%{_includedir} install
+
+%post -p /sbin/ldconfig
+%postun -p /sbin/ldconfig
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+%files
+%defattr(-, root, root)
+
+%doc README COPYING ChangeLog NEWS AUTHORS INSTALL
+%{_bindir}/%{name}
+%{_prefix}/share/%{name}
+
+%changelog
+* Sat Mar 22 2003 Hans Petter Jansson <hpj@copyleft.no>
+- Wrote initial spec file.
