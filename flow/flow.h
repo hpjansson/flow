@@ -42,6 +42,7 @@
 #include <flow/flow-pad.h>
 #include <flow/flow-pipeline.h>
 #include <flow/flow-position.h>
+#include <flow/flow-property-event.h>
 #include <flow/flow-segment-request.h>
 #include <flow/flow-shunt.h>
 #include <flow/flow-simplex-element.h>
