@@ -42,7 +42,7 @@ typedef struct _FlowDestructorClass FlowDestructorClass;
 
 struct _FlowDestructor
 {
-  FlowCollector    parent;
+  FlowCollector parent;
 };
 
 struct _FlowDestructorClass
@@ -56,6 +56,8 @@ struct _FlowDestructorClass
   void (*_pad_3) (void);
   void (*_pad_4) (void);
 };
+
+FlowDestructor *flow_destructor_new (void);
 
 G_END_DECLS
 

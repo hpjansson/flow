@@ -39,6 +39,78 @@ FLOW_GOBJECT_MAKE_IMPL        (flow_demux, FlowDemux, FLOW_TYPE_ELEMENT, 0)
 /* --- FlowDemux implementation --- */
 
 static void
+flow_demux_output_pad_blocked (FlowElement *element, FlowPad *output_pad)
+{
+  FlowPad *input_pad;
+
+  input_pad = g_ptr_array_index (element->input_pads, 0);
+
+  /* Block input pad if any output pad is blocked */
+
+  if (!flow_pad_is_blocked (input_pad))
+    flow_pad_block (input_pad);
+}
+
+static void
+flow_demux_output_pad_unblocked (FlowElement *element, FlowPad *outpud_pad)
+{
+  guint i;
+
+  /* Block input pad if any output pad is blocked */
+
+  /* NOTE: This may be slow if we have lots of outputs. It could be solved
+   * by storing a counter indicating how many blocked outputs we have. I
+   * very much doubt it'll be a problem in practice, though. */
+
+  for (i = 0; i < element->output_pads->len; i++)
+  {
+    FlowPad *output_pad = g_ptr_array_index (element->output_pads, i);
+
+    if (flow_pad_is_blocked (output_pad))
+      break;
+  }
+
+  if (i >= element->output_pads->len)
+  {
+    FlowPad *input_pad;
+
+    /* We reached the end - there are no blocked outputs */
+
+    input_pad = g_ptr_array_index (element->input_pads, 0);
+
+    if (!flow_pad_is_blocked (input_pad))
+      flow_pad_block (input_pad);
+  }
+}
+
+static void
+flow_demux_process_input (FlowElement *element, FlowPad *input_pad)
+{
+  FlowPacketQueue *packet_queue;
+  FlowPacket      *packet;
+
+  packet_queue = flow_pad_get_packet_queue (input_pad);
+
+  for ( ; (packet = flow_packet_queue_pop_packet (packet_queue)); )
+  {
+    guint i;
+
+    flow_handle_universal_events (element, packet);
+
+    if (element->output_pads->len > 0)
+    {
+      for (i = 1; i < element->output_pads->len; i++)
+      {
+        flow_pad_push (g_ptr_array_index (element->output_pads, i), flow_packet_copy (packet));
+      }
+
+      /* Push the original packet last, as it may get destroyed */
+      flow_pad_push (g_ptr_array_index (element->output_pads, 0), packet);
+    }
+  }
+}
+
+static void
 flow_demux_type_init (GType type)
 {
 }
@@ -46,6 +118,11 @@ flow_demux_type_init (GType type)
 static void
 flow_demux_class_init (FlowDemuxClass *klass)
 {
+  FlowElementClass *element_klass = FLOW_ELEMENT_CLASS (klass);
+
+  element_klass->output_pad_blocked   = flow_demux_output_pad_blocked;
+  element_klass->output_pad_unblocked = flow_demux_output_pad_unblocked;
+  element_klass->process_input        = flow_demux_process_input;
 }
 
 static void

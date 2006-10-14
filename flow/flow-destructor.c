@@ -38,20 +38,6 @@ FLOW_GOBJECT_MAKE_IMPL        (flow_destructor, FlowDestructor, FLOW_TYPE_COLLEC
 /* --- FlowDestructor implementation --- */
 
 static void
-flow_destructor_process_input (FlowElement *element, FlowPad *input_pad)
-{
-  FlowPacketQueue *packet_queue;
-  FlowPacket      *packet;
-
-  packet_queue = flow_pad_get_packet_queue (input_pad);
-
-  for ( ; (packet = flow_packet_queue_pop_packet (packet_queue)); )
-  {
-    flow_packet_free (packet);
-  }
-}
-
-static void
 flow_destructor_type_init (GType type)
 {
 }
@@ -59,9 +45,8 @@ flow_destructor_type_init (GType type)
 static void
 flow_destructor_class_init (FlowDestructorClass *klass)
 {
-  FlowElementClass *element_klass = FLOW_ELEMENT_CLASS (klass);
-
-  element_klass->process_input = flow_destructor_process_input;
+  /* We don't have to implement anything - the FlowCollector class
+   * defaults to exactly what we want. */
 }
 
 static void
@@ -86,3 +71,8 @@ flow_destructor_finalize (FlowDestructor *destructor)
 
 /* --- FlowDestructor public API --- */
 
+FlowDestructor *
+flow_destructor_new (void)
+{
+  return g_object_new (FLOW_TYPE_DESTRUCTOR, NULL);
+}

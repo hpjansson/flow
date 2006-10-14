@@ -23,6 +23,7 @@
  */
 
 #include "config.h"
+#include "flow-util.h"
 #include "flow-gobject-util.h"
 #include "flow-collector.h"
 
@@ -38,6 +39,21 @@ FLOW_GOBJECT_MAKE_IMPL        (flow_collector, FlowCollector, FLOW_TYPE_ELEMENT,
 /* --- FlowCollector implementation --- */
 
 static void
+flow_collector_process_input (FlowElement *element, FlowPad *input_pad)
+{
+  FlowPacketQueue *packet_queue;
+  FlowPacket      *packet;
+
+  packet_queue = flow_pad_get_packet_queue (input_pad);
+
+  for ( ; (packet = flow_packet_queue_pop_packet (packet_queue)); )
+  {
+    flow_handle_universal_events (element, packet);
+    flow_packet_free (packet);
+  }
+}
+
+static void
 flow_collector_type_init (GType type)
 {
 }
@@ -45,6 +61,9 @@ flow_collector_type_init (GType type)
 static void
 flow_collector_class_init (FlowCollectorClass *klass)
 {
+  FlowElementClass *element_klass = FLOW_ELEMENT_CLASS (klass);
+
+  element_klass->process_input = flow_collector_process_input;
 }
 
 static void
