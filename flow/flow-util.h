@@ -26,12 +26,14 @@
 #define _FLOW_UTIL_H
 
 #include <glib.h>
+#include <flow-element.h>
 #include <flow-packet.h>
 
 G_BEGIN_DECLS
 
 gchar       *flow_strerror                   (gint errnum);
 FlowPacket  *flow_create_simple_event_packet (const gchar *domain, gint code);
+gboolean     flow_handle_universal_events    (FlowElement *element, FlowPacket *packet);
 
 gint         flow_g_ptr_array_find           (GPtrArray *array, gpointer data);
 gboolean     flow_g_ptr_array_remove_sparse  (GPtrArray *array, gpointer data);

@@ -28,6 +28,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include "flow-detailed-event.h"
+#include "flow-property-event.h"
 #include "flow-messages.h"
 #include "flow-util.h"
 
@@ -42,6 +43,24 @@ flow_create_simple_event_packet (const gchar *domain, gint code)
   flow_detailed_event_add_code (detailed_event, domain, code);
 
   return flow_packet_new_take_object (detailed_event, 0);
+}
+
+gboolean
+flow_handle_universal_events (FlowElement *element, FlowPacket *packet)
+{
+  gboolean result = FALSE;
+
+  if (flow_packet_get_format (packet) == FLOW_PACKET_FORMAT_OBJECT)
+  {
+    gpointer instance = flow_packet_get_data (packet);
+
+    /* Try to apply property events to element */
+
+    if (FLOW_IS_PROPERTY_EVENT (instance))
+      result = flow_property_event_try_apply (instance, element);
+  }
+
+  return result;
 }
 
 gchar *
