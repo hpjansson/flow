@@ -26,7 +26,7 @@
 #define _FLOW_CONNECTOR_H
 
 #include <glib-object.h>
-#include <flow-element.h>
+#include <flow-simplex-element.h>
 
 G_BEGIN_DECLS
 
@@ -52,7 +52,7 @@ typedef struct _FlowConnectorClass FlowConnectorClass;
 
 struct _FlowConnector
 {
-  FlowElement        parent;
+  FlowSimplexElement parent;
 
   FlowConnectivity   state;
   FlowConnectivity   last_state;
@@ -60,7 +60,7 @@ struct _FlowConnector
 
 struct _FlowConnectorClass
 {
-  FlowElementClass parent_class;
+  FlowSimplexElementClass parent_class;
 
   /* Padding for future expansion */
 

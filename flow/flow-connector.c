@@ -34,7 +34,7 @@ FLOW_GOBJECT_PROPERTIES_END   ()
 
 /* --- FlowConnector definition --- */
 
-FLOW_GOBJECT_MAKE_IMPL        (flow_connector, FlowConnector, FLOW_TYPE_ELEMENT, G_TYPE_FLAG_ABSTRACT)
+FLOW_GOBJECT_MAKE_IMPL        (flow_connector, FlowConnector, FLOW_TYPE_SIMPLEX_ELEMENT, G_TYPE_FLAG_ABSTRACT)
 
 /* --- FlowConnector implementation --- */
 
@@ -46,6 +46,15 @@ flow_connector_type_init (GType type)
 static void
 flow_connector_class_init (FlowConnectorClass *klass)
 {
+  FlowElementClass *element_klass = FLOW_ELEMENT_CLASS (klass);
+
+  /* The FlowSimplexElement default implementation just maps
+   * input to output. That doesn't make sense for us. */
+
+  element_klass->output_pad_blocked   = NULL;
+  element_klass->output_pad_unblocked = NULL;
+  element_klass->process_input        = NULL;
+
   g_signal_newv ("connectivity-changed",
                  G_TYPE_FROM_CLASS (klass),
                  G_SIGNAL_RUN_LAST | G_SIGNAL_NO_HOOKS,
