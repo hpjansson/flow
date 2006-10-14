@@ -23,6 +23,7 @@
  */
 
 #include "config.h"
+#include "flow-util.h"
 #include "flow-gobject-util.h"
 #include "flow-duplex-element.h"
 
@@ -82,6 +83,7 @@ flow_duplex_element_process_input (FlowElement *element, FlowPad *input_pad)
 
   for ( ; (packet = flow_packet_queue_pop_packet (packet_queue)); )
   {
+    flow_handle_universal_events (element, packet);
     flow_pad_push (g_ptr_array_index (element->output_pads, index), packet);
   }
 }
