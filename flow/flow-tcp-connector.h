@@ -49,7 +49,6 @@ struct _FlowTcpConnector
   FlowIPService   *remote_service;
   FlowIPService   *next_remote_service;
 
-  FlowPacketQueue *queue_to_shunt;
   FlowShunt       *shunt;
 };
 
