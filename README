@@ -1,0 +1,35 @@
+About
+=====
+
+Flow is intended to fulfill three roles:
+
+1) A lightweight streaming framework for data and objects.
+
+2) A set of pre-made stream elements for various tasks, including network
+   and file system interaction.
+
+3) High-level API for easy-to-use network and file system access, hiding the
+   complexity of the underlying stream model.
+
+For details regarding hacking on Flow itself, see the HACKING file, which you
+should have obtained along with this writ.
+
+Availability
+============
+
+Flow is maintained in the GNOME CVS repository. It can be checked out with
+the following command:
+
+  cvs -d <user>@cvs.gnome.org:/cvs/gnome co flow
+
+Replace <user> with your GNOME CVS account. If you do not have such an account,
+you can get Flow from an anonymous mirror by doing the following:
+
+  cvs -d anonymous@anoncvs.gnome.org:/cvs/gnome co flow
+
+Contact
+=======
+
+E-mail: See the MAINTAINERS file. Flow does not currently have a mailing list.
+
+IRC: Channel #flow on the irc.gnome.org server.
