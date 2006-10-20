@@ -179,10 +179,14 @@ flow_pad_connect (FlowPad *pad, FlowPad *other_pad)
   if (pad_ref && other_pad_ref)
     g_object_set (other_pad, "connected-pad", pad, NULL);
 
+  /* Stimulate data flow across new connection */
+
   if (pad_ref)
     FLOW_PAD_GET_CLASS (pad)->push (pad, NULL);
   if (other_pad_ref)
     FLOW_PAD_GET_CLASS (other_pad)->push (other_pad, NULL);
+
+  /* Clean up */
 
   if (pad_ref)
     g_object_remove_weak_pointer ((GObject *) pad, &pad_ref);
