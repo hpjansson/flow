@@ -33,6 +33,7 @@ flow_built_headers = \
 
 libflow_la_SOURCES = \
 	flow-anonymous-event.c \
+	flow-bin.c \
 	flow-duplex-element.c \
 	flow-collector.c \
 	flow-connector.c \
@@ -45,6 +46,7 @@ libflow_la_SOURCES = \
 	flow-event.c \
 	flow-gobject-util.c \
 	flow-input-pad.c \
+	flow-io.c \
 	flow-ip-addr.c \
 	flow-ip-resolver.c \
 	flow-ip-service.c \
@@ -61,12 +63,14 @@ libflow_la_SOURCES = \
 	flow-shunt.c \
 	flow-simplex-element.c \
 	flow-tcp-connector.c \
+	flow-user-adapter.c \
 	flow-util.c \
 	$(flow_built_sources)
 
 pkginclude_HEADERS = \
 	flow.h \
 	flow-anonymous-event.h \
+	flow-bin.h \
 	flow-duplex-element.h \
 	flow-collector.h \
 	flow-connector.h \
@@ -78,6 +82,7 @@ pkginclude_HEADERS = \
 	flow-event.h \
 	flow-event-codes.h \
 	flow-input-pad.h \
+	flow-io.h \
 	flow-ip-addr.h \
 	flow-ip-resolver.h \
 	flow-ip-service.h \
@@ -94,6 +99,7 @@ pkginclude_HEADERS = \
 	flow-shunt.h \
 	flow-simplex-element.h \
 	flow-tcp-connector.h \
+	flow-user-adapter.h \
 	flow-util.h
 
 noinst_HEADERS = \
