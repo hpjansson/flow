@@ -31,6 +31,8 @@
 
 G_BEGIN_DECLS
 
+typedef void (*FlowNotifyFunc) (gpointer user_data);
+
 gchar       *flow_strerror                   (gint errnum);
 FlowPacket  *flow_create_simple_event_packet (const gchar *domain, gint code);
 gboolean     flow_handle_universal_events    (FlowElement *element, FlowPacket *packet);
