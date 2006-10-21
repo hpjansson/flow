@@ -37,6 +37,7 @@ libflow_la_SOURCES = \
 	flow-duplex-element.c \
 	flow-collector.c \
 	flow-connector.c \
+	flow-context-mgmt.c \
 	flow-common.c \
 	flow-demux.c \
 	flow-destructor.c \
@@ -74,6 +75,7 @@ pkginclude_HEADERS = \
 	flow-duplex-element.h \
 	flow-collector.h \
 	flow-connector.h \
+	flow-context-mgmt.h \
 	flow-demux.h \
 	flow-destructor.h \
 	flow-detailed-event.h \
