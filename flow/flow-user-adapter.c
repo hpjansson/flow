@@ -25,6 +25,7 @@
 #include "config.h"
 #include "flow-util.h"
 #include "flow-gobject-util.h"
+#include "flow-context-mgmt.h"
 #include "flow-user-adapter.h"
 
 /* --- FlowUserAdapter properties --- */
@@ -46,7 +47,7 @@ notify_user (FlowUserAdapter *user_adapter)
 }
 
 static void
-flow_user_adapter_push_from_user (FlowUserAdapter *user_adapter)
+flow_user_adapter_push_output (FlowUserAdapter *user_adapter)
 {
   FlowElement *element    = FLOW_ELEMENT (user_adapter);
   FlowPad     *output_pad = g_ptr_array_index (element->output_pads, 0);
@@ -55,9 +56,22 @@ flow_user_adapter_push_from_user (FlowUserAdapter *user_adapter)
   {
     FlowPacket *packet;
 
-    packet = flow_packet_queue_pop_packet (user_adapter->queue_from_user);
+    packet = flow_packet_queue_pop_packet (user_adapter->output_queue);
     if (!packet)
+    {
+      if (user_adapter->waiting_for_output)
+      {
+        /* g_main_loop_is_running () is cheap compared to g_main_loop_quit () */
+        if (g_main_loop_is_running (user_adapter->output_loop))
+          g_main_loop_quit (user_adapter->output_loop);
+      }
+      else
+      {
+        notify_user (user_adapter);
+      }
+
       break;
+    }
 
     flow_handle_universal_events (element, packet);
     flow_pad_push (output_pad, packet);
@@ -76,10 +90,19 @@ flow_user_adapter_process_input (FlowElement *element, FlowPad *input_pad)
   for ( ; (packet = flow_packet_queue_pop_packet (packet_queue)); )
   {
     flow_handle_universal_events (element, packet);
-    flow_packet_queue_push_packet (user_adapter->queue_to_user, packet);
+    flow_packet_queue_push_packet (user_adapter->input_queue, packet);
   }
 
-  notify_user (user_adapter);
+  if (user_adapter->waiting_for_input)
+  {
+    /* g_main_loop_is_running () is cheap compared to g_main_loop_quit () */
+    if (g_main_loop_is_running (user_adapter->input_loop))
+      g_main_loop_quit (user_adapter->input_loop);
+  }
+  else
+  {
+    notify_user (user_adapter);
+  }
 }
 
 static void
@@ -93,15 +116,15 @@ flow_user_adapter_class_init (FlowUserAdapterClass *klass)
   FlowElementClass *element_klass = FLOW_ELEMENT_CLASS (klass);
 
   element_klass->output_pad_blocked   = NULL;
-  element_klass->output_pad_unblocked = (void (*) (FlowElement *, FlowPad *)) flow_user_adapter_push_from_user;
+  element_klass->output_pad_unblocked = (void (*) (FlowElement *, FlowPad *)) flow_user_adapter_push_output;
   element_klass->process_input        = flow_user_adapter_process_input;
 }
 
 static void
 flow_user_adapter_init (FlowUserAdapter *user_adapter)
 {
-  user_adapter->queue_to_user   = flow_packet_queue_new ();
-  user_adapter->queue_from_user = flow_packet_queue_new ();
+  user_adapter->input_queue   = flow_packet_queue_new ();
+  user_adapter->output_queue = flow_packet_queue_new ();
 }
 
 static void
@@ -117,8 +140,20 @@ flow_user_adapter_dispose (FlowUserAdapter *user_adapter)
 static void
 flow_user_adapter_finalize (FlowUserAdapter *user_adapter)
 {
-  flow_gobject_unref_clear (user_adapter->queue_to_user);
-  flow_gobject_unref_clear (user_adapter->queue_from_user);
+  if (user_adapter->input_loop)
+  {
+    g_main_loop_unref (user_adapter->input_loop);
+    user_adapter->input_loop = NULL;
+  }
+
+  if (user_adapter->output_loop)
+  {
+    g_main_loop_unref (user_adapter->output_loop);
+    user_adapter->output_loop = NULL;
+  }
+
+  flow_gobject_unref_clear (user_adapter->input_queue);
+  flow_gobject_unref_clear (user_adapter->output_queue);
 }
 
 /* --- FlowUserAdapter public API --- */
@@ -137,7 +172,7 @@ flow_user_adapter_set_notify_func (FlowUserAdapter *user_adapter, FlowNotifyFunc
   user_adapter->user_notify_func = func;
   user_adapter->user_notify_data = user_data;
 
-  if (func && flow_packet_queue_get_length_packets (user_adapter->queue_to_user))
+  if (func && flow_packet_queue_get_length_packets (user_adapter->input_queue))
     notify_user (user_adapter);
 }
 
@@ -146,7 +181,7 @@ flow_user_adapter_get_input_queue (FlowUserAdapter *user_adapter)
 {
   g_return_val_if_fail (FLOW_IS_USER_ADAPTER (user_adapter), NULL);
 
-  return user_adapter->queue_to_user;
+  return user_adapter->input_queue;
 }
 
 FlowPacketQueue *
@@ -154,7 +189,7 @@ flow_user_adapter_get_output_queue (FlowUserAdapter *user_adapter)
 {
   g_return_val_if_fail (FLOW_IS_USER_ADAPTER (user_adapter), NULL);
 
-  return user_adapter->queue_from_user;
+  return user_adapter->output_queue;
 }
 
 void
@@ -162,7 +197,7 @@ flow_user_adapter_push (FlowUserAdapter *user_adapter)
 {
   g_return_if_fail (FLOW_IS_USER_ADAPTER (user_adapter));
 
-  flow_user_adapter_push_from_user (user_adapter);
+  flow_user_adapter_push_output (user_adapter);
 }
 
 void
@@ -173,10 +208,15 @@ flow_user_adapter_block (FlowUserAdapter *user_adapter)
 
   g_return_if_fail (FLOW_IS_USER_ADAPTER (user_adapter));
 
-  element = FLOW_ELEMENT (user_adapter);
-  input_pad = g_ptr_array_index (element->input_pads, 0);
+  /* Don't block the input pad if we're waiting for input somewhere in the stack */
 
-  flow_pad_block (input_pad);
+  if (!user_adapter->waiting_for_input)
+  {
+    element = FLOW_ELEMENT (user_adapter);
+    input_pad = g_ptr_array_index (element->input_pads, 0);
+
+    flow_pad_block (input_pad);
+  }
 }
 
 void
@@ -191,4 +231,87 @@ flow_user_adapter_unblock (FlowUserAdapter *user_adapter)
   input_pad = g_ptr_array_index (element->input_pads, 0);
 
   flow_pad_unblock (input_pad);
+}
+
+void
+flow_user_adapter_wait_for_input (FlowUserAdapter *user_adapter)
+{
+  FlowElement *element;
+  FlowPad     *input_pad;
+
+  g_return_if_fail (FLOW_IS_USER_ADAPTER (user_adapter));
+
+  user_adapter->waiting_for_input++;
+
+  if G_UNLIKELY (!user_adapter->input_loop)
+  {
+    GMainContext *main_context;
+
+    main_context = flow_get_main_context_for_current_thread ();
+    user_adapter->input_loop = g_main_loop_new (main_context, FALSE);
+  }
+
+  /* Make sure the input pad is not blocked when we go to sleep */
+
+  element = FLOW_ELEMENT (user_adapter);
+  input_pad = g_ptr_array_index (element->input_pads, 0);
+
+  if (flow_pad_is_blocked (input_pad))
+  {
+    guint n_packets = flow_packet_queue_get_length_packets (user_adapter->input_queue);
+
+    flow_pad_unblock (input_pad);
+
+    /* If we got packets as a result of unblocking the pad, return immediately */
+
+    if (flow_packet_queue_get_length_packets (user_adapter->input_queue) > n_packets)
+    {
+      user_adapter->waiting_for_input--;
+      return;
+    }
+  }
+
+  g_main_loop_run (user_adapter->input_loop);
+
+  user_adapter->waiting_for_input--;
+}
+
+void
+flow_user_adapter_wait_for_output (FlowUserAdapter *user_adapter)
+{
+  FlowElement *element;
+  FlowPad     *output_pad;
+  guint        n_packets;
+
+  g_return_if_fail (FLOW_IS_USER_ADAPTER (user_adapter));
+
+  user_adapter->waiting_for_output++;
+
+  if G_UNLIKELY (!user_adapter->output_loop)
+  {
+    GMainContext *main_context;
+
+    main_context = flow_get_main_context_for_current_thread ();
+    user_adapter->output_loop = g_main_loop_new (main_context, FALSE);
+  }
+
+  /* Make sure we have packets and that the output pad is blocked when we go to sleep */
+
+  element = FLOW_ELEMENT (user_adapter);
+  output_pad = g_ptr_array_index (element->output_pads, 0);
+
+  if (!flow_pad_is_blocked (output_pad))
+    flow_user_adapter_push_output (user_adapter);
+
+  n_packets = flow_packet_queue_get_length_packets (user_adapter->output_queue);
+  if (!n_packets)
+  {
+    /* Nothing to send, so return immediately */
+    user_adapter->waiting_for_output--;
+    return;
+  }
+
+  g_main_loop_run (user_adapter->output_loop);
+
+  user_adapter->waiting_for_output--;
 }

@@ -46,10 +46,24 @@ struct _FlowUserAdapter
 
   FlowSimplexElement  parent;
 
-  FlowPacketQueue    *queue_to_user;
-  FlowPacketQueue    *queue_from_user;
+  FlowPacketQueue    *input_queue;
+  FlowPacketQueue    *output_queue;
+
+  GMainLoop          *input_loop;
+  GMainLoop          *output_loop;
+
   FlowNotifyFunc      user_notify_func;
   gpointer            user_notify_data;
+
+  /* waiting_for_... means the user is in a blocking call. Blocking calls can
+   * be recursive if the GMainContext is shared with other facilities, so we
+   * maintain a depth count.
+   *
+   * This is used to prevent async notifications from firing while we're in
+   * a blocking call (for apps that mix sync and async access). */
+
+  guint16             waiting_for_input;
+  guint16             waiting_for_output;
 };
 
 struct _FlowUserAdapterClass
@@ -75,6 +89,9 @@ void             flow_user_adapter_push             (FlowUserAdapter *user_adapt
 
 void             flow_user_adapter_block            (FlowUserAdapter *user_adapter);
 void             flow_user_adapter_unblock          (FlowUserAdapter *user_adapter);
+
+void             flow_user_adapter_wait_for_input   (FlowUserAdapter *user_adapter);
+void             flow_user_adapter_wait_for_output  (FlowUserAdapter *user_adapter);
 
 G_END_DECLS
 
