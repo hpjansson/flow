@@ -279,9 +279,7 @@ flow_user_adapter_wait_for_input (FlowUserAdapter *user_adapter)
 void
 flow_user_adapter_wait_for_output (FlowUserAdapter *user_adapter)
 {
-  FlowElement *element;
-  FlowPad     *output_pad;
-  guint        n_packets;
+  guint n_packets;
 
   g_return_if_fail (FLOW_IS_USER_ADAPTER (user_adapter));
 
@@ -297,16 +295,13 @@ flow_user_adapter_wait_for_output (FlowUserAdapter *user_adapter)
 
   /* Make sure we have packets and that the output pad is blocked when we go to sleep */
 
-  element = FLOW_ELEMENT (user_adapter);
-  output_pad = g_ptr_array_index (element->output_pads, 0);
-
-  if (!flow_pad_is_blocked (output_pad))
-    flow_user_adapter_push_output (user_adapter);
+  flow_user_adapter_push_output (user_adapter);
 
   n_packets = flow_packet_queue_get_length_packets (user_adapter->output_queue);
   if (!n_packets)
   {
     /* Nothing to send, so return immediately */
+
     user_adapter->waiting_for_output--;
     return;
   }
