@@ -203,10 +203,8 @@ static gpointer socket_shunt_main (void);
 
 static GStaticMutex    global_mutex       = G_STATIC_MUTEX_INIT;
 static FlowWakeupPipe  wakeup_pipe        = FLOW_WAKEUP_PIPE_INVALID;
-static guint           dispatch_source_id = 0;
 static GThread        *watch_thread;
 static GPtrArray      *active_socket_shunts;
-static GPtrArray      *dispatch_shunts [2];
 
 /* --------------------------------------- *
  * Errno maps for Linux 2.6.16 / glibc 2.4 *
@@ -848,8 +846,6 @@ flow_shunt_impl_init (void)
     g_thread_init (NULL);
 
   active_socket_shunts = g_ptr_array_new ();
-  dispatch_shunts [0]  = g_ptr_array_new ();
-  dispatch_shunts [1]  = g_ptr_array_new ();
 
   flow_wakeup_pipe_init (&wakeup_pipe);
 
@@ -866,17 +862,15 @@ flow_shunt_impl_finalize (void)
   g_ptr_array_free (active_socket_shunts, TRUE);
   active_socket_shunts = NULL;
 
-  g_ptr_array_free (dispatch_shunts [0], TRUE);
-  dispatch_shunts [0] = NULL;
+  /* FIXME: Do something about ShuntSources, but in flow-shunt.c */
 
-  g_ptr_array_free (dispatch_shunts [1], TRUE);
-  dispatch_shunts [1] = NULL;
-
+#if 0
   if (dispatch_source_id)
   {
     g_source_remove (dispatch_source_id);
     dispatch_source_id = 0;
   }
+#endif
 }
 
 /* ----------- *
@@ -903,13 +897,6 @@ flow_shunt_impl_unlock (void)
 static void
 flow_shunt_impl_destroy_shunt (FlowShunt *shunt)
 {
-  if (shunt->wait_dispatch)
-  {
-    flow_g_ptr_array_remove_sparse (dispatch_shunts [0], shunt);
-    flow_g_ptr_array_remove_sparse (dispatch_shunts [1], shunt);
-    shunt->wait_dispatch = FALSE;
-  }
-
   if (shunt->shunt_type == SHUNT_TYPE_FILE)
   {
     FileShunt *file_shunt = (FileShunt *) shunt;
@@ -918,23 +905,18 @@ flow_shunt_impl_destroy_shunt (FlowShunt *shunt)
   }
 }
 
-/* Invoked from flow_shunt_finalize () */
+/* Invoked from generic dispatch_main () */
 static void
 flow_shunt_impl_finalize_shunt (FlowShunt *shunt)
 {
+  /* File shunts are finalized in their own thread */
+  if (shunt->shunt_type == SHUNT_TYPE_FILE)
+    return;
+
+  flow_shunt_finalize_common (shunt);
+
   switch (shunt->shunt_type)
   {
-    case SHUNT_TYPE_FILE:
-      {
-        FileShunt *file_shunt = (FileShunt *) shunt;
-
-        g_cond_free (file_shunt->cond);
-        file_shunt->cond = NULL;
-
-        g_slice_free (FileShunt, file_shunt);
-      }
-      break;
-
     case SHUNT_TYPE_PIPE:
       {
         PipeShunt *pipe_shunt = (PipeShunt *) shunt;
@@ -1049,168 +1031,6 @@ flow_shunt_impl_need_writes (FlowShunt *shunt)
   }
 }
 
-/* ---------------- *
- * Dispatch to User *
- * ---------------- */
-
-static gboolean
-dispatch_main (void)
-{
-  GPtrArray *current_dispatch_shunts;
-  guint      i;
-
-  flow_shunt_impl_lock ();
-
-  /* Swap dispatch_shunts so new dispatch requests aren't added to current
-   * dispatch. If this were to happen, and one or more of the consumers are
-   * slow, we might never leave this function. */
-
-  current_dispatch_shunts = dispatch_shunts [0];
-  dispatch_shunts [0]     = dispatch_shunts [1];
-  dispatch_shunts [1]     = current_dispatch_shunts;
-
-  /* Allow for next dispatch to be set up */
-
-  dispatch_source_id = 0;
-
-  /* Do dispatch */
-
-  for (i = 0; i < current_dispatch_shunts->len; i++)
-  {
-    FlowPacket  *packet;
-    FlowPacket  *packets [MAX_DISPATCH_PACKETS];
-    FlowShunt   *shunt = g_ptr_array_index (current_dispatch_shunts, i);
-    guint        written_packets;
-    guint        written_bytes;
-    guint        read_packets;
-    guint        read_bytes;
-    guint        read_data_bytes;
-    guint        j;
-
-    if (!shunt)
-      continue;  /* Shunt was disposed while queued */
-
-    written_bytes = flow_packet_queue_get_length_bytes (shunt->write_queue);
-
-    /* Peek packets from read queue. We stage them in an array so we don't
-     * have to lock/unlock around each peek. */
-
-    read_packets    = MAX_DISPATCH_PACKETS;
-    read_bytes      = 0;
-    read_data_bytes = 0;
-    flow_packet_queue_peek_packets (shunt->read_queue, packets, &read_packets);
-
-    /* It's important that wait_dispatch be cleared before we unlock, as the shunt
-     * may have to be re-queued for dispatches while we're running unlocked. */
-
-    shunt->in_dispatch   = TRUE;
-    shunt->wait_dispatch = FALSE;
-    flow_shunt_impl_unlock ();
-
-    /* --- UNLOCKED CODE BEGINS --- */
-
-    /* Dispatch reads */
-
-    for (j = 0; shunt->read_func && !shunt->block_reads && !shunt->was_destroyed && j < read_packets; j++)
-    {
-      guint packet_size;
-
-      packet = packets [j];
-      packet_size = flow_packet_get_size (packet);
-
-      read_bytes += packet_size;
-      if (flow_packet_get_format (packet) == FLOW_PACKET_FORMAT_BUFFER)
-        read_data_bytes += packet_size;
-
-      shunt->read_func (shunt, packet, shunt->read_func_data);
-    }
-
-    read_packets = j;
-
-    /* Dispatch writes */
-
-    for (written_packets = 0; shunt->write_func && !shunt->block_writes && !shunt->was_destroyed &&
-                              written_packets < MAX_DISPATCH_PACKETS && written_bytes <= MAX_BUFFER &&
-                              !shunt->received_end; written_packets++)
-    {
-      packet = shunt->write_func (shunt, shunt->write_func_data);
-      if G_UNLIKELY (!packet)
-        break;
-
-      /* Written packets are staged in an array so we only have to lock once
-       * when we queue them */
-      packets [written_packets] = packet;
-      written_bytes += flow_packet_get_size (packet);
-
-      /* If we get end-of-stream, don't request any more writes */
-
-      if G_UNLIKELY (flow_packet_get_format (packet) == FLOW_PACKET_FORMAT_OBJECT)
-      {
-        FlowDetailedEvent *detailed_event = flow_packet_get_data (packet);
-
-        if (FLOW_IS_DETAILED_EVENT (detailed_event) &&
-            flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END))
-        {
-          shunt->received_end = TRUE;
-        }
-      }
-    }
-
-    /* --- UNLOCKED CODE ENDS --- */
-
-    flow_shunt_impl_lock ();
-    shunt->in_dispatch = FALSE;
-
-    /* Steal (not drop!) read packets. NOTE: The packets may already have been
-     * freed by the user. */
-
-    flow_packet_queue_steal (shunt->read_queue, read_packets, read_bytes, read_data_bytes);
-
-    /* Queue written packets */
-
-    for (j = 0; j < written_packets; j++)
-      flow_packet_queue_push_packet (shunt->write_queue, packets [j]);
-
-    if G_UNLIKELY (shunt->was_destroyed)
-    {
-      /* File shunts finalize in worker thread */
-      if (shunt->shunt_type != SHUNT_TYPE_FILE)
-      {
-        flow_shunt_impl_unlock ();
-        flow_shunt_finalize (shunt);
-        flow_shunt_impl_lock ();
-      }
-    }
-    else
-    {
-      if (read_packets > 0)
-        flow_shunt_read_state_changed (shunt);
-      if (written_packets > 0)
-        flow_shunt_write_state_changed (shunt);
-    }
-  }
-
-  /* Clear dispatch array */
-  g_ptr_array_set_size (current_dispatch_shunts, 0);
-
-  flow_shunt_impl_unlock ();
-  return FALSE;
-}
-
-/* Invoked from flow_shunt_(read|write)_state_changed () */
-static void
-flow_shunt_impl_need_dispatch (FlowShunt *shunt)
-{
-  if (shunt->wait_dispatch)
-    return;
-
-  shunt->wait_dispatch = TRUE;
-  g_ptr_array_add (dispatch_shunts [0], shunt);
-
-  if (!dispatch_source_id)
-    dispatch_source_id = g_idle_add_full (G_PRIORITY_DEFAULT_IDLE, (GSourceFunc) dispatch_main, NULL, NULL);
-}
-
 /* ----------------------------- *
  * Socket and Pipe Low-level I/O *
  * ----------------------------- */
@@ -1269,7 +1089,7 @@ tcp_listener_shunt_read (FlowShunt *shunt)
 
     new_tcp_shunt = g_slice_new0 (TcpShunt);
     new_shunt = (FlowShunt *) new_tcp_shunt;
-    flow_shunt_init (new_shunt);
+    flow_shunt_init_common (new_shunt, shunt->shunt_source);
     new_shunt->shunt_type = SHUNT_TYPE_TCP;
 
     tcp_socket_set_quality (new_fd, tcp_listener_shunt->quality);
@@ -2180,6 +2000,17 @@ file_shunt_open (FileShuntParams *params)
   g_slice_free (FileShuntParams, params);
 }
 
+static void
+file_shunt_finalize (FileShunt *file_shunt)
+{
+  flow_shunt_finalize_common ((FlowShunt *) file_shunt);
+
+  g_cond_free (file_shunt->cond);
+  file_shunt->cond = NULL;
+
+  g_slice_free (FileShunt, file_shunt);
+}
+
 static gpointer
 file_shunt_main (FileShuntParams *params)
 {
@@ -2218,11 +2049,11 @@ file_shunt_main (FileShuntParams *params)
     }
   }
 
-  shunt->in_worker = FALSE;
-  flow_shunt_impl_unlock ();
-
   /* Finalize the shunt */
-  flow_shunt_finalize (shunt);
+  shunt->in_worker = FALSE;
+  file_shunt_finalize (file_shunt);
+
+  flow_shunt_impl_unlock ();
 
   return NULL;
 }
@@ -2240,7 +2071,7 @@ create_file_shunt_params (const gchar *path, FlowAccessMode access_mode)
 
   file_shunt = g_slice_new0 (FileShunt);
   shunt = (FlowShunt *) file_shunt;
-  flow_shunt_init (shunt);
+  flow_shunt_init_common (shunt, NULL);
   shunt->shunt_type = SHUNT_TYPE_FILE;
 
   file_shunt->fd      = -1;
@@ -2366,7 +2197,7 @@ create_thread_shunt (FlowWorkerFunc func, gpointer user_data, gboolean filter_ob
 
   thread_shunt = g_slice_new0 (ThreadShunt);
   shunt = (FlowShunt *) thread_shunt;
-  flow_shunt_init (shunt);
+  flow_shunt_init_common (shunt, NULL);
   shunt->shunt_type = SHUNT_TYPE_THREAD;
 
   thread_shunt->cond = g_cond_new ();
@@ -2440,7 +2271,7 @@ flow_shunt_impl_spawn_process (FlowWorkerFunc func, gpointer user_data)
 
   pipe_shunt = g_slice_new0 (PipeShunt);
   shunt = (FlowShunt *) pipe_shunt;
-  flow_shunt_init (shunt);
+  flow_shunt_init_common (shunt, NULL);
   shunt->shunt_type = SHUNT_TYPE_PIPE;
 
   if (pipe (up_fds) < 0)
@@ -2557,7 +2388,7 @@ flow_shunt_impl_spawn_command_line (const gchar *command_line)
 
   pipe_shunt = g_slice_new0 (PipeShunt);
   shunt = (FlowShunt *) pipe_shunt;
-  flow_shunt_init (shunt);
+  flow_shunt_init_common (shunt, NULL);
   shunt->shunt_type = SHUNT_TYPE_PIPE;
 
   if (!g_shell_parse_argv (command_line,
@@ -2651,7 +2482,7 @@ flow_shunt_impl_open_tcp_listener (FlowIPService *local_service)
 
   tcp_listener_shunt = g_slice_new0 (TcpListenerShunt);
   shunt = (FlowShunt *) tcp_listener_shunt;
-  flow_shunt_init (shunt);
+  flow_shunt_init_common (shunt, NULL);
   shunt->shunt_type = SHUNT_TYPE_TCP_LISTENER;
 
   if (local_service)
@@ -2787,7 +2618,7 @@ flow_shunt_impl_connect_to_tcp (FlowIPService *remote_service, gint local_port)
 
   tcp_shunt = g_slice_new0 (TcpShunt);
   shunt = (FlowShunt *) tcp_shunt;
-  flow_shunt_init (shunt);
+  flow_shunt_init_common (shunt, NULL);
   shunt->shunt_type = SHUNT_TYPE_TCP;
 
   family = flow_ip_addr_get_family (FLOW_IP_ADDR (remote_service));
@@ -2893,7 +2724,7 @@ flow_shunt_impl_open_udp_port (FlowIPService *local_service)
 
   udp_shunt = g_slice_new0 (UdpShunt);
   shunt = (FlowShunt *) udp_shunt;
-  flow_shunt_init (shunt);
+  flow_shunt_init_common (shunt, NULL);
   shunt->shunt_type = SHUNT_TYPE_UDP;
 
   family = flow_ip_addr_get_family (FLOW_IP_ADDR (local_service));
