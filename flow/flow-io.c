@@ -29,7 +29,7 @@
 #include "flow-event-codes.h"
 #include "flow-io.h"
 
-#define USER_ELEMENT_NAME "user-element"
+#define USER_ADAPTER_NAME "user-adapter"
 
 #define return_if_invalid_bin(io) \
   G_STMT_START { \
@@ -66,6 +66,14 @@ FLOW_GOBJECT_MAKE_IMPL        (flow_io, FlowIO, FLOW_TYPE_BIN, 0)
 
 /* --- FlowIO implementation --- */
 
+static gboolean
+flow_io_handle_input_object (FlowIO *io, gpointer object)
+{
+  /* TODO */
+
+  return TRUE;
+}
+
 static void
 flow_io_type_init (GType type)
 {
@@ -74,6 +82,7 @@ flow_io_type_init (GType type)
 static void
 flow_io_class_init (FlowIOClass *klass)
 {
+  klass->handle_input_object = flow_io_handle_input_object;
 }
 
 static void
@@ -83,7 +92,7 @@ flow_io_init (FlowIO *io)
   FlowElement *element;
 
   element = FLOW_ELEMENT (flow_user_adapter_new ());
-  flow_bin_add_element (bin, element, USER_ELEMENT_NAME);
+  flow_bin_add_element (bin, element, USER_ADAPTER_NAME);
   g_object_unref (element);
 
   io->need_to_rescan_children = TRUE;
@@ -109,9 +118,36 @@ rescan_children (FlowIO *io)
 {
   FlowBin *bin = FLOW_BIN (io);
 
-  io->user_adapter = FLOW_USER_ADAPTER (flow_bin_get_element (bin, USER_ELEMENT_NAME));
+  io->user_adapter = FLOW_USER_ADAPTER (flow_bin_get_element (bin, USER_ADAPTER_NAME));
 
   io->need_to_rescan_children = FALSE;
+}
+
+static gboolean
+handle_object (FlowIO *io, gpointer object)
+{
+  GType    type;
+  gboolean result = FALSE;
+
+  /* Call the class handlers, from most derived to least derived, stopping
+   * if a handler returns TRUE. We return the return value from the last
+   * handler run. */
+
+  /* FIXME: If necessary, we can speed this up by caching the class pointers, or
+   * even the function pointers if we're feeling frisky. */
+
+  for (type = G_OBJECT_TYPE (object); g_type_is_a (type, FLOW_TYPE_IO); type = g_type_parent (type))
+  {
+    FlowIOClass *klass = g_type_class_peek (type);
+
+    if (klass->handle_input_object)
+      result = klass->handle_input_object (io, object);
+
+    if (result)
+      break;
+  }
+
+  return result;
 }
 
 /* --- FlowIO public API --- */
@@ -126,7 +162,7 @@ gint
 flow_io_read (FlowIO *io, gpointer dest_buffer, gint max_len)
 {
   FlowPacketQueue *packet_queue;
-  FlowPacket      *packet;
+  FlowPacket      *packet = NULL;
   guint            packet_offset;
   gint             result = 0;
 
@@ -142,9 +178,9 @@ flow_io_read (FlowIO *io, gpointer dest_buffer, gint max_len)
     if G_LIKELY (flow_packet_get_format (packet) == FLOW_PACKET_FORMAT_BUFFER)
       break;
 
-    /* TODO: Handle events */
-
-    flow_packet_queue_pop_packet (packet_queue);
+    handle_object (io, flow_packet_get_data (packet));
+    flow_packet_queue_drop_packet (packet_queue);
+    packet = NULL;
   }
 
   if G_LIKELY (packet)

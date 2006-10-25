@@ -56,6 +56,10 @@ struct _FlowIOClass
 {
   GObjectClass parent_class;
 
+  /* Methods */
+
+  gboolean (*handle_input_object) (FlowIO *io, gpointer object);
+
   /* Padding for future expansion */
 
   void (*_pad_1) (void);
