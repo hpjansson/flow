@@ -12,7 +12,7 @@ Flow is intended to fulfill three roles:
    complexity of the underlying stream model.
 
 For details regarding hacking on Flow itself, see the HACKING file, which you
-should have obtained along with this writ.
+should have obtained along with this file.
 
 Availability
 ============
