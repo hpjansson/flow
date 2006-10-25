@@ -64,6 +64,8 @@ struct _FlowTcpConnectorClass
   void (*_pad_4) (void);
 };
 
+FlowTcpConnector *flow_tcp_connector_new (void);
+
 G_END_DECLS
 
 #endif  /* _FLOW_TCP_CONNECTOR_H */
