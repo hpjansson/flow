@@ -181,10 +181,10 @@ flow_packet_queue_new (void)
   return g_object_new (FLOW_TYPE_PACKET_QUEUE, NULL);
 }
 
-guint
+gint
 flow_packet_queue_get_length_packets (FlowPacketQueue *packet_queue)
 {
-  guint length;
+  gint length;
 
   g_return_val_if_fail (FLOW_IS_PACKET_QUEUE (packet_queue), 0);
 
@@ -195,7 +195,7 @@ flow_packet_queue_get_length_packets (FlowPacketQueue *packet_queue)
   return length;
 }
 
-guint
+gint
 flow_packet_queue_get_length_bytes (FlowPacketQueue *packet_queue)
 {
   g_return_val_if_fail (FLOW_IS_PACKET_QUEUE (packet_queue), 0);
@@ -203,7 +203,7 @@ flow_packet_queue_get_length_bytes (FlowPacketQueue *packet_queue)
   return packet_queue->bytes_in_queue - packet_queue->packet_position;
 }
 
-guint
+gint
 flow_packet_queue_get_length_data_bytes (FlowPacketQueue *packet_queue)
 {
   g_return_val_if_fail (FLOW_IS_PACKET_QUEUE (packet_queue), 0);
@@ -223,7 +223,7 @@ flow_packet_queue_get_length_data_bytes (FlowPacketQueue *packet_queue)
 void
 flow_packet_queue_push_packet (FlowPacketQueue *packet_queue, FlowPacket *packet)
 {
-  guint packet_size;
+  gint packet_size;
 
   g_return_if_fail (FLOW_IS_PACKET_QUEUE (packet_queue));
   g_return_if_fail (packet != NULL);
@@ -256,12 +256,13 @@ flow_packet_queue_push_packet (FlowPacketQueue *packet_queue, FlowPacket *packet
  * popped in the order they were pushed (first in, first out).
  **/
 void
-flow_packet_queue_push_bytes (FlowPacketQueue *packet_queue, gconstpointer src, guint n)
+flow_packet_queue_push_bytes (FlowPacketQueue *packet_queue, gconstpointer src, gint n)
 {
   FlowPacket *packet;
 
   g_return_if_fail (FLOW_IS_PACKET_QUEUE (packet_queue));
   g_return_if_fail (src != NULL);
+  g_return_if_fail (n >= 0);
 
   if (n == 0)
     return;
@@ -290,8 +291,8 @@ flow_packet_queue_pop_packet (FlowPacketQueue *packet_queue)
   FlowPacket       *packet;
   FlowPacket       *new_packet;
   FlowPacketFormat  packet_format;
-  guint             packet_len;
-  guint             new_packet_len;
+  gint              packet_len;
+  gint              new_packet_len;
 
   g_return_val_if_fail (FLOW_IS_PACKET_QUEUE (packet_queue), NULL);
 
@@ -346,15 +347,16 @@ flow_packet_queue_pop_packet (FlowPacketQueue *packet_queue)
  * Return value: %TRUE if the request could be satisfied, %FALSE otherwise.
  **/
 gboolean
-flow_packet_queue_pop_bytes (FlowPacketQueue *packet_queue, gpointer dest, guint n)
+flow_packet_queue_pop_bytes (FlowPacketQueue *packet_queue, gpointer dest, gint n)
 {
   FlowPacket *packet;
-  guint       n_contiguous_bytes; 
+  gint        n_contiguous_bytes; 
   guint8     *p;
   GList      *l;
-  guint       i;
+  gint        i;
 
   g_return_val_if_fail (FLOW_IS_PACKET_QUEUE (packet_queue), FALSE);
+  g_return_val_if_fail (n >= 0, FALSE);
 
   if (n == 0)
     return TRUE;
@@ -390,8 +392,8 @@ flow_packet_queue_pop_bytes (FlowPacketQueue *packet_queue, gpointer dest, guint
   for (p = dest, i = n; i; )
   {
     guint8     *data;
-    guint       packet_len;
-    guint       increment;
+    gint        packet_len;
+    gint        increment;
 
     packet = peek_packet (packet_queue);
     g_assert (packet != NULL);
@@ -424,7 +426,7 @@ flow_packet_queue_pop_bytes (FlowPacketQueue *packet_queue, gpointer dest, guint
 }
 
 gboolean
-flow_packet_queue_peek_packet (FlowPacketQueue *packet_queue, FlowPacket **packet_out, guint *offset_out)
+flow_packet_queue_peek_packet (FlowPacketQueue *packet_queue, FlowPacket **packet_out, gint *offset_out)
 {
   FlowPacket *packet;
 
@@ -443,12 +445,12 @@ flow_packet_queue_peek_packet (FlowPacketQueue *packet_queue, FlowPacket **packe
 }
 
 void
-flow_packet_queue_peek_packets (FlowPacketQueue *packet_queue, FlowPacket **packets_out, guint *n_packets_out)
+flow_packet_queue_peek_packets (FlowPacketQueue *packet_queue, FlowPacket **packets_out, gint *n_packets_out)
 {
   FlowPacket *packet;
   GList      *l;
-  guint       n;
-  guint       i;
+  gint        n;
+  gint        i;
 
   g_return_if_fail (FLOW_IS_PACKET_QUEUE (packet_queue));
   g_return_if_fail (packets_out != NULL);
@@ -492,7 +494,9 @@ flow_packet_queue_drop_packet (FlowPacketQueue *packet_queue)
 
   if (flow_packet_get_format (packet) == FLOW_PACKET_FORMAT_BUFFER)
   {
-    guint dropped_bytes = flow_packet_get_size (packet) - packet_queue->packet_position;
+    gint dropped_bytes = flow_packet_get_size (packet) - packet_queue->packet_position;
+
+    g_assert (dropped_bytes >= 0);
 
     packet_queue->packet_position = 0;
     packet_queue->bytes_in_queue      -= dropped_bytes;
@@ -504,9 +508,12 @@ flow_packet_queue_drop_packet (FlowPacketQueue *packet_queue)
 }
 
 void
-flow_packet_queue_steal (FlowPacketQueue *packet_queue, guint n_packets, guint n_bytes, guint n_data_bytes)
+flow_packet_queue_steal (FlowPacketQueue *packet_queue, gint n_packets, gint n_bytes, gint n_data_bytes)
 {
   g_return_if_fail (FLOW_IS_PACKET_QUEUE (packet_queue));
+  g_return_if_fail (n_packets >= 0);
+  g_return_if_fail (n_bytes >= 0);
+  g_return_if_fail (n_data_bytes >= 0);
 
   if (n_bytes > packet_queue->bytes_in_queue)
   {

@@ -1280,7 +1280,7 @@ socket_shunt_write (FlowShunt *shunt)
   while (!shunt->was_destroyed)
   {
     FlowPacket       *packet;
-    guint             packet_offset;
+    gint              packet_offset;
     FlowPacketFormat  packet_format;
 
     if (!flow_packet_queue_peek_packet (shunt->write_queue, &packet, &packet_offset))
@@ -1727,7 +1727,7 @@ file_shunt_write (FlowShunt *shunt)
   while (!shunt->was_destroyed)
   {
     FlowPacket       *packet;
-    guint             packet_offset;
+    gint              packet_offset;
     FlowPacketFormat  packet_format;
 
     if (!flow_packet_queue_peek_packet (shunt->write_queue, &packet, &packet_offset))

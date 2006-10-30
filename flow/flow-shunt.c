@@ -207,12 +207,12 @@ dispatch_main (ShuntSource *shunt_source)
     FlowPacket  *packet;
     FlowPacket  *packets [MAX_DISPATCH_PACKETS];
     FlowShunt   *shunt = g_ptr_array_index (current_dispatch_shunts, i);
-    guint        written_packets;
-    guint        written_bytes;
-    guint        read_packets;
-    guint        read_bytes;
-    guint        read_data_bytes;
-    guint        j;
+    gint         written_packets;
+    gint         written_bytes;
+    gint         read_packets;
+    gint         read_bytes;
+    gint         read_data_bytes;
+    gint         j;
 
     if (!shunt)
       continue;  /* Shunt was disposed while queued */

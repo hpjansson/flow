@@ -49,9 +49,9 @@ struct _FlowPacketQueue
 
   FlowPacket *first_packet;
   GQueue     *queue;
-  guint       packet_position;
-  guint       bytes_in_queue;
-  guint       data_bytes_in_queue;
+  gint        packet_position;
+  gint        bytes_in_queue;
+  gint        data_bytes_in_queue;
 };
 
 struct _FlowPacketQueueClass
@@ -67,25 +67,25 @@ struct _FlowPacketQueueClass
 
 FlowPacketQueue  *flow_packet_queue_new                    (void);
 
-guint             flow_packet_queue_get_length_packets     (FlowPacketQueue *packet_queue);
-guint             flow_packet_queue_get_length_bytes       (FlowPacketQueue *packet_queue);
-guint             flow_packet_queue_get_length_data_bytes  (FlowPacketQueue *packet_queue);
+gint              flow_packet_queue_get_length_packets     (FlowPacketQueue *packet_queue);
+gint              flow_packet_queue_get_length_bytes       (FlowPacketQueue *packet_queue);
+gint              flow_packet_queue_get_length_data_bytes  (FlowPacketQueue *packet_queue);
 
 void              flow_packet_queue_clear                  (FlowPacketQueue *packet_queue);
 
 void              flow_packet_queue_push_packet            (FlowPacketQueue *packet_queue, FlowPacket *packet);
-void              flow_packet_queue_push_bytes             (FlowPacketQueue *packet_queue, gconstpointer src, guint n);
+void              flow_packet_queue_push_bytes             (FlowPacketQueue *packet_queue, gconstpointer src, gint n);
 
 FlowPacket       *flow_packet_queue_pop_packet             (FlowPacketQueue *packet_queue);
-gboolean          flow_packet_queue_pop_bytes              (FlowPacketQueue *packet_queue, gpointer dest, guint n);
+gboolean          flow_packet_queue_pop_bytes              (FlowPacketQueue *packet_queue, gpointer dest, gint n);
 
 gboolean          flow_packet_queue_peek_packet            (FlowPacketQueue *packet_queue,
-                                                            FlowPacket **packet_out, guint *offset_out);
+                                                            FlowPacket **packet_out, gint *offset_out);
 void              flow_packet_queue_peek_packets           (FlowPacketQueue *packet_queue,
-                                                            FlowPacket **packet_out, guint *n_packets);
+                                                            FlowPacket **packet_out, gint *n_packets);
 gboolean          flow_packet_queue_drop_packet            (FlowPacketQueue *packet_queue);
 void              flow_packet_queue_steal                  (FlowPacketQueue *packet_queue,
-                                                            guint n_packets, guint n_bytes, guint n_data_bytes);
+                                                            gint n_packets, gint n_bytes, gint n_data_bytes);
 
 FlowPacket       *flow_packet_queue_peek_first_object      (FlowPacketQueue *packet_queue);
 FlowPacket       *flow_packet_queue_pop_first_object       (FlowPacketQueue *packet_queue);
