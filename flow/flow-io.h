@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
 
-/* flow-io.h - A simple I/O class based on a bin of processing elements.
+/* flow-io.h - A prefab I/O class based on a bin of processing elements.
  *
  * Copyright (C) 2006 Hans Petter Jansson
  *
@@ -43,22 +43,30 @@ typedef struct _FlowIOClass FlowIOClass;
 
 struct _FlowIO
 {
-  /* --- Private --- */
-
   FlowBin          parent;
 
-  guint            need_to_rescan_children : 1;
+  /* --- Protected --- */
 
+  guint            allow_blocking_read     : 1;
+  guint            allow_blocking_write    : 1;
+  guint            need_to_check_bin       : 1;
+
+  /* --- Private --- */
+
+  gint             min_read_buffer;
   FlowUserAdapter *user_adapter;
 };
 
 struct _FlowIOClass
 {
-  GObjectClass parent_class;
+  FlowBinClass parent_class;
 
   /* Methods */
 
+  void     (*check_bin)           (FlowIO *io);
   gboolean (*handle_input_object) (FlowIO *io, gpointer object);
+  void     (*prepare_read)        (FlowIO *io, gint request_len);
+  void     (*prepare_write)       (FlowIO *io, gint request_len);
 
   /* Padding for future expansion */
 
@@ -68,21 +76,23 @@ struct _FlowIOClass
   void (*_pad_4) (void);
 };
 
-FlowIO  *flow_io_new               (void);
+FlowIO   *flow_io_new               (void);
 
-gint     flow_io_read              (FlowIO *io, gpointer dest_buffer, gint max_len);
-gboolean flow_io_read_exact        (FlowIO *io, gpointer dest_buffer, gint exact_len);
-gpointer flow_io_read_object       (FlowIO *io);
-void     flow_io_write             (FlowIO *io, gpointer src_buffer,  gint exact_len);
-void     flow_io_write_object      (FlowIO *io, gpointer object);
-void     flow_io_flush             (FlowIO *io);
+gint      flow_io_read              (FlowIO *io, gpointer dest_buffer, gint max_len);
+gboolean  flow_io_read_exact        (FlowIO *io, gpointer dest_buffer, gint exact_len);
+gpointer  flow_io_read_object       (FlowIO *io);
+void      flow_io_write             (FlowIO *io, gpointer src_buffer,  gint exact_len);
+void      flow_io_write_object      (FlowIO *io, gpointer object);
+void      flow_io_flush             (FlowIO *io);
 
-gint     flow_io_sync_read         (FlowIO *io, gpointer dest_buffer, gint max_len);
-gboolean flow_io_sync_read_exact   (FlowIO *io, gpointer dest_buffer, gint exact_len);
-gpointer flow_io_sync_read_object  (FlowIO *io);
-void     flow_io_sync_write        (FlowIO *io, gpointer src_buffer,  gint exact_len);
-void     flow_io_sync_write_object (FlowIO *io, gpointer object);
-gboolean flow_io_sync_flush        (FlowIO *io);
+gint      flow_io_sync_read         (FlowIO *io, gpointer dest_buffer, gint max_len);
+gboolean  flow_io_sync_read_exact   (FlowIO *io, gpointer dest_buffer, gint exact_len);
+gpointer  flow_io_sync_read_object  (FlowIO *io);
+void      flow_io_sync_write        (FlowIO *io, gpointer src_buffer,  gint exact_len);
+void      flow_io_sync_write_object (FlowIO *io, gpointer object);
+void      flow_io_sync_flush        (FlowIO *io);
+
+void      flow_io_check_bin         (FlowIO *io);
 
 G_END_DECLS
 
