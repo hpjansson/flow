@@ -93,6 +93,9 @@ void             flow_user_adapter_unblock          (FlowUserAdapter *user_adapt
 void             flow_user_adapter_wait_for_input   (FlowUserAdapter *user_adapter);
 void             flow_user_adapter_wait_for_output  (FlowUserAdapter *user_adapter);
 
+void             flow_user_adapter_interrupt_input  (FlowUserAdapter *user_adapter);
+void             flow_user_adapter_interrupt_output (FlowUserAdapter *user_adapter);
+
 G_END_DECLS
 
 #endif  /* _FLOW_USER_ADAPTER_H */

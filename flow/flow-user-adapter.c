@@ -123,7 +123,7 @@ flow_user_adapter_class_init (FlowUserAdapterClass *klass)
 static void
 flow_user_adapter_init (FlowUserAdapter *user_adapter)
 {
-  user_adapter->input_queue   = flow_packet_queue_new ();
+  user_adapter->input_queue  = flow_packet_queue_new ();
   user_adapter->output_queue = flow_packet_queue_new ();
 }
 
@@ -258,7 +258,7 @@ flow_user_adapter_wait_for_input (FlowUserAdapter *user_adapter)
 
   if (flow_pad_is_blocked (input_pad))
   {
-    guint n_packets = flow_packet_queue_get_length_packets (user_adapter->input_queue);
+    gint n_packets = flow_packet_queue_get_length_packets (user_adapter->input_queue);
 
     flow_pad_unblock (input_pad);
 
@@ -309,4 +309,30 @@ flow_user_adapter_wait_for_output (FlowUserAdapter *user_adapter)
   g_main_loop_run (user_adapter->output_loop);
 
   user_adapter->waiting_for_output--;
+}
+
+void
+flow_user_adapter_interrupt_input (FlowUserAdapter *user_adapter)
+{
+  g_return_if_fail (user_adapter != NULL);
+
+  if (!user_adapter->input_loop)
+    return;
+
+  /* g_main_loop_is_running () is cheap compared to g_main_loop_quit () */
+  if (g_main_loop_is_running (user_adapter->input_loop))
+    g_main_loop_quit (user_adapter->input_loop);
+}
+
+void
+flow_user_adapter_interrupt_output (FlowUserAdapter *user_adapter)
+{
+  g_return_if_fail (user_adapter != NULL);
+
+  if (!user_adapter->output_loop)
+    return;
+
+  /* g_main_loop_is_running () is cheap compared to g_main_loop_quit () */
+  if (g_main_loop_is_running (user_adapter->output_loop))
+    g_main_loop_quit (user_adapter->output_loop);
 }
