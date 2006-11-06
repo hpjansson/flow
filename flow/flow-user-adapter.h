@@ -25,6 +25,7 @@
 #ifndef _FLOW_USER_ADAPTER_H
 #define _FLOW_USER_ADAPTER_H
 
+#include <flow/flow-util.h>
 #include <flow/flow-simplex-element.h>
 
 G_BEGIN_DECLS
