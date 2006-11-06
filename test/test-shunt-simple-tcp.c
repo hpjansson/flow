@@ -113,11 +113,11 @@ read_from_shunt (FlowShunt *shunt, FlowPacket *packet, gpointer data)
 
   if (flow_packet_get_format (packet) == FLOW_PACKET_FORMAT_OBJECT)
   {
-    FlowDetailedEvent *detailed_event = packet_data;
+    gpointer object = packet_data;
 
-    if (FLOW_IS_DETAILED_EVENT (detailed_event))
+    if (FLOW_IS_DETAILED_EVENT (object))
     {
-      if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_BEGIN))
+      if (flow_detailed_event_matches (object, FLOW_STREAM_DOMAIN, FLOW_STREAM_BEGIN))
       {
         test_print ("Read: Beginning of stream marker\n");
 
@@ -126,7 +126,7 @@ read_from_shunt (FlowShunt *shunt, FlowPacket *packet, gpointer data)
 
         started_reading = TRUE;
       }
-      else if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_SEGMENT_BEGIN))
+      else if (flow_detailed_event_matches (object, FLOW_STREAM_DOMAIN, FLOW_STREAM_SEGMENT_BEGIN))
       {
         test_print ("Read: Beginning of segment marker\n");
 
@@ -141,7 +141,7 @@ read_from_shunt (FlowShunt *shunt, FlowPacket *packet, gpointer data)
 
         in_segment = TRUE;
       }
-      else if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END))
+      else if (flow_detailed_event_matches (object, FLOW_STREAM_DOMAIN, FLOW_STREAM_END))
       {
         test_print ("Read: End of stream marker\n");
 
@@ -162,7 +162,7 @@ read_from_shunt (FlowShunt *shunt, FlowPacket *packet, gpointer data)
         /* Wait a bit before quitting, so shunts have a chance to generate invalid events */
         g_timeout_add (1000, (GSourceFunc) test_quit_main_loop, NULL);
       }
-      else if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_SEGMENT_END))
+      else if (flow_detailed_event_matches (object, FLOW_STREAM_DOMAIN, FLOW_STREAM_SEGMENT_END))
       {
         test_print ("Read: End of segment marker\n");
 
@@ -178,7 +178,14 @@ read_from_shunt (FlowShunt *shunt, FlowPacket *packet, gpointer data)
         in_segment = FALSE;
       }
     }
-    else if (!FLOW_IS_EVENT (detailed_event))
+    else if (FLOW_IS_IP_SERVICE (object))
+    {
+      gchar *string;
+
+      string = flow_ip_addr_get_string (FLOW_IP_ADDR (object));
+      test_print ("Read: Got remote IP service %s:%d.\n", string, flow_ip_service_get_port (FLOW_IP_SERVICE (object)));
+    }
+    else if (!FLOW_IS_EVENT (object))
     {
       test_end (TEST_RESULT_FAILED, "got a weird object from read shunt");
     }
@@ -247,21 +254,21 @@ read_from_listener (FlowShunt *shunt, FlowPacket *packet, gpointer data)
   {
     if (FLOW_IS_DETAILED_EVENT (packet_data))
     {
-      FlowDetailedEvent *detailed_event = packet_data;
+      gpointer object = packet_data;
 
-      if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_BEGIN))
+      if (flow_detailed_event_matches (object, FLOW_STREAM_DOMAIN, FLOW_STREAM_BEGIN))
       {
         test_print ("Listener: Beginning of stream marker\n");
       }
-      else if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_SEGMENT_BEGIN))
+      else if (flow_detailed_event_matches (object, FLOW_STREAM_DOMAIN, FLOW_STREAM_SEGMENT_BEGIN))
       {
         test_print ("Listener: Beginning of segment marker\n");
       }
-      else if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END))
+      else if (flow_detailed_event_matches (object, FLOW_STREAM_DOMAIN, FLOW_STREAM_END))
       {
         test_print ("Listener: End of stream marker\n");
       }
-      else if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_SEGMENT_END))
+      else if (flow_detailed_event_matches (object, FLOW_STREAM_DOMAIN, FLOW_STREAM_SEGMENT_END))
       {
         test_print ("Listener: End of segment marker\n");
       }
@@ -269,7 +276,7 @@ read_from_listener (FlowShunt *shunt, FlowPacket *packet, gpointer data)
       {
         gchar *message;
 
-        message = g_strdup_printf ("listener got unexpected event: %s", flow_event_get_description (FLOW_EVENT (detailed_event)));
+        message = g_strdup_printf ("listener got unexpected event: %s", flow_event_get_description (FLOW_EVENT (object)));
         test_end (TEST_RESULT_FAILED, message);
       }
     }
