@@ -308,13 +308,14 @@ gboolean
 flow_sockaddr_init (FlowSockaddr *dest_sa, FlowAddrFamily family, const gchar *addr_str, gint port)
 {
   g_return_val_if_fail (dest_sa != NULL, FALSE);
-  g_return_val_if_fail (addr_str != NULL, FALSE);
 
   if (family == FLOW_ADDR_FAMILY_IPV4)
   {
     struct sockaddr_in in_sa;
 
-    if (preferred_pton (AF_INET, addr_str, &in_sa.sin_addr) < 1)
+    if (!addr_str || !strcmp (addr_str, "0.0.0.0"))
+      in_sa.sin_addr.s_addr = INADDR_ANY;
+    else if (preferred_pton (AF_INET, addr_str, &in_sa.sin_addr) < 1)
       return FALSE;
 
     in_sa.sin_family = AF_INET;
@@ -328,7 +329,9 @@ flow_sockaddr_init (FlowSockaddr *dest_sa, FlowAddrFamily family, const gchar *a
   {
     struct sockaddr_in6 in6_sa;
 
-    if (preferred_pton (AF_INET6, addr_str, &in6_sa.sin6_addr) < 1)
+    if (!addr_str)
+      memset (&in6_sa.sin6_addr, 0, sizeof (in6_sa.sin6_addr));
+    else if (preferred_pton (AF_INET6, addr_str, &in6_sa.sin6_addr) < 1)
       return FALSE;
 
     in6_sa.sin6_family = AF_INET6;
@@ -337,13 +340,6 @@ flow_sockaddr_init (FlowSockaddr *dest_sa, FlowAddrFamily family, const gchar *a
   }
 
 #endif
-
-  else if (family == FLOW_ADDR_FAMILY_UNIX)
-  {
-    /* TODO: Unix named pipes */
-
-    g_assert_not_reached ();
-  }
 
   else
   {
@@ -568,10 +564,11 @@ flow_ip_addr_get_sockaddr (FlowIPAddr *ip_addr, FlowSockaddr *dest_sa, gint port
   gboolean  result;
 
   addr_str = flow_ip_addr_get_string (ip_addr);
-  if (!addr_str)
-    return FALSE;
 
-  result = flow_sockaddr_init (dest_sa, ip_addr->family, addr_str, port);
+  if (addr_str)
+    result = flow_sockaddr_init (dest_sa, ip_addr->family, addr_str, port);
+  else
+    result = flow_sockaddr_init (dest_sa, FLOW_IP_ADDR_IPV4, NULL, 0);
 
   g_free (addr_str);
   return result;
