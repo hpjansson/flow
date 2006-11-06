@@ -32,6 +32,7 @@
 #include <flow/flow-element.h>
 #include <flow/flow-emitter.h>
 #include <flow/flow-input-pad.h>
+#include <flow/flow-io.h>
 #include <flow/flow-ip-addr.h>
 #include <flow/flow-ip-resolver.h>
 #include <flow/flow-ip-service.h>
@@ -47,4 +48,8 @@
 #include <flow/flow-shunt.h>
 #include <flow/flow-simplex-element.h>
 #include <flow/flow-tcp-connector.h>
+#include <flow/flow-tcp-io.h>
+#include <flow/flow-tcp-io-listener.h>
+#include <flow/flow-tcp-listener.h>
+#include <flow/flow-user-adapter.h>
 #include <flow/flow-util.h>
