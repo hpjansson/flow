@@ -1038,13 +1038,13 @@ flow_shunt_impl_need_writes (FlowShunt *shunt)
 static void
 tcp_listener_shunt_read (FlowShunt *shunt)
 {
-  struct sockaddr   sa;
-  guint             sa_len             = sizeof (struct sockaddr);
+  FlowSockaddr      sa;
+  guint             sa_len             = sizeof (FlowSockaddr);
   gint              new_fd;
   SocketShunt      *socket_shunt       = (SocketShunt *) shunt;
   TcpListenerShunt *tcp_listener_shunt = (TcpListenerShunt *) shunt;
 
-  new_fd = accept (socket_shunt->fd, &sa, &sa_len);
+  new_fd = accept (socket_shunt->fd, (struct sockaddr *) &sa, &sa_len);
 
   if G_UNLIKELY (new_fd < 0)
   {
@@ -1080,12 +1080,13 @@ tcp_listener_shunt_read (FlowShunt *shunt)
   }
   else
   {
+    FlowIPService      *new_ip_service;
     FlowShunt          *new_shunt;
     TcpShunt           *new_tcp_shunt;
     FlowAnonymousEvent *anonymous_event;
     gint                on = 1;
 
-    /* Success */
+    /* Success - set up new connected shunt */
 
     new_tcp_shunt = g_slice_new0 (TcpShunt);
     new_shunt = (FlowShunt *) new_tcp_shunt;
@@ -1102,8 +1103,16 @@ tcp_listener_shunt_read (FlowShunt *shunt)
     new_shunt->can_read  = TRUE;
     new_shunt->can_write = TRUE;
 
+    /* Queue remote IP service as first packet on shunt */
+
+    new_ip_service = flow_ip_service_new ();
+    flow_ip_service_set_sockaddr (new_ip_service, &sa);
+    flow_packet_queue_push_packet (new_shunt->read_queue, flow_packet_new_take_object (new_ip_service, 0));
+
     flow_shunt_read_state_changed (new_shunt);
     flow_shunt_write_state_changed (new_shunt);
+
+    /* Queue shunt on listener */
 
     anonymous_event = flow_anonymous_event_new ();
     flow_anonymous_event_set_data (anonymous_event, new_shunt);
