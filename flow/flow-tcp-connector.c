@@ -47,10 +47,21 @@ FLOW_GOBJECT_MAKE_IMPL        (flow_tcp_connector, FlowTcpConnector, FLOW_TYPE_C
 /* --- FlowTcpConnector implementation --- */
 
 static void
-connect_to_remote_service (FlowTcpConnector *tcp_connector)
+setup_shunt (FlowTcpConnector *tcp_connector)
 {
   FlowPad *output_pad;
 
+  flow_shunt_set_read_func (tcp_connector->shunt, (FlowShuntReadFunc *) shunt_read, tcp_connector);
+  flow_shunt_set_write_func (tcp_connector->shunt, (FlowShuntWriteFunc *) shunt_write, tcp_connector);
+
+  output_pad = FLOW_PAD (flow_simplex_element_get_output_pad (FLOW_SIMPLEX_ELEMENT (tcp_connector)));
+  if (flow_pad_is_blocked (output_pad))
+    flow_shunt_block_reads (tcp_connector->shunt);
+}
+
+static void
+connect_to_remote_service (FlowTcpConnector *tcp_connector)
+{
   g_assert (tcp_connector->shunt == NULL);
 
   /* FIXME: Need a way to specify local (originating) port */
@@ -71,13 +82,7 @@ connect_to_remote_service (FlowTcpConnector *tcp_connector)
   }
 
   tcp_connector->shunt = flow_connect_to_tcp (tcp_connector->remote_service, -1);
-  flow_shunt_set_read_func (tcp_connector->shunt, (FlowShuntReadFunc *) shunt_read, tcp_connector);
-  flow_shunt_set_write_func (tcp_connector->shunt, (FlowShuntWriteFunc *) shunt_write, tcp_connector);
-
-  output_pad = FLOW_PAD (flow_simplex_element_get_output_pad (FLOW_SIMPLEX_ELEMENT (tcp_connector)));
-  if (flow_pad_is_blocked (output_pad))
-    flow_shunt_block_reads (tcp_connector->shunt);
-
+  setup_shunt (tcp_connector);
   flow_connector_set_state_internal (FLOW_CONNECTOR (tcp_connector), FLOW_CONNECTIVITY_CONNECTING);
 }
 
@@ -303,4 +308,40 @@ FlowTcpConnector *
 flow_tcp_connector_new (void)
 {
   return g_object_new (FLOW_TYPE_TCP_CONNECTOR, NULL);
+}
+
+FlowIPService *
+flow_tcp_connector_get_remote_service (FlowTcpConnector *tcp_connector)
+{
+  g_return_val_if_fail (FLOW_IS_TCP_CONNECTOR (tcp_connector), NULL);
+
+  return tcp_connector->remote_service;
+}
+
+/* For use in friend classes (e.g. FlowTcpListener) only */
+void
+_flow_tcp_connector_install_connected_shunt (FlowTcpConnector *tcp_connector, FlowShunt *shunt)
+{
+  FlowConnector *connector;
+  gpointer       object;
+
+  g_return_if_fail (FLOW_IS_TCP_CONNECTOR (tcp_connector));
+  g_return_if_fail (shunt != NULL);
+
+  connector = FLOW_CONNECTOR (tcp_connector);
+
+  g_assert (tcp_connector->shunt == NULL);
+  g_assert (flow_connector_get_state (connector) == FLOW_CONNECTIVITY_DISCONNECTED);
+
+  /* Read remote IP service */
+
+  object = flow_read_object_from_shunt (shunt);
+  g_assert (FLOW_IS_IP_SERVICE (object));
+  tcp_connector->remote_service = object;
+
+  /* Set up in connecting state */
+
+  tcp_connector->shunt = shunt;
+  setup_shunt (tcp_connector);
+  flow_connector_set_state_internal (connector, FLOW_CONNECTIVITY_CONNECTING);
 }

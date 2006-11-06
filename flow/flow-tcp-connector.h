@@ -64,7 +64,9 @@ struct _FlowTcpConnectorClass
   void (*_pad_4) (void);
 };
 
-FlowTcpConnector *flow_tcp_connector_new (void);
+FlowTcpConnector *flow_tcp_connector_new                (void);
+
+FlowIPService    *flow_tcp_connector_get_remote_service (FlowTcpConnector *tcp_connector);
 
 G_END_DECLS
 
