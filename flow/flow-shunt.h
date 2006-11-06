@@ -28,6 +28,7 @@
 #include <flow/flow-event-codes.h>
 #include <flow/flow-packet-queue.h>
 #include <flow/flow-ip-service.h>
+#include <flow/flow-detailed-event.h>
 
 G_BEGIN_DECLS
 
@@ -61,7 +62,12 @@ FlowShunt  *flow_connect_to_tcp         (FlowIPService *remote_service, gint loc
 
 void        flow_shunt_destroy          (FlowShunt *shunt);
 
+void        flow_shunt_dispatch_now     (FlowShunt *shunt, gint *n_reads_done, gint *n_writes_done);
+
+void        flow_shunt_get_read_func    (FlowShunt *shunt, FlowShuntReadFunc **read_func, gpointer *user_data);
 void        flow_shunt_set_read_func    (FlowShunt *shunt, FlowShuntReadFunc *read_func, gpointer user_data);
+
+void        flow_shunt_get_write_func   (FlowShunt *shunt, FlowShuntWriteFunc **write_func, gpointer *user_data);
 void        flow_shunt_set_write_func   (FlowShunt *shunt, FlowShuntWriteFunc *write_func, gpointer user_data);
 
 void        flow_shunt_block_reads      (FlowShunt *shunt);

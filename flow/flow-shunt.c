@@ -134,9 +134,9 @@ static FlowShunt  *flow_shunt_impl_create_file        (const gchar *path, FlowAc
 static FlowShunt  *flow_shunt_impl_spawn_worker       (FlowWorkerFunc func, gpointer user_data);
 static FlowShunt  *flow_shunt_impl_spawn_process      (FlowWorkerFunc func, gpointer user_data);
 static FlowShunt  *flow_shunt_impl_spawn_command_line (const gchar *command_line);
+static FlowShunt  *flow_shunt_impl_open_udp_port      (FlowIPService *local_service);
 static FlowShunt  *flow_shunt_impl_open_tcp_listener  (FlowIPService *local_service);
 static FlowShunt  *flow_shunt_impl_connect_to_tcp     (FlowIPService *remote_service, gint local_port);
-static FlowShunt  *flow_shunt_impl_open_udp_port      (FlowIPService *local_service);
 
 /* Notifies the implementation that one of the need_* flags went from
  * FALSE to TRUE while its corresponding doing_* flag was FALSE. The
@@ -184,8 +184,119 @@ static void        flow_shunt_write_state_changed     (FlowShunt *shunt);
  * Dispatch to User *
  * ---------------- */
 
+static void
+dispatch_for_shunt (FlowShunt *shunt, gint *n_reads_done, gint *n_writes_done)
+{
+  FlowPacket  *packet;
+  FlowPacket  *packets [MAX_DISPATCH_PACKETS];
+  gint         written_packets;
+  gint         written_bytes;
+  gint         read_packets;
+  gint         read_bytes;
+  gint         read_data_bytes;
+  gint         j;
+
+  written_bytes = flow_packet_queue_get_length_bytes (shunt->write_queue);
+
+  /* Peek packets from read queue. We stage them in an array so we don't
+   * have to lock/unlock around each peek. */
+
+  read_packets    = MAX_DISPATCH_PACKETS;
+  read_bytes      = 0;
+  read_data_bytes = 0;
+  flow_packet_queue_peek_packets (shunt->read_queue, packets, &read_packets);
+
+  /* It's important that wait_dispatch be cleared before we unlock, as the shunt
+   * may have to be re-queued for dispatches while we're running unlocked. */
+
+  shunt->in_dispatch   = TRUE;
+  shunt->wait_dispatch = FALSE;
+  flow_shunt_impl_unlock ();
+
+  /* --- UNLOCKED CODE BEGINS --- */
+
+  /* Dispatch reads */
+
+  for (j = 0; shunt->read_func && !shunt->block_reads && !shunt->was_destroyed && j < read_packets; j++)
+  {
+    guint packet_size;
+
+    packet = packets [j];
+    packet_size = flow_packet_get_size (packet);
+
+    read_bytes += packet_size;
+    if (flow_packet_get_format (packet) == FLOW_PACKET_FORMAT_BUFFER)
+      read_data_bytes += packet_size;
+
+    shunt->read_func (shunt, packet, shunt->read_func_data);
+  }
+
+  read_packets = j;
+
+  /* Dispatch writes */
+
+  for (written_packets = 0; shunt->write_func && !shunt->block_writes && !shunt->was_destroyed &&
+                            written_packets < MAX_DISPATCH_PACKETS && written_bytes <= MAX_BUFFER &&
+                            !shunt->received_end; written_packets++)
+  {
+    packet = shunt->write_func (shunt, shunt->write_func_data);
+    if G_UNLIKELY (!packet)
+      break;
+
+    /* Written packets are staged in an array so we only have to lock once
+     * when we queue them */
+    packets [written_packets] = packet;
+    written_bytes += flow_packet_get_size (packet);
+
+    /* If we get end-of-stream, don't request any more writes */
+
+    if G_UNLIKELY (flow_packet_get_format (packet) == FLOW_PACKET_FORMAT_OBJECT)
+    {
+      FlowDetailedEvent *detailed_event = flow_packet_get_data (packet);
+
+      if (FLOW_IS_DETAILED_EVENT (detailed_event) &&
+          flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END))
+      {
+        shunt->received_end = TRUE;
+      }
+    }
+  }
+
+  /* --- UNLOCKED CODE ENDS --- */
+
+  flow_shunt_impl_lock ();
+  shunt->in_dispatch = FALSE;
+
+  /* Steal (not drop!) read packets. NOTE: The packets may already have been
+   * freed by the user. */
+
+  flow_packet_queue_steal (shunt->read_queue, read_packets, read_bytes, read_data_bytes);
+
+  /* Queue written packets */
+
+  for (j = 0; j < written_packets; j++)
+    flow_packet_queue_push_packet (shunt->write_queue, packets [j]);
+
+  if G_UNLIKELY (shunt->was_destroyed)
+  {
+    flow_shunt_impl_finalize_shunt (shunt);
+  }
+  else
+  {
+    if (read_packets > 0)
+      flow_shunt_read_state_changed (shunt);
+    if (written_packets > 0)
+      flow_shunt_write_state_changed (shunt);
+  }
+
+  if G_UNLIKELY (n_reads_done)
+    *n_reads_done = read_packets;
+  if G_UNLIKELY (n_writes_done)
+    *n_writes_done = written_packets;
+}
+
 static gboolean
-dispatch_main (ShuntSource *shunt_source)
+dispatch_for_source (ShuntSource *shunt_source)
 {
   GPtrArray *current_dispatch_shunts;
   guint      i;
@@ -204,111 +315,12 @@ dispatch_main (ShuntSource *shunt_source)
 
   for (i = 0; i < current_dispatch_shunts->len; i++)
   {
-    FlowPacket  *packet;
-    FlowPacket  *packets [MAX_DISPATCH_PACKETS];
-    FlowShunt   *shunt = g_ptr_array_index (current_dispatch_shunts, i);
-    gint         written_packets;
-    gint         written_bytes;
-    gint         read_packets;
-    gint         read_bytes;
-    gint         read_data_bytes;
-    gint         j;
+    FlowShunt *shunt = g_ptr_array_index (current_dispatch_shunts, i);
 
     if (!shunt)
       continue;  /* Shunt was disposed while queued */
 
-    written_bytes = flow_packet_queue_get_length_bytes (shunt->write_queue);
-
-    /* Peek packets from read queue. We stage them in an array so we don't
-     * have to lock/unlock around each peek. */
-
-    read_packets    = MAX_DISPATCH_PACKETS;
-    read_bytes      = 0;
-    read_data_bytes = 0;
-    flow_packet_queue_peek_packets (shunt->read_queue, packets, &read_packets);
-
-    /* It's important that wait_dispatch be cleared before we unlock, as the shunt
-     * may have to be re-queued for dispatches while we're running unlocked. */
-
-    shunt->in_dispatch   = TRUE;
-    shunt->wait_dispatch = FALSE;
-    flow_shunt_impl_unlock ();
-
-    /* --- UNLOCKED CODE BEGINS --- */
-
-    /* Dispatch reads */
-
-    for (j = 0; shunt->read_func && !shunt->block_reads && !shunt->was_destroyed && j < read_packets; j++)
-    {
-      guint packet_size;
-
-      packet = packets [j];
-      packet_size = flow_packet_get_size (packet);
-
-      read_bytes += packet_size;
-      if (flow_packet_get_format (packet) == FLOW_PACKET_FORMAT_BUFFER)
-        read_data_bytes += packet_size;
-
-      shunt->read_func (shunt, packet, shunt->read_func_data);
-    }
-
-    read_packets = j;
-
-    /* Dispatch writes */
-
-    for (written_packets = 0; shunt->write_func && !shunt->block_writes && !shunt->was_destroyed &&
-                              written_packets < MAX_DISPATCH_PACKETS && written_bytes <= MAX_BUFFER &&
-                              !shunt->received_end; written_packets++)
-    {
-      packet = shunt->write_func (shunt, shunt->write_func_data);
-      if G_UNLIKELY (!packet)
-        break;
-
-      /* Written packets are staged in an array so we only have to lock once
-       * when we queue them */
-      packets [written_packets] = packet;
-      written_bytes += flow_packet_get_size (packet);
-
-      /* If we get end-of-stream, don't request any more writes */
-
-      if G_UNLIKELY (flow_packet_get_format (packet) == FLOW_PACKET_FORMAT_OBJECT)
-      {
-        FlowDetailedEvent *detailed_event = flow_packet_get_data (packet);
-
-        if (FLOW_IS_DETAILED_EVENT (detailed_event) &&
-            flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END))
-        {
-          shunt->received_end = TRUE;
-        }
-      }
-    }
-
-    /* --- UNLOCKED CODE ENDS --- */
-
-    flow_shunt_impl_lock ();
-    shunt->in_dispatch = FALSE;
-
-    /* Steal (not drop!) read packets. NOTE: The packets may already have been
-     * freed by the user. */
-
-    flow_packet_queue_steal (shunt->read_queue, read_packets, read_bytes, read_data_bytes);
-
-    /* Queue written packets */
-
-    for (j = 0; j < written_packets; j++)
-      flow_packet_queue_push_packet (shunt->write_queue, packets [j]);
-
-    if G_UNLIKELY (shunt->was_destroyed)
-    {
-      flow_shunt_impl_finalize_shunt (shunt);
-    }
-    else
-    {
-      if (read_packets > 0)
-        flow_shunt_read_state_changed (shunt);
-      if (written_packets > 0)
-        flow_shunt_write_state_changed (shunt);
-    }
+    dispatch_for_shunt (shunt, NULL, NULL);
   }
 
   /* Clear dispatch array */
@@ -415,7 +427,7 @@ add_shunt_to_shunt_source (FlowShunt *shunt, ShuntSource *shunt_source)
 
   g_source_set_priority    (source, G_PRIORITY_DEFAULT_IDLE);
   g_source_set_can_recurse (source, FALSE);
-  g_source_set_callback    (source, (GSourceFunc) dispatch_main, source, NULL);
+  g_source_set_callback    (source, (GSourceFunc) dispatch_for_source, source, NULL);
   g_source_attach          (source, main_context);
 
   shunt_source->waiting_shunts     = g_ptr_array_new ();
@@ -651,6 +663,30 @@ flow_shunt_destroy (FlowShunt *shunt)
 }
 
 void
+flow_shunt_dispatch_now (FlowShunt *shunt, gint *n_reads_done, gint *n_writes_done)
+{
+  g_return_if_fail (shunt != NULL);
+
+  dispatch_for_shunt (shunt, n_reads_done, n_writes_done);
+}
+
+void
+flow_shunt_get_read_func (FlowShunt *shunt, FlowShuntReadFunc **read_func, gpointer *user_data)
+{
+  g_return_if_fail (shunt != NULL);
+
+  flow_shunt_impl_lock ();
+
+  if (read_func)
+    *read_func = shunt->read_func;
+
+  if (user_data)
+    *user_data = shunt->read_func_data;
+
+  flow_shunt_impl_unlock ();
+}
+
+void
 flow_shunt_set_read_func (FlowShunt *shunt, FlowShuntReadFunc *read_func, gpointer user_data)
 {
   g_return_if_fail (shunt != NULL);
@@ -661,6 +697,22 @@ flow_shunt_set_read_func (FlowShunt *shunt, FlowShuntReadFunc *read_func, gpoint
   shunt->read_func_data = user_data;
 
   flow_shunt_read_state_changed (shunt);
+
+  flow_shunt_impl_unlock ();
+}
+
+void
+flow_shunt_get_write_func (FlowShunt *shunt, FlowShuntWriteFunc **write_func, gpointer *user_data)
+{
+  g_return_if_fail (shunt != NULL);
+
+  flow_shunt_impl_lock ();
+
+  if (write_func)
+    *write_func = shunt->write_func;
+
+  if (user_data)
+    *user_data = shunt->write_func_data;
 
   flow_shunt_impl_unlock ();
 }
