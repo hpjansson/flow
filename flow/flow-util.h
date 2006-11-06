@@ -26,6 +26,7 @@
 #define _FLOW_UTIL_H
 
 #include <glib.h>
+#include <flow-shunt.h>
 #include <flow-element.h>
 #include <flow-packet.h>
 
@@ -36,6 +37,7 @@ typedef void (*FlowNotifyFunc) (gpointer user_data);
 gchar       *flow_strerror                   (gint errnum);
 FlowPacket  *flow_create_simple_event_packet (const gchar *domain, gint code);
 gboolean     flow_handle_universal_events    (FlowElement *element, FlowPacket *packet);
+gpointer     flow_read_object_from_shunt     (FlowShunt *shunt);
 
 gint         flow_g_ptr_array_find           (GPtrArray *array, gpointer data);
 gboolean     flow_g_ptr_array_remove_sparse  (GPtrArray *array, gpointer data);

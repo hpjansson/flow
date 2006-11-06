@@ -63,6 +63,35 @@ flow_handle_universal_events (FlowElement *element, FlowPacket *packet)
   return result;
 }
 
+static void
+shunt_read_object (FlowShunt *shunt, FlowPacket *packet, gpointer **object_dest)
+{
+  FlowPacketFormat packet_format = flow_packet_get_format (packet);
+  gpointer         packet_data   = flow_packet_get_data (packet);
+
+  g_assert (packet_format == FLOW_PACKET_FORMAT_OBJECT);
+
+  flow_shunt_set_read_func (shunt, NULL, NULL);
+  *object_dest = g_object_ref (packet_data);
+  flow_packet_free (packet);
+}
+
+gpointer
+flow_read_object_from_shunt (FlowShunt *shunt)
+{
+  FlowShuntReadFunc *old_read_func;
+  gpointer           old_user_data;
+  gpointer           object = NULL;
+
+  flow_shunt_get_read_func (shunt, &old_read_func, &old_user_data);
+
+  flow_shunt_set_read_func (shunt, (FlowShuntReadFunc *) shunt_read_object, &object);
+  flow_shunt_dispatch_now (shunt, NULL, NULL);
+
+  flow_shunt_set_read_func (shunt, old_read_func, old_user_data);
+  return object;
+}
+
 gchar *
 flow_strerror (gint errnum)
 {
