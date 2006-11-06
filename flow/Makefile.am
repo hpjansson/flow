@@ -64,6 +64,9 @@ libflow_la_SOURCES = \
 	flow-shunt.c \
 	flow-simplex-element.c \
 	flow-tcp-connector.c \
+	flow-tcp-io.c \
+	flow-tcp-io-listener.c \
+	flow-tcp-listener.c \
 	flow-user-adapter.c \
 	flow-util.c \
 	$(flow_built_sources)
@@ -101,6 +104,9 @@ pkginclude_HEADERS = \
 	flow-shunt.h \
 	flow-simplex-element.h \
 	flow-tcp-connector.h \
+	flow-tcp-io.h \
+	flow-tcp-io-listener.h \
+	flow-tcp-listener.h \
 	flow-user-adapter.h \
 	flow-util.h
 
