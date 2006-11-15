@@ -7,7 +7,8 @@ noinst_PROGRAMS = \
 	test-shunt-process \
 	test-shunt-simple-file \
 	test-shunt-simple-tcp \
-	test-shunt-simple-udp
+	test-shunt-simple-udp \
+	test-tcp-io
 
 INCLUDES = \
 	-I$(top_srcdir) \
