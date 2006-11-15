@@ -66,6 +66,69 @@ FLOW_GOBJECT_MAKE_IMPL        (flow_io, FlowIO, FLOW_TYPE_BIN, 0)
 
 /* --- FlowIO implementation --- */
 
+static gboolean
+handle_object (FlowIO *io, gpointer object)
+{
+  GType    type;
+  gboolean result = FALSE;
+
+  /* Call the class handlers, from most derived to least derived, stopping
+   * if a handler returns TRUE. We return the return value from the last
+   * handler run. */
+
+  /* FIXME: If necessary, we can speed this up by caching the class pointers, or
+   * even the function pointers if we're feeling frisky. */
+
+  for (type = G_OBJECT_TYPE (io); g_type_is_a (type, FLOW_TYPE_IO); type = g_type_parent (type))
+  {
+    FlowIOClass *klass = g_type_class_peek (type);
+
+    if (klass->handle_input_object)
+      result = klass->handle_input_object (io, object);
+
+    if (result)
+      break;
+  }
+
+  return result;
+}
+
+static void
+user_adapter_input (FlowIO *io)
+{
+  FlowPacketQueue *packet_queue;
+  FlowPacket      *packet = NULL;
+
+  /* Check for events first */
+
+  packet_queue = flow_user_adapter_get_input_queue (io->user_adapter);
+
+  while (flow_packet_queue_peek_packet (packet_queue, &packet, NULL))
+  {
+    if G_LIKELY (flow_packet_get_format (packet) == FLOW_PACKET_FORMAT_BUFFER)
+      break;
+
+    if (!handle_object (io, flow_packet_get_data (packet)))
+      break;
+
+    flow_packet_queue_drop_packet (packet_queue);
+    packet = NULL;
+  }
+
+  /* If we ran into a packet that's not handled by us, and the user wants
+   * to hear about it, notify. */
+
+  if (packet && io->read_notify_func && !io->reads_are_blocked)
+    io->read_notify_func (io->read_notify_data);
+}
+
+static void
+user_adapter_output (FlowIO *io)
+{
+  if (io->write_notify_func && !io->writes_are_blocked)
+    io->write_notify_func (io->write_notify_data);
+}
+
 static void
 bin_changed (FlowIO *io)
 {
@@ -83,7 +146,12 @@ flow_io_check_bin_internal (FlowIO *io)
   if (io->user_adapter)
   {
     if (FLOW_IS_USER_ADAPTER (io->user_adapter))
+    {
       g_object_ref (io->user_adapter);
+
+      flow_user_adapter_set_input_notify (io->user_adapter, (FlowNotifyFunc) user_adapter_input, io);
+      flow_user_adapter_set_output_notify (io->user_adapter, (FlowNotifyFunc) user_adapter_output, io);
+    }
     else
       io->user_adapter = NULL;
   }
@@ -122,6 +190,9 @@ flow_io_init (FlowIO *io)
   io->user_adapter = flow_user_adapter_new ();
   flow_bin_add_element (bin, FLOW_ELEMENT (io->user_adapter), USER_ADAPTER_NAME);
 
+  flow_user_adapter_set_input_notify (io->user_adapter, (FlowNotifyFunc) user_adapter_input, io);
+  flow_user_adapter_set_output_notify (io->user_adapter, (FlowNotifyFunc) user_adapter_output, io);
+
   g_signal_connect (io, "element-added",   G_CALLBACK (bin_changed), NULL);
   g_signal_connect (io, "element-removed", G_CALLBACK (bin_changed), NULL);
 }
@@ -155,35 +226,8 @@ set_minimum_read_buffer (FlowIO *io, gint min_len)
     FlowPacketQueue *packet_queue = flow_user_adapter_get_input_queue (io->user_adapter);
 
     if (flow_packet_queue_get_length_data_bytes (packet_queue) < min_len)
-      flow_user_adapter_unblock (io->user_adapter);
+      flow_user_adapter_unblock_input (io->user_adapter);
   }
-}
-
-static gboolean
-handle_object (FlowIO *io, gpointer object)
-{
-  GType    type;
-  gboolean result = FALSE;
-
-  /* Call the class handlers, from most derived to least derived, stopping
-   * if a handler returns TRUE. We return the return value from the last
-   * handler run. */
-
-  /* FIXME: If necessary, we can speed this up by caching the class pointers, or
-   * even the function pointers if we're feeling frisky. */
-
-  for (type = G_OBJECT_TYPE (object); g_type_is_a (type, FLOW_TYPE_IO); type = g_type_parent (type))
-  {
-    FlowIOClass *klass = g_type_class_peek (type);
-
-    if (klass->handle_input_object)
-      result = klass->handle_input_object (io, object);
-
-    if (result)
-      break;
-  }
-
-  return result;
 }
 
 static gint
@@ -408,6 +452,74 @@ flow_io_flush (FlowIO *io)
   flow_user_adapter_push (io->user_adapter);
 }
 
+void
+flow_io_set_read_notify (FlowIO *io, FlowNotifyFunc func, gpointer user_data)
+{
+  g_return_if_fail (FLOW_IS_IO (io));
+  return_if_invalid_bin (io);
+
+  io->read_notify_func = func;
+  io->read_notify_data = user_data;
+
+  /* TODO? */
+}
+
+void
+flow_io_set_write_notify (FlowIO *io, FlowNotifyFunc func, gpointer user_data)
+{
+  g_return_if_fail (FLOW_IS_IO (io));
+  return_if_invalid_bin (io);
+
+  io->write_notify_func = func;
+  io->write_notify_data = user_data;
+
+  /* TODO? */
+}
+
+void
+flow_io_block_reads (FlowIO *io)
+{
+  g_return_if_fail (FLOW_IS_IO (io));
+  return_if_invalid_bin (io);
+
+  io->reads_are_blocked = TRUE;
+
+  /* TODO? */
+}
+
+void
+flow_io_unblock_reads (FlowIO *io)
+{
+  g_return_if_fail (FLOW_IS_IO (io));
+  return_if_invalid_bin (io);
+
+  io->reads_are_blocked = FALSE;
+
+  /* TODO? */
+}
+
+void
+flow_io_block_writes (FlowIO *io)
+{
+  g_return_if_fail (FLOW_IS_IO (io));
+  return_if_invalid_bin (io);
+
+  io->writes_are_blocked = TRUE;
+
+  /* TODO? */
+}
+
+void
+flow_io_unblock_writes (FlowIO *io)
+{
+  g_return_if_fail (FLOW_IS_IO (io));
+  return_if_invalid_bin (io);
+
+  io->writes_are_blocked = FALSE;
+
+  /* TODO? */
+}
+
 gint
 flow_io_sync_read (FlowIO *io, gpointer dest_buffer, gint max_len)
 {
@@ -578,5 +690,31 @@ flow_io_check_bin (FlowIO *io)
 
     if (klass->check_bin)
       klass->check_bin (io);
+  }
+}
+
+void
+flow_io_check_events (FlowIO *io)
+{
+  FlowPacketQueue *packet_queue;
+  FlowPacket      *packet;
+
+  g_return_if_fail (FLOW_IS_IO (io));
+
+  packet_queue = flow_user_adapter_get_input_queue (io->user_adapter);
+
+  while (flow_packet_queue_peek_packet (packet_queue, &packet, NULL))
+  {
+    gpointer object;
+
+    if (flow_packet_get_format (packet) != FLOW_PACKET_FORMAT_OBJECT)
+      break;
+
+    object = flow_packet_get_data (packet);
+
+    if (!handle_object (io, object))
+      break;
+
+    flow_packet_queue_drop_packet (packet_queue);
   }
 }
