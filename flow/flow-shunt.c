@@ -667,7 +667,11 @@ flow_shunt_dispatch_now (FlowShunt *shunt, gint *n_reads_done, gint *n_writes_do
 {
   g_return_if_fail (shunt != NULL);
 
+  flow_shunt_impl_lock ();
+
   dispatch_for_shunt (shunt, n_reads_done, n_writes_done);
+
+  flow_shunt_impl_unlock ();
 }
 
 void
