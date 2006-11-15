@@ -49,7 +49,6 @@ struct _FlowTcpIO
 
   /* --- Private --- */
 
-  guint             need_to_rescan_children : 1;
   FlowConnectivity  connectivity;
 
   FlowTcpConnector *tcp_connector;
