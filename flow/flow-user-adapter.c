@@ -40,10 +40,17 @@ FLOW_GOBJECT_MAKE_IMPL        (flow_user_adapter, FlowUserAdapter, FLOW_TYPE_SIM
 /* --- FlowUserAdapter implementation --- */
 
 static inline void
-notify_user (FlowUserAdapter *user_adapter)
+notify_user_of_input (FlowUserAdapter *user_adapter)
 {
-  if (user_adapter->user_notify_func)
-    user_adapter->user_notify_func (user_adapter->user_notify_data);
+  if (!user_adapter->input_is_blocked && user_adapter->input_notify_func)
+    user_adapter->input_notify_func (user_adapter->input_notify_data);
+}
+
+static inline void
+notify_user_of_output (FlowUserAdapter *user_adapter)
+{
+  if (!user_adapter->output_is_blocked && user_adapter->output_notify_func)
+    user_adapter->output_notify_func (user_adapter->output_notify_data);
 }
 
 static void
@@ -67,7 +74,7 @@ flow_user_adapter_push_output (FlowUserAdapter *user_adapter)
       }
       else
       {
-        notify_user (user_adapter);
+        notify_user_of_output (user_adapter);
       }
 
       break;
@@ -101,7 +108,7 @@ flow_user_adapter_process_input (FlowElement *element, FlowPad *input_pad)
   }
   else
   {
-    notify_user (user_adapter);
+    notify_user_of_input (user_adapter);
   }
 }
 
@@ -165,15 +172,27 @@ flow_user_adapter_new (void)
 }
 
 void
-flow_user_adapter_set_notify_func (FlowUserAdapter *user_adapter, FlowNotifyFunc func, gpointer user_data)
+flow_user_adapter_set_input_notify (FlowUserAdapter *user_adapter, FlowNotifyFunc func, gpointer user_data)
 {
   g_return_if_fail (FLOW_IS_USER_ADAPTER (user_adapter));
 
-  user_adapter->user_notify_func = func;
-  user_adapter->user_notify_data = user_data;
+  user_adapter->input_notify_func = func;
+  user_adapter->input_notify_data = user_data;
 
-  if (func && flow_packet_queue_get_length_packets (user_adapter->input_queue))
-    notify_user (user_adapter);
+  if (!user_adapter->waiting_for_input && flow_packet_queue_get_length_packets (user_adapter->input_queue))
+    notify_user_of_input (user_adapter);
+}
+
+void
+flow_user_adapter_set_output_notify (FlowUserAdapter *user_adapter, FlowNotifyFunc func, gpointer user_data)
+{
+  g_return_if_fail (FLOW_IS_USER_ADAPTER (user_adapter));
+
+  user_adapter->output_notify_func = func;
+  user_adapter->output_notify_data = user_data;
+
+  if (!user_adapter->waiting_for_output && !flow_packet_queue_get_length_packets (user_adapter->output_queue))
+    notify_user_of_output (user_adapter);
 }
 
 FlowPacketQueue *
@@ -201,12 +220,14 @@ flow_user_adapter_push (FlowUserAdapter *user_adapter)
 }
 
 void
-flow_user_adapter_block (FlowUserAdapter *user_adapter)
+flow_user_adapter_block_input (FlowUserAdapter *user_adapter)
 {
   FlowElement *element;
   FlowPad     *input_pad;
 
   g_return_if_fail (FLOW_IS_USER_ADAPTER (user_adapter));
+
+  user_adapter->input_is_blocked = TRUE;
 
   /* Don't block the input pad if we're waiting for input somewhere in the stack */
 
@@ -220,17 +241,38 @@ flow_user_adapter_block (FlowUserAdapter *user_adapter)
 }
 
 void
-flow_user_adapter_unblock (FlowUserAdapter *user_adapter)
+flow_user_adapter_unblock_input (FlowUserAdapter *user_adapter)
 {
   FlowElement *element;
   FlowPad     *input_pad;
 
   g_return_if_fail (FLOW_IS_USER_ADAPTER (user_adapter));
 
+  user_adapter->input_is_blocked = FALSE;
+
   element = FLOW_ELEMENT (user_adapter);
   input_pad = g_ptr_array_index (element->input_pads, 0);
 
   flow_pad_unblock (input_pad);
+}
+
+void
+flow_user_adapter_block_output (FlowUserAdapter *user_adapter)
+{
+  g_return_if_fail (FLOW_IS_USER_ADAPTER (user_adapter));
+
+  user_adapter->output_is_blocked = TRUE;
+}
+
+void
+flow_user_adapter_unblock_output (FlowUserAdapter *user_adapter)
+{
+  g_return_if_fail (FLOW_IS_USER_ADAPTER (user_adapter));
+
+  user_adapter->output_is_blocked = FALSE;
+
+  if (!user_adapter->waiting_for_output && !flow_packet_queue_get_length_packets (user_adapter->output_queue))
+    notify_user_of_output (user_adapter);
 }
 
 void
@@ -274,6 +316,14 @@ flow_user_adapter_wait_for_input (FlowUserAdapter *user_adapter)
   g_main_loop_run (user_adapter->input_loop);
 
   user_adapter->waiting_for_input--;
+
+  /* If the user doesn't want input notifications, make sure the input pad is blocked */
+
+  if (!user_adapter->waiting_for_input && user_adapter->input_is_blocked)
+  {
+    input_pad = g_ptr_array_index (FLOW_ELEMENT (user_adapter)->input_pads, 0);
+    flow_pad_block (input_pad);
+  }
 }
 
 void

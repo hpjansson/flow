@@ -53,8 +53,11 @@ struct _FlowUserAdapter
   GMainLoop          *input_loop;
   GMainLoop          *output_loop;
 
-  FlowNotifyFunc      user_notify_func;
-  gpointer            user_notify_data;
+  FlowNotifyFunc      input_notify_func;
+  gpointer            input_notify_data;
+
+  FlowNotifyFunc      output_notify_func;
+  gpointer            output_notify_data;
 
   /* waiting_for_... means the user is in a blocking call. Blocking calls can
    * be recursive if the GMainContext is shared with other facilities, so we
@@ -63,8 +66,10 @@ struct _FlowUserAdapter
    * This is used to prevent async notifications from firing while we're in
    * a blocking call (for apps that mix sync and async access). */
 
-  guint16             waiting_for_input;
-  guint16             waiting_for_output;
+  guint               input_is_blocked   :  1;
+  guint               output_is_blocked  :  1;
+  guint               waiting_for_input  : 14;
+  guint               waiting_for_output : 14;
 };
 
 struct _FlowUserAdapterClass
@@ -79,23 +84,27 @@ struct _FlowUserAdapterClass
   void (*_pad_4) (void);
 };
 
-FlowUserAdapter *flow_user_adapter_new              (void);
+FlowUserAdapter *flow_user_adapter_new               (void);
 
-void             flow_user_adapter_set_notify_func  (FlowUserAdapter *user_adapter, FlowNotifyFunc func, gpointer user_data);
+void             flow_user_adapter_push              (FlowUserAdapter *user_adapter);
 
-FlowPacketQueue *flow_user_adapter_get_input_queue  (FlowUserAdapter *user_adapter);
-FlowPacketQueue *flow_user_adapter_get_output_queue (FlowUserAdapter *user_adapter);
+FlowPacketQueue *flow_user_adapter_get_input_queue   (FlowUserAdapter *user_adapter);
+FlowPacketQueue *flow_user_adapter_get_output_queue  (FlowUserAdapter *user_adapter);
 
-void             flow_user_adapter_push             (FlowUserAdapter *user_adapter);
+void             flow_user_adapter_set_input_notify  (FlowUserAdapter *user_adapter, FlowNotifyFunc func, gpointer user_data);
+void             flow_user_adapter_set_output_notify (FlowUserAdapter *user_adapter, FlowNotifyFunc func, gpointer user_data);
 
-void             flow_user_adapter_block            (FlowUserAdapter *user_adapter);
-void             flow_user_adapter_unblock          (FlowUserAdapter *user_adapter);
+void             flow_user_adapter_block_input       (FlowUserAdapter *user_adapter);
+void             flow_user_adapter_unblock_input     (FlowUserAdapter *user_adapter);
 
-void             flow_user_adapter_wait_for_input   (FlowUserAdapter *user_adapter);
-void             flow_user_adapter_wait_for_output  (FlowUserAdapter *user_adapter);
+void             flow_user_adapter_block_output      (FlowUserAdapter *user_adapter);
+void             flow_user_adapter_unblock_output    (FlowUserAdapter *user_adapter);
 
-void             flow_user_adapter_interrupt_input  (FlowUserAdapter *user_adapter);
-void             flow_user_adapter_interrupt_output (FlowUserAdapter *user_adapter);
+void             flow_user_adapter_wait_for_input    (FlowUserAdapter *user_adapter);
+void             flow_user_adapter_wait_for_output   (FlowUserAdapter *user_adapter);
+
+void             flow_user_adapter_interrupt_input   (FlowUserAdapter *user_adapter);
+void             flow_user_adapter_interrupt_output  (FlowUserAdapter *user_adapter);
 
 G_END_DECLS
 
