@@ -59,8 +59,10 @@ struct _FlowTcpIOListenerClass
   void (*_pad_4) (void);
 };
 
-FlowTcpIOListener  *flow_tcp_io_listener_new                (void);
-FlowTcpIO          *flow_tcp_io_listener_pop_connection     (FlowTcpIOListener *tcp_io_listener);
+FlowTcpIOListener  *flow_tcp_io_listener_new                 (void);
+
+FlowTcpIO          *flow_tcp_io_listener_pop_connection      (FlowTcpIOListener *tcp_io_listener);
+FlowTcpIO          *flow_tcp_io_listener_sync_pop_connection (FlowTcpIOListener *tcp_io_listener);
 
 G_END_DECLS
 

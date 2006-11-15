@@ -72,28 +72,13 @@ flow_tcp_io_listener_finalize (FlowTcpIOListener *tcp_io_listener)
 {
 }
 
-/* --- FlowTcpIOListener public API --- */
-
-FlowTcpIOListener *
-flow_tcp_io_listener_new (void)
+static FlowTcpIO *
+setup_tcp_io (FlowElement *tcp_connector)
 {
-  return g_object_new (FLOW_TYPE_TCP_IO_LISTENER, NULL);
-}
-
-FlowTcpIO *
-flow_tcp_io_listener_pop_connection (FlowTcpIOListener *tcp_io_listener)
-{
-  FlowElement *tcp_connector;
-  FlowElement *old_tcp_connector;
-  FlowElement *user_adapter;
   FlowTcpIO   *tcp_io;
   FlowBin     *bin;
-
-  g_return_val_if_fail (FLOW_IS_TCP_IO_LISTENER (tcp_io_listener), NULL);
-
-  tcp_connector = (FlowElement *) flow_tcp_listener_pop_connection (FLOW_TCP_LISTENER (tcp_io_listener));
-  if (!tcp_connector)
-    return NULL;
+  FlowElement *old_tcp_connector;
+  FlowElement *user_adapter;
 
   tcp_io = flow_tcp_io_new ();
   bin    = FLOW_BIN (tcp_io);
@@ -125,4 +110,40 @@ flow_tcp_io_listener_pop_connection (FlowTcpIOListener *tcp_io_listener)
   }
 
   return tcp_io;
+}
+
+/* --- FlowTcpIOListener public API --- */
+
+FlowTcpIOListener *
+flow_tcp_io_listener_new (void)
+{
+  return g_object_new (FLOW_TYPE_TCP_IO_LISTENER, NULL);
+}
+
+FlowTcpIO *
+flow_tcp_io_listener_pop_connection (FlowTcpIOListener *tcp_io_listener)
+{
+  FlowElement *tcp_connector;
+
+  g_return_val_if_fail (FLOW_IS_TCP_IO_LISTENER (tcp_io_listener), NULL);
+
+  tcp_connector = (FlowElement *) flow_tcp_listener_pop_connection (FLOW_TCP_LISTENER (tcp_io_listener));
+  if (!tcp_connector)
+    return NULL;
+
+  return setup_tcp_io (tcp_connector);
+}
+
+FlowTcpIO *
+flow_tcp_io_listener_sync_pop_connection (FlowTcpIOListener *tcp_io_listener)
+{
+  FlowElement *tcp_connector;
+
+  g_return_val_if_fail (FLOW_IS_TCP_IO_LISTENER (tcp_io_listener), NULL);
+
+  tcp_connector = (FlowElement *) flow_tcp_listener_sync_pop_connection (FLOW_TCP_LISTENER (tcp_io_listener));
+  if (!tcp_connector)
+    return NULL;
+
+  return setup_tcp_io (tcp_connector);
 }

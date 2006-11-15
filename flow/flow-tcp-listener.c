@@ -29,6 +29,7 @@
 #include "flow-tcp-listener.h"
 #include "flow-anonymous-event.h"
 #include "flow-detailed-event.h"
+#include "flow-context-mgmt.h"
 
 /* Implemented in flow-tcp-connector.c */
 void _flow_tcp_connector_install_connected_shunt (FlowTcpConnector *tcp_connector, FlowShunt *connected_shunt);
@@ -67,7 +68,17 @@ shunt_read (FlowShunt *shunt, FlowPacket *packet, FlowTcpListener *tcp_listener)
       g_assert (connected_shunt != NULL);
 
       g_queue_push_tail (tcp_listener->connected_shunts, connected_shunt);
-      g_signal_emit_by_name (tcp_listener, "new-connection");
+
+      if (tcp_listener->waiting_for_pop)
+      {
+        g_assert (tcp_listener->pop_loop != NULL);
+
+        g_main_loop_quit (tcp_listener->pop_loop);
+      }
+      else
+      {
+        g_signal_emit_by_name (tcp_listener, "new-connection");
+      }
     }
 
     /* We may get FlowDetailedEvents if resource exhaustion is preventing us from
@@ -123,6 +134,9 @@ flow_tcp_listener_finalize (FlowTcpListener *tcp_listener)
 {
   FlowShunt *connected_shunt;
 
+  if (tcp_listener->pop_loop)
+    g_main_loop_unref (tcp_listener->pop_loop);
+
   while ((connected_shunt = g_queue_pop_head (tcp_listener->connected_shunts)))
   {
     flow_shunt_destroy (connected_shunt);
@@ -130,6 +144,22 @@ flow_tcp_listener_finalize (FlowTcpListener *tcp_listener)
 
   g_queue_free (tcp_listener->connected_shunts);
   tcp_listener->connected_shunts = NULL;
+}
+
+static FlowTcpConnector *
+pop_connection (FlowTcpListener *tcp_listener)
+{
+  FlowTcpConnector *tcp_connector;
+  FlowShunt        *connected_shunt;
+
+  connected_shunt = g_queue_pop_head (tcp_listener->connected_shunts);
+  if (!connected_shunt)
+    return NULL;
+
+  tcp_connector = flow_tcp_connector_new ();
+  _flow_tcp_connector_install_connected_shunt (tcp_connector, connected_shunt);
+
+  return tcp_connector;
 }
 
 /* --- FlowTcpListener public API --- */
@@ -208,17 +238,32 @@ flow_tcp_listener_set_local_service (FlowTcpListener *tcp_listener, FlowIPServic
 FlowTcpConnector *
 flow_tcp_listener_pop_connection (FlowTcpListener *tcp_listener)
 {
-  FlowTcpConnector *tcp_connector;
-  FlowShunt        *connected_shunt;
-
   g_return_val_if_fail (FLOW_IS_TCP_LISTENER (tcp_listener), NULL);
 
-  connected_shunt = g_queue_pop_head (tcp_listener->connected_shunts);
-  if (!connected_shunt)
-    return NULL;
+  return pop_connection (tcp_listener);
+}
 
-  tcp_connector = flow_tcp_connector_new ();
-  _flow_tcp_connector_install_connected_shunt (tcp_connector, connected_shunt);
+FlowTcpConnector *
+flow_tcp_listener_sync_pop_connection (FlowTcpListener *tcp_listener)
+{
+  FlowTcpConnector *tcp_connector;
+
+  tcp_listener->waiting_for_pop++;
+
+  while (!(tcp_connector = pop_connection (tcp_listener)))
+  {
+    if G_UNLIKELY (!tcp_listener->pop_loop)
+    {
+      GMainContext *main_context;
+
+      main_context = flow_get_main_context_for_current_thread ();
+      tcp_listener->pop_loop = g_main_loop_new (main_context, FALSE);
+    }
+
+    g_main_loop_run (tcp_listener->pop_loop);
+  }
+
+  tcp_listener->waiting_for_pop--;
 
   return tcp_connector;
 }

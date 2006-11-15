@@ -51,6 +51,9 @@ struct _FlowTcpListener
   FlowShunt       *shunt;
 
   GQueue          *connected_shunts;
+
+  guint            waiting_for_pop;
+  GMainLoop       *pop_loop;
 };
 
 struct _FlowTcpListenerClass
@@ -65,13 +68,14 @@ struct _FlowTcpListenerClass
   void (*_pad_4) (void);
 };
 
-FlowTcpListener  *flow_tcp_listener_new                (void);
+FlowTcpListener  *flow_tcp_listener_new                 (void);
 
-FlowIPService    *flow_tcp_listener_get_local_service  (FlowTcpListener *tcp_listener);
-gboolean          flow_tcp_listener_set_local_service  (FlowTcpListener *tcp_listener, FlowIPService *ip_service,
-                                                        FlowDetailedEvent **error_event);
+FlowIPService    *flow_tcp_listener_get_local_service   (FlowTcpListener *tcp_listener);
+gboolean          flow_tcp_listener_set_local_service   (FlowTcpListener *tcp_listener, FlowIPService *ip_service,
+                                                         FlowDetailedEvent **error_event);
 
-FlowTcpConnector *flow_tcp_listener_pop_connection     (FlowTcpListener *tcp_listener);
+FlowTcpConnector *flow_tcp_listener_pop_connection      (FlowTcpListener *tcp_listener);
+FlowTcpConnector *flow_tcp_listener_sync_pop_connection (FlowTcpListener *tcp_listener);
 
 G_END_DECLS
 
