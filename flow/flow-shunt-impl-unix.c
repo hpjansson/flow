@@ -1263,6 +1263,8 @@ socket_shunt_write (FlowShunt *shunt)
       shunt->dispatched_begin = TRUE;
       generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_BEGIN);
       generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_SEGMENT_BEGIN);
+
+      flow_shunt_read_state_changed (shunt);
     }
     else
     {
