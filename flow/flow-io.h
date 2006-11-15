@@ -90,7 +90,7 @@ FlowIO   *flow_io_new               (void);
 gint      flow_io_read              (FlowIO *io, gpointer dest_buffer, gint max_len);
 gboolean  flow_io_read_exact        (FlowIO *io, gpointer dest_buffer, gint exact_len);
 gpointer  flow_io_read_object       (FlowIO *io);
-void      flow_io_write             (FlowIO *io, gpointer src_buffer,  gint exact_len);  #
+void      flow_io_write             (FlowIO *io, gpointer src_buffer,  gint exact_len);
 void      flow_io_write_object      (FlowIO *io, gpointer object);
 void      flow_io_flush             (FlowIO *io);
 
@@ -103,8 +103,8 @@ void      flow_io_unblock_reads     (FlowIO *io);
 void      flow_io_block_writes      (FlowIO *io);
 void      flow_io_unblock_writes    (FlowIO *io);
 
-gint      flow_io_sync_read         (FlowIO *io, gpointer dest_buffer, gint max_len);    #
-gboolean  flow_io_sync_read_exact   (FlowIO *io, gpointer dest_buffer, gint exact_len);  #
+gint      flow_io_sync_read         (FlowIO *io, gpointer dest_buffer, gint max_len);
+gboolean  flow_io_sync_read_exact   (FlowIO *io, gpointer dest_buffer, gint exact_len);
 gpointer  flow_io_sync_read_object  (FlowIO *io);
 void      flow_io_sync_write        (FlowIO *io, gpointer src_buffer,  gint exact_len);
 void      flow_io_sync_write_object (FlowIO *io, gpointer object);
