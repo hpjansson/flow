@@ -55,8 +55,11 @@ setup_shunt (FlowTcpConnector *tcp_connector)
   flow_shunt_set_write_func (tcp_connector->shunt, (FlowShuntWriteFunc *) shunt_write, tcp_connector);
 
   output_pad = FLOW_PAD (flow_simplex_element_get_output_pad (FLOW_SIMPLEX_ELEMENT (tcp_connector)));
+
   if (flow_pad_is_blocked (output_pad))
+  {
     flow_shunt_block_reads (tcp_connector->shunt);
+  }
 }
 
 static void
@@ -190,6 +193,20 @@ shunt_write (FlowShunt *shunt, FlowTcpConnector *tcp_connector)
   input_pad = FLOW_PAD (flow_simplex_element_get_input_pad (FLOW_SIMPLEX_ELEMENT (tcp_connector)));
   packet_queue = flow_pad_get_packet_queue (input_pad);
 
+  if (!packet_queue ||
+      (flow_packet_queue_get_length_packets (packet_queue) < MAX_BUFFER_PACKETS &&
+       flow_packet_queue_get_length_bytes (packet_queue) < MAX_BUFFER_BYTES))
+  {
+    flow_pad_unblock (input_pad);
+    packet_queue = flow_pad_get_packet_queue (input_pad);
+  }
+
+  if (!packet_queue || flow_packet_queue_get_length_packets (packet_queue) == 0)
+  {
+    flow_shunt_block_writes (shunt);
+    return NULL;
+  }
+
   do
   {
     packet = flow_packet_queue_pop_packet (packet_queue);
@@ -199,17 +216,6 @@ shunt_write (FlowShunt *shunt, FlowTcpConnector *tcp_connector)
     packet = handle_outbound_packet (tcp_connector, packet);
   }
   while (!packet);
-
-  if (flow_packet_queue_get_length_packets (packet_queue) < MAX_BUFFER_PACKETS &&
-      flow_packet_queue_get_length_bytes (packet_queue) < MAX_BUFFER_BYTES)
-  {
-    flow_pad_unblock (input_pad);
-  }
-
-  if (flow_packet_queue_get_length_packets (packet_queue) == 0)
-  {
-    flow_shunt_block_writes (shunt);
-  }
 
   return packet;
 }
@@ -242,6 +248,11 @@ flow_tcp_connector_process_input (FlowTcpConnector *tcp_connector, FlowPad *inpu
       flow_packet_queue_get_length_packets (packet_queue) >= MAX_BUFFER_PACKETS)
   {
     flow_pad_block (input_pad);
+  }
+  else if (tcp_connector->shunt)
+  {
+    /* FIXME: The shunt's locking might be a performance liability. We could cache the state. */
+    flow_shunt_unblock_writes (tcp_connector->shunt);
   }
 }
 
