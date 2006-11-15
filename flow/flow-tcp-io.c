@@ -68,13 +68,11 @@ FLOW_GOBJECT_MAKE_IMPL        (flow_tcp_io, FlowTcpIO, FLOW_TYPE_IO, 0)
 /* --- FlowTcpIO implementation --- */
 
 static void
-remote_connectivity_changed (FlowTcpIO *tcp_io)
+query_remote_connectivity (FlowTcpIO *tcp_io)
 {
   FlowIO           *io = FLOW_IO (tcp_io);
   FlowConnectivity  before;
   FlowConnectivity  after;
-
-  return_if_invalid_bin (tcp_io);
 
   before = flow_connector_get_last_state (FLOW_CONNECTOR (tcp_io->tcp_connector));
   after  = flow_connector_get_state      (FLOW_CONNECTOR (tcp_io->tcp_connector));
@@ -93,6 +91,14 @@ remote_connectivity_changed (FlowTcpIO *tcp_io)
     io->allow_blocking_read  = TRUE;
     io->allow_blocking_write = TRUE;
   }
+}
+
+static void
+remote_connectivity_changed (FlowTcpIO *tcp_io)
+{
+  return_if_invalid_bin (tcp_io);
+
+  query_remote_connectivity (tcp_io);
 }
 
 static void
@@ -126,7 +132,7 @@ flow_tcp_io_check_bin (FlowTcpIO *tcp_io)
       g_object_ref (tcp_io->tcp_connector);
       g_signal_connect_swapped (tcp_io->tcp_connector, "connectivity-changed",
                                 G_CALLBACK (remote_connectivity_changed), tcp_io);
-      remote_connectivity_changed (tcp_io);
+      query_remote_connectivity (tcp_io);
     }
     else
       tcp_io->tcp_connector = NULL;
@@ -153,7 +159,8 @@ flow_tcp_io_handle_input_object (FlowTcpIO *tcp_io, gpointer object)
 
       /* FIXME: Issue signal */
     }
-    else if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END))
+    else if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END) ||
+             flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_DENIED))
     {
       FlowIO *io = FLOW_IO (tcp_io);
 
@@ -326,6 +333,7 @@ flow_tcp_io_sync_connect (FlowTcpIO *tcp_io, FlowIPService *ip_service)
   while (tcp_io->connectivity == FLOW_CONNECTIVITY_CONNECTING)
   {
     flow_user_adapter_wait_for_input (tcp_io->user_adapter);
+    flow_io_check_events (io);
   }
 
   return tcp_io->connectivity == FLOW_CONNECTIVITY_CONNECTED ? TRUE : FALSE;
@@ -347,10 +355,14 @@ flow_tcp_io_sync_connect_by_name (FlowTcpIO *tcp_io, const gchar *name, gint por
 void
 flow_tcp_io_sync_disconnect (FlowTcpIO *tcp_io)
 {
+  FlowIO *io;
+
   g_return_if_fail (FLOW_IS_TCP_IO (tcp_io));
   return_if_invalid_bin (tcp_io);
   g_return_if_fail (tcp_io->connectivity != FLOW_CONNECTIVITY_DISCONNECTED);
   g_return_if_fail (tcp_io->connectivity != FLOW_CONNECTIVITY_DISCONNECTING);
+
+  io = FLOW_IO (tcp_io);
 
   write_stream_end (tcp_io);
 
@@ -359,6 +371,7 @@ flow_tcp_io_sync_disconnect (FlowTcpIO *tcp_io)
   while (tcp_io->connectivity == FLOW_CONNECTIVITY_DISCONNECTING)
   {
     flow_user_adapter_wait_for_input (tcp_io->user_adapter);
+    flow_io_check_events (io);
   }
 
   g_assert (tcp_io->connectivity == FLOW_CONNECTIVITY_DISCONNECTED);
