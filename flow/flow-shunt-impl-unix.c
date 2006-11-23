@@ -913,6 +913,9 @@ flow_shunt_impl_finalize_shunt (FlowShunt *shunt)
   if (shunt->shunt_type == SHUNT_TYPE_FILE)
     return;
 
+  close_read_fd (shunt);
+  close_write_fd (shunt);
+
   flow_shunt_finalize_common (shunt);
 
   switch (shunt->shunt_type)
@@ -1354,9 +1357,7 @@ socket_shunt_write (FlowShunt *shunt)
 
         /* TODO: Dispatch something more specific here? */
 
-        generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_SEGMENT_END);
-        generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_END);
-        shunt->dispatched_end = TRUE;
+        generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_END_CONVERSE);
         close_write_fd (shunt);
         flow_shunt_read_state_changed (shunt);
         break;
@@ -1386,6 +1387,22 @@ socket_shunt_write (FlowShunt *shunt)
         {
           /* User requested end-of-stream */
           close_write_fd (shunt);
+        }
+
+        if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END_CONVERSE) ||
+            flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_DENIED))
+        {
+          /* User wants to stop reading */
+          close_read_fd (shunt);
+
+          if (!shunt->dispatched_end)
+          {
+            generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_SEGMENT_END);
+            generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_END);
+            shunt->dispatched_end = TRUE;
+
+            flow_shunt_read_state_changed (shunt);
+          }
         }
       }
       else if (shunt->shunt_type == SHUNT_TYPE_UDP)
@@ -1455,6 +1472,7 @@ socket_shunt_exception (FlowShunt *shunt)
     /* Other error */
 
     shunt->dispatched_end = TRUE;
+    generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_END_CONVERSE);
     generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_SEGMENT_END);
     generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_END);
   }
@@ -2246,6 +2264,8 @@ create_thread_shunt (FlowWorkerFunc func, gpointer user_data, gboolean filter_ob
     g_clear_error (&error);
   }
 
+  shunt->dispatched_begin = TRUE;
+
   flow_shunt_read_state_changed (shunt);
   flow_shunt_write_state_changed (shunt);
 
@@ -2474,6 +2494,8 @@ flow_shunt_impl_spawn_command_line (const gchar *command_line)
 
   flow_shunt_impl_lock ();
 
+  shunt->dispatched_begin = TRUE;
+
   flow_shunt_read_state_changed (shunt);
   flow_shunt_write_state_changed (shunt);
 
@@ -2597,10 +2619,10 @@ flow_shunt_impl_open_tcp_listener (FlowIPService *local_service)
 
       generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_BEGIN);
       generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_SEGMENT_BEGIN);
-
-      shunt->dispatched_begin = TRUE;
     }
   }
+
+  shunt->dispatched_begin = TRUE;
 
   if (!shunt->can_read)
   {
