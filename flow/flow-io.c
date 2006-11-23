@@ -184,11 +184,16 @@ flow_io_init (FlowIO *io)
 {
   FlowBin *bin = FLOW_BIN (io);
 
+  io->min_read_buffer = 1;
+
   io->allow_blocking_read  = TRUE;
   io->allow_blocking_write = TRUE;
 
   io->user_adapter = flow_user_adapter_new ();
   flow_bin_add_element (bin, FLOW_ELEMENT (io->user_adapter), USER_ADAPTER_NAME);
+
+  flow_user_adapter_block_input (io->user_adapter);
+  flow_user_adapter_block_output (io->user_adapter);
 
   flow_user_adapter_set_input_notify (io->user_adapter, (FlowNotifyFunc) user_adapter_input, io);
   flow_user_adapter_set_output_notify (io->user_adapter, (FlowNotifyFunc) user_adapter_output, io);
@@ -452,6 +457,20 @@ flow_io_flush (FlowIO *io)
   flow_user_adapter_push (io->user_adapter);
 }
 
+static void
+update_user_adapter_blocks (FlowIO *io)
+{
+  if (!io->read_notify_func || io->reads_are_blocked)
+    flow_user_adapter_block_input (io->user_adapter);
+  else
+    flow_user_adapter_unblock_input (io->user_adapter);
+
+  if (!io->write_notify_func || io->writes_are_blocked)
+    flow_user_adapter_block_output (io->user_adapter);
+  else
+    flow_user_adapter_unblock_output (io->user_adapter);
+}
+
 void
 flow_io_set_read_notify (FlowIO *io, FlowNotifyFunc func, gpointer user_data)
 {
@@ -460,6 +479,8 @@ flow_io_set_read_notify (FlowIO *io, FlowNotifyFunc func, gpointer user_data)
 
   io->read_notify_func = func;
   io->read_notify_data = user_data;
+
+  update_user_adapter_blocks (io);
 
   /* TODO? */
 }
@@ -473,6 +494,8 @@ flow_io_set_write_notify (FlowIO *io, FlowNotifyFunc func, gpointer user_data)
   io->write_notify_func = func;
   io->write_notify_data = user_data;
 
+  update_user_adapter_blocks (io);
+
   /* TODO? */
 }
 
@@ -482,7 +505,11 @@ flow_io_block_reads (FlowIO *io)
   g_return_if_fail (FLOW_IS_IO (io));
   return_if_invalid_bin (io);
 
+  if (io->reads_are_blocked)
+    return;
+
   io->reads_are_blocked = TRUE;
+  update_user_adapter_blocks (io);
 
   /* TODO? */
 }
@@ -493,7 +520,11 @@ flow_io_unblock_reads (FlowIO *io)
   g_return_if_fail (FLOW_IS_IO (io));
   return_if_invalid_bin (io);
 
+  if (!io->reads_are_blocked)
+    return;
+
   io->reads_are_blocked = FALSE;
+  update_user_adapter_blocks (io);
 
   /* TODO? */
 }
@@ -504,7 +535,11 @@ flow_io_block_writes (FlowIO *io)
   g_return_if_fail (FLOW_IS_IO (io));
   return_if_invalid_bin (io);
 
+  if (io->writes_are_blocked)
+    return;
+
   io->writes_are_blocked = TRUE;
+  update_user_adapter_blocks (io);
 
   /* TODO? */
 }
@@ -515,7 +550,11 @@ flow_io_unblock_writes (FlowIO *io)
   g_return_if_fail (FLOW_IS_IO (io));
   return_if_invalid_bin (io);
 
+  if (!io->writes_are_blocked)
+    return;
+
   io->writes_are_blocked = FALSE;
+  update_user_adapter_blocks (io);
 
   /* TODO? */
 }
