@@ -50,9 +50,12 @@ struct _FlowTcpIO
   /* --- Private --- */
 
   FlowConnectivity  connectivity;
+  FlowConnectivity  last_connectivity;
 
   FlowTcpConnector *tcp_connector;
   FlowUserAdapter  *user_adapter;
+
+  guint             name_resolution_id;
 };
 
 struct _FlowTcpIOClass
@@ -71,7 +74,7 @@ FlowTcpIO        *flow_tcp_io_new                   (void);
 
 void              flow_tcp_io_connect               (FlowTcpIO *tcp_io, FlowIPService *ip_service);
 void              flow_tcp_io_connect_by_name       (FlowTcpIO *tcp_io, const gchar *name, gint port);
-void              flow_tcp_io_disconnect            (FlowTcpIO *tcp_io);
+void              flow_tcp_io_disconnect            (FlowTcpIO *tcp_io, gboolean close_both_directions);
 
 gboolean          flow_tcp_io_sync_connect          (FlowTcpIO *tcp_io, FlowIPService *ip_service);
 gboolean          flow_tcp_io_sync_connect_by_name  (FlowTcpIO *tcp_io, const gchar *name, gint port);
@@ -79,6 +82,7 @@ void              flow_tcp_io_sync_disconnect       (FlowTcpIO *tcp_io);
 
 FlowIPService    *flow_tcp_io_get_remote_service    (FlowTcpIO *tcp_io);
 FlowConnectivity  flow_tcp_io_get_connectivity      (FlowTcpIO *tcp_io);
+FlowConnectivity  flow_tcp_io_get_last_connectivity (FlowTcpIO *tcp_io);
 
 G_END_DECLS
 

@@ -139,9 +139,23 @@ flow_tcp_io_check_bin (FlowTcpIO *tcp_io)
   }
 }
 
+static void
+set_connectivity (FlowTcpIO *tcp_io, FlowConnectivity new_connectivity)
+{
+  if (new_connectivity == tcp_io->connectivity)
+    return;
+
+  tcp_io->last_connectivity = tcp_io->connectivity;
+  tcp_io->connectivity = new_connectivity;
+
+  g_signal_emit_by_name (tcp_io, "connectivity-changed");
+}
+
 static gboolean
 flow_tcp_io_handle_input_object (FlowTcpIO *tcp_io, gpointer object)
 {
+  gboolean result = FALSE;
+
   if (FLOW_IS_DETAILED_EVENT (object))
   {
     FlowDetailedEvent *detailed_event = object;
@@ -152,12 +166,12 @@ flow_tcp_io_handle_input_object (FlowTcpIO *tcp_io, gpointer object)
 
       g_assert (tcp_io->connectivity != FLOW_CONNECTIVITY_CONNECTED);
 
-      tcp_io->connectivity = FLOW_CONNECTIVITY_CONNECTED;
-
       io->allow_blocking_read  = TRUE;
       io->allow_blocking_write = TRUE;
 
-      /* FIXME: Issue signal */
+      set_connectivity (tcp_io, FLOW_CONNECTIVITY_CONNECTED);
+
+      result = TRUE;
     }
     else if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END) ||
              flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_DENIED))
@@ -166,16 +180,22 @@ flow_tcp_io_handle_input_object (FlowTcpIO *tcp_io, gpointer object)
 
       g_assert (tcp_io->connectivity != FLOW_CONNECTIVITY_DISCONNECTED);
 
-      tcp_io->connectivity = FLOW_CONNECTIVITY_DISCONNECTED;
-
       io->allow_blocking_read  = FALSE;
       io->allow_blocking_write = FALSE;
 
-      /* FIXME: Issue signal */
+      set_connectivity (tcp_io, FLOW_CONNECTIVITY_DISCONNECTED);
+
+      result = TRUE;
+    }
+    /* FIXME: Do we really need this? */
+    else if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_SEGMENT_BEGIN) ||
+             flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_SEGMENT_END))
+    {
+      result = TRUE;
     }
   }
 
-  return FALSE;
+  return result;
 }
 
 static void
@@ -190,6 +210,15 @@ flow_tcp_io_class_init (FlowTcpIOClass *klass)
 
   io_klass->check_bin           = (void (*) (FlowIO *)) flow_tcp_io_check_bin;
   io_klass->handle_input_object = (gboolean (*) (FlowIO *, gpointer)) flow_tcp_io_handle_input_object;
+
+  g_signal_newv ("connectivity-changed",
+                 G_TYPE_FROM_CLASS (klass),
+                 G_SIGNAL_RUN_LAST | G_SIGNAL_NO_HOOKS,
+                 NULL,                                   /* Class closure */
+                 NULL, NULL,                             /* Accumulator, accu data */
+                 g_cclosure_marshal_VOID__VOID,          /* Marshaller */
+                 G_TYPE_NONE,                            /* Return type */
+                 0, NULL);                               /* Number of params, param types */
 }
 
 static void
@@ -209,13 +238,14 @@ flow_tcp_io_init (FlowTcpIO *tcp_io)
   flow_pad_connect (FLOW_PAD (flow_simplex_element_get_output_pad (FLOW_SIMPLEX_ELEMENT (tcp_io->tcp_connector))),
                     FLOW_PAD (flow_simplex_element_get_input_pad (FLOW_SIMPLEX_ELEMENT (tcp_io->user_adapter))));
 
-  tcp_io->connectivity = FLOW_CONNECTIVITY_DISCONNECTED;
+  g_signal_connect_swapped (tcp_io->tcp_connector, "connectivity-changed",
+                            G_CALLBACK (remote_connectivity_changed), tcp_io);
 
   io->allow_blocking_read  = FALSE;
   io->allow_blocking_write = FALSE;
 
-  g_signal_connect_swapped (tcp_io->tcp_connector, "connectivity-changed",
-                            G_CALLBACK (remote_connectivity_changed), tcp_io);
+  tcp_io->connectivity      = FLOW_CONNECTIVITY_DISCONNECTED;
+  tcp_io->last_connectivity = FLOW_CONNECTIVITY_DISCONNECTED;
 }
 
 static void
@@ -249,12 +279,15 @@ write_stream_begin (FlowTcpIO *tcp_io)
 }
 
 static void
-write_stream_end (FlowTcpIO *tcp_io)
+write_stream_end (FlowTcpIO *tcp_io, gboolean close_both_directions)
 {
   FlowDetailedEvent *detailed_event;
 
   detailed_event = flow_detailed_event_new (NULL);
   flow_detailed_event_add_code (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END);
+
+  if (close_both_directions)
+    flow_detailed_event_add_code (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END_CONVERSE);
 
   flow_io_write_object (FLOW_IO (tcp_io), detailed_event);
 
@@ -284,7 +317,7 @@ flow_tcp_io_connect (FlowTcpIO *tcp_io, FlowIPService *ip_service)
   flow_io_write_object (io, ip_service);
   write_stream_begin (tcp_io);
 
-  tcp_io->connectivity = FLOW_CONNECTIVITY_CONNECTING;
+  set_connectivity (tcp_io, FLOW_CONNECTIVITY_CONNECTING);
 }
 
 void
@@ -301,16 +334,18 @@ flow_tcp_io_connect_by_name (FlowTcpIO *tcp_io, const gchar *name, gint port)
 }
 
 void
-flow_tcp_io_disconnect (FlowTcpIO *tcp_io)
+flow_tcp_io_disconnect (FlowTcpIO *tcp_io, gboolean close_both_directions)
 {
   g_return_if_fail (FLOW_IS_TCP_IO (tcp_io));
   return_if_invalid_bin (tcp_io);
-  g_return_if_fail (tcp_io->connectivity != FLOW_CONNECTIVITY_DISCONNECTED);
-  g_return_if_fail (tcp_io->connectivity != FLOW_CONNECTIVITY_DISCONNECTING);
 
-  write_stream_end (tcp_io);
+  if (tcp_io->connectivity == FLOW_CONNECTIVITY_DISCONNECTED ||
+      tcp_io->connectivity == FLOW_CONNECTIVITY_DISCONNECTING)
+    return;
 
-  tcp_io->connectivity = FLOW_CONNECTIVITY_DISCONNECTING;
+  write_stream_end (tcp_io, close_both_directions);
+
+  set_connectivity (tcp_io, FLOW_CONNECTIVITY_DISCONNECTING);
 }
 
 gboolean
@@ -328,7 +363,7 @@ flow_tcp_io_sync_connect (FlowTcpIO *tcp_io, FlowIPService *ip_service)
   flow_io_write_object (io, ip_service);
   write_stream_begin (tcp_io);
 
-  tcp_io->connectivity = FLOW_CONNECTIVITY_CONNECTING;
+  set_connectivity (tcp_io, FLOW_CONNECTIVITY_CONNECTING);
 
   while (tcp_io->connectivity == FLOW_CONNECTIVITY_CONNECTING)
   {
@@ -359,15 +394,18 @@ flow_tcp_io_sync_disconnect (FlowTcpIO *tcp_io)
 
   g_return_if_fail (FLOW_IS_TCP_IO (tcp_io));
   return_if_invalid_bin (tcp_io);
-  g_return_if_fail (tcp_io->connectivity != FLOW_CONNECTIVITY_DISCONNECTED);
-  g_return_if_fail (tcp_io->connectivity != FLOW_CONNECTIVITY_DISCONNECTING);
+
+  if (tcp_io->connectivity == FLOW_CONNECTIVITY_DISCONNECTED)
+    return;
+
+  if (tcp_io->connectivity != FLOW_CONNECTIVITY_DISCONNECTING)
+  {
+    write_stream_end (tcp_io, TRUE);
+    set_connectivity (tcp_io, FLOW_CONNECTIVITY_DISCONNECTING);
+  }
 
   io = FLOW_IO (tcp_io);
 
-  write_stream_end (tcp_io);
-
-  tcp_io->connectivity = FLOW_CONNECTIVITY_DISCONNECTING;
-  
   while (tcp_io->connectivity == FLOW_CONNECTIVITY_DISCONNECTING)
   {
     flow_user_adapter_wait_for_input (tcp_io->user_adapter);
@@ -396,4 +434,13 @@ flow_tcp_io_get_connectivity (FlowTcpIO *tcp_io)
   return_val_if_invalid_bin (tcp_io, FLOW_CONNECTIVITY_DISCONNECTED);
 
   return tcp_io->connectivity;
+}
+
+FlowConnectivity
+flow_tcp_io_get_last_connectivity (FlowTcpIO *tcp_io)
+{
+  g_return_val_if_fail (FLOW_IS_TCP_IO (tcp_io), FLOW_CONNECTIVITY_DISCONNECTED);
+  return_val_if_invalid_bin (tcp_io, FLOW_CONNECTIVITY_DISCONNECTED);
+
+  return tcp_io->last_connectivity;
 }
