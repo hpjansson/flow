@@ -226,6 +226,8 @@ flow_tcp_connector_process_input (FlowTcpConnector *tcp_connector, FlowPad *inpu
   FlowPacketQueue *packet_queue;
 
   packet_queue = flow_pad_get_packet_queue (input_pad);
+  if (!packet_queue)
+    return;
 
   while (!tcp_connector->shunt)
   {
@@ -249,7 +251,8 @@ flow_tcp_connector_process_input (FlowTcpConnector *tcp_connector, FlowPad *inpu
   {
     flow_pad_block (input_pad);
   }
-  else if (tcp_connector->shunt)
+
+  if (tcp_connector->shunt)
   {
     /* FIXME: The shunt's locking might be a performance liability. We could cache the state. */
     flow_shunt_unblock_writes (tcp_connector->shunt);
