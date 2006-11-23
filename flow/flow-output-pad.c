@@ -125,7 +125,7 @@ flow_output_pad_unblock (FlowPad *pad)
   pad_dispatch_enter (pad);
 
   element_klass = FLOW_ELEMENT_GET_CLASS (element);
-  if (element_klass->output_pad_blocked)
+  if (element_klass->output_pad_unblocked)
     element_klass->output_pad_unblocked (element, pad);
 
   try_push_to_connected (pad);
