@@ -27,6 +27,9 @@
 
 /* Test variables; adjustable */
 
+#define SOCKETS_NUM            5
+#define SOCKETS_CONCURRENT_MAX 5
+
 #define BUFFER_SIZE            5000000   /* Amount of data to transfer */
 #define PACKET_MAX_SIZE        8192      /* Max transfer unit */
 #define PACKET_MIN_SIZE        1         /* Min transfer unit */
@@ -48,27 +51,228 @@
 
 #include "test-common.c"
 
-static guchar            *buffer;
-static guint              src_index;
-static guint              dest_index;
+typedef struct
+{
+  gint read_offset;
+  gint write_offset;
+}
+TransferInfo;
 
-static FlowTcpIOListener *tcp_listener = NULL;
-static FlowTcpIO         *tcp_reader   = NULL;
-static FlowTcpIO         *tcp_writer   = NULL;
+static guchar            *buffer              = NULL;
+
+static FlowIPService     *loopback_service    = NULL;
+static FlowTcpIOListener *tcp_listener        = NULL;
+static FlowTcpIO         *tcp_reader          = NULL;
+static FlowTcpIO         *tcp_writer          = NULL;
+
+static GHashTable        *transfer_info_table = NULL;
+
+static GMainLoop         *main_loop           = NULL;
+static gint               sockets_done        = 0;
+static gint               sockets_running     = 0;
+
+static FlowTcpIO         *main_tcp_io         = NULL;
+
+static void
+transfer_info_free (TransferInfo *transfer_info)
+{
+  g_slice_free (TransferInfo, transfer_info);
+}
+
+static void
+subthread_main (void)
+{
+  FlowTcpIO    *tcp_io;
+  TransferInfo  transfer_info;
+  guchar        temp_buffer [PACKET_MAX_SIZE];
+
+  test_print ("Subthread connecting to main thread\n");
+
+  tcp_io = flow_tcp_io_new ();
+  flow_tcp_io_sync_connect (tcp_io, loopback_service);
+
+  test_print ("Subthread connected to main thread\n");
+
+  transfer_info.read_offset  = 0;
+  transfer_info.write_offset = 0;
+
+  while (transfer_info.read_offset  < BUFFER_SIZE ||
+         transfer_info.write_offset < BUFFER_SIZE)
+  {
+    if (transfer_info.write_offset < BUFFER_SIZE)
+    {
+      gint len;
+
+      len = g_random_int_range (PACKET_MIN_SIZE, PACKET_MAX_SIZE);
+      len = MIN (len, BUFFER_SIZE - transfer_info.write_offset);
+
+      flow_io_sync_write (FLOW_IO (tcp_io), buffer + transfer_info.write_offset, len);
+      test_print ("Subthread wrote %d bytes\n", len);
+
+      transfer_info.write_offset += len;
+    }
+
+    if (transfer_info.read_offset < BUFFER_SIZE)
+    {
+      gint len;
+
+      len = g_random_int_range (PACKET_MIN_SIZE, PACKET_MAX_SIZE);
+      len = MIN (len, BUFFER_SIZE - transfer_info.read_offset);
+
+      if (!flow_io_sync_read_exact (FLOW_IO (tcp_io), temp_buffer, len))
+        test_end (TEST_RESULT_FAILED, "subthread short read");
+
+      test_print ("Subthread read %d bytes\n", len);
+
+      if (memcmp (buffer + transfer_info.read_offset, temp_buffer, len))
+        test_end (TEST_RESULT_FAILED, "subthread read mismatch");
+
+      transfer_info.read_offset += len;
+    }
+  }
+
+  test_print ("Subthread disconnecting\n");
+  flow_tcp_io_sync_disconnect (tcp_io);
+  test_print ("Subthread disconnected\n");
+
+  g_object_unref (tcp_io);
+  test_print ("Subthread cleaned up\n");
+}
+
+static gboolean
+spawn_subthread (void)
+{
+  if (sockets_running >= SOCKETS_CONCURRENT_MAX)
+    return TRUE;
+
+  test_print ("Spawning new subthread\n");
+  g_thread_create ((GThreadFunc) subthread_main, NULL, FALSE, NULL);
+
+  sockets_running++;
+  return TRUE;
+}
+
+static void
+read_notify (FlowTcpIO *tcp_io)
+{
+  TransferInfo *transfer_info;
+  guchar        temp_buffer [PACKET_MAX_SIZE];
+  gint          len;
+
+  test_print ("Main thread read notify (%p)\n", tcp_io);
+
+  transfer_info = g_hash_table_lookup (transfer_info_table, tcp_io);
+  g_assert (transfer_info != NULL);
+
+  len = flow_io_read (FLOW_IO (tcp_io), temp_buffer, PACKET_MAX_SIZE);
+  test_print ("Main thread read %d bytes\n", len);
+
+  if (memcmp (buffer + transfer_info->read_offset, temp_buffer, len))
+    test_end (TEST_RESULT_FAILED, "main thread read mismatch");
+
+  transfer_info->read_offset += len;
+
+  if (transfer_info->read_offset > BUFFER_SIZE)
+    test_end (TEST_RESULT_FAILED, "main thread read past buffer length");
+}
+
+static void
+write_notify (FlowTcpIO *tcp_io)
+{
+  TransferInfo *transfer_info;
+  gint          len;
+
+  test_print ("Main thread write notify (%p)\n", tcp_io);
+
+  transfer_info = g_hash_table_lookup (transfer_info_table, tcp_io);
+  g_assert (transfer_info != NULL);
+
+  len = g_random_int_range (PACKET_MIN_SIZE, PACKET_MAX_SIZE);
+  len = MIN (len, BUFFER_SIZE - transfer_info->write_offset);
+
+  flow_io_write (FLOW_IO (tcp_io), buffer + transfer_info->write_offset, len);
+  test_print ("Main thread wrote %d bytes\n", len);
+
+  transfer_info->write_offset += len;
+
+  if (transfer_info->write_offset == BUFFER_SIZE)
+  {
+    flow_io_set_write_notify (FLOW_IO (tcp_io), NULL, NULL);
+    test_print ("Main thread read done\n");
+  }
+}
+
+static void
+lost_connection (FlowTcpIO *tcp_io)
+{
+  TransferInfo *transfer_info;
+
+  if (flow_tcp_io_get_connectivity (tcp_io) != FLOW_CONNECTIVITY_DISCONNECTED)
+    return;
+
+  transfer_info = g_hash_table_lookup (transfer_info_table, tcp_io);
+  g_assert (transfer_info != NULL);
+
+  if (transfer_info->read_offset < BUFFER_SIZE)
+    test_end (TEST_RESULT_FAILED, "main thread did not read all data");
+
+  if (transfer_info->write_offset < BUFFER_SIZE)
+    test_end (TEST_RESULT_FAILED, "main thread did not write all data");
+
+  test_print ("Main thread lost connection\n");
+  g_object_unref (tcp_io);
+
+  sockets_done++;
+  sockets_running--;
+
+  if (sockets_done == SOCKETS_NUM)
+    g_main_loop_quit (main_loop);
+}
+
+static void
+new_connection (void)
+{
+  FlowTcpIO    *tcp_io;
+  TransferInfo *transfer_info;
+
+  tcp_io = flow_tcp_io_listener_pop_connection (tcp_listener);
+  if (!tcp_io)
+    return;
+
+  main_tcp_io = tcp_io;
+
+  test_print ("Main thread received connection\n");
+
+  transfer_info = g_slice_new0 (TransferInfo);
+  g_hash_table_insert (transfer_info_table, tcp_io, transfer_info);
+
+  flow_io_set_read_notify  (FLOW_IO (tcp_io), (FlowNotifyFunc) read_notify, tcp_io);
+  flow_io_set_write_notify (FLOW_IO (tcp_io), (FlowNotifyFunc) write_notify, tcp_io);
+
+  g_signal_connect (tcp_io, "connectivity-changed", (GCallback) lost_connection, NULL);
+}
+
+static void
+long_test (void)
+{
+  test_print ("Long test begin\n");
+
+  g_timeout_add (250, (GSourceFunc) spawn_subthread, NULL);
+
+  g_signal_connect (tcp_listener, "new-connection", (GCallback) new_connection, NULL);
+
+  main_loop = g_main_loop_new (g_main_context_default (), FALSE);
+  g_main_loop_run (main_loop);
+
+  test_print ("Long test end\n");
+}
 
 static void
 short_tests (void)
 {
-  FlowIPService *loopback_service;
-  guchar         read_buffer [2048];
+  guchar read_buffer [2048];
 
-  loopback_service = flow_ip_service_new ();
-  flow_ip_addr_set_string (FLOW_IP_ADDR (loopback_service), "127.0.0.1");
-  flow_ip_service_set_port (loopback_service, 2533);
-
-  tcp_listener = flow_tcp_io_listener_new ();
-  if (!flow_tcp_listener_set_local_service (FLOW_TCP_LISTENER (tcp_listener), loopback_service, NULL))
-    test_end (TEST_RESULT_FAILED, "could not bind short-test listener");
+  test_print ("Short tests begin\n");
 
   tcp_writer = flow_tcp_io_new ();
   if (!flow_tcp_io_sync_connect (tcp_writer, loopback_service))
@@ -107,13 +311,18 @@ short_tests (void)
   if (memcmp (buffer + 48, read_buffer + 48, 1000))
     test_end (TEST_RESULT_FAILED, "data mismatch in short transfer (3)");
 
-  g_object_unref (loopback_service);
+  /* Disconnect */
+
+  flow_tcp_io_sync_disconnect (tcp_reader);
+  flow_tcp_io_sync_disconnect (tcp_writer);
+
+  test_print ("Short tests end\n");
 }
 
 static void
 test_run (void)
 {
-  gint           i;
+  gint i;
 
   g_random_set_seed (time (NULL));
 
@@ -137,10 +346,20 @@ test_run (void)
     }
   }
 
-  src_index          = 0;
-  dest_index         = 0;
+  transfer_info_table = g_hash_table_new_full (g_direct_hash, g_direct_equal,
+                                               NULL, (GDestroyNotify) transfer_info_free);
+
+  loopback_service = flow_ip_service_new ();
+  flow_ip_addr_set_string (FLOW_IP_ADDR (loopback_service), "127.0.0.1");
+  flow_ip_service_set_port (loopback_service, 2533);
+
+  tcp_listener = flow_tcp_io_listener_new ();
+  if (!flow_tcp_listener_set_local_service (FLOW_TCP_LISTENER (tcp_listener), loopback_service, NULL))
+    test_end (TEST_RESULT_FAILED, "could not bind short-test listener");
 
   short_tests ();
+  long_test ();
 
+  g_object_unref (loopback_service);
   g_free (buffer);
 }
