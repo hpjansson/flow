@@ -59,6 +59,8 @@ struct _FlowUserAdapter
   FlowNotifyFunc      output_notify_func;
   gpointer            output_notify_data;
 
+  guint               io_callback_id;
+
   /* waiting_for_... means the user is in a blocking call. Blocking calls can
    * be recursive if the GMainContext is shared with other facilities, so we
    * maintain a depth count.

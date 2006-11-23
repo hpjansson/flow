@@ -93,6 +93,8 @@ flow_user_adapter_process_input (FlowElement *element, FlowPad *input_pad)
   FlowPacket      *packet;
 
   packet_queue = flow_pad_get_packet_queue (input_pad);
+  if (!packet_queue)
+    return;
 
   for ( ; (packet = flow_packet_queue_pop_packet (packet_queue)); )
   {
@@ -142,6 +144,11 @@ flow_user_adapter_construct (FlowUserAdapter *user_adapter)
 static void
 flow_user_adapter_dispose (FlowUserAdapter *user_adapter)
 {
+  if (user_adapter->io_callback_id)
+  {
+    flow_source_remove_from_current_thread (user_adapter->io_callback_id);
+    user_adapter->io_callback_id = 0;
+  }
 }
 
 static void
@@ -163,6 +170,40 @@ flow_user_adapter_finalize (FlowUserAdapter *user_adapter)
   flow_gobject_unref_clear (user_adapter->output_queue);
 }
 
+static gboolean
+do_scheduled_io (FlowUserAdapter *user_adapter)
+{
+  FlowElement     *element = FLOW_ELEMENT (user_adapter);
+  FlowPacketQueue *input_queue;
+  FlowPacketQueue *output_queue;
+  FlowPad         *input_pad;
+  FlowPad         *output_pad;
+
+  user_adapter->io_callback_id = 0;
+
+  input_queue  = user_adapter->input_queue;
+  output_queue = user_adapter->output_queue;
+  input_pad    = g_ptr_array_index (element->input_pads, 0);
+  output_pad   = g_ptr_array_index (element->output_pads, 0);
+
+  if (!user_adapter->waiting_for_input)
+    flow_user_adapter_process_input (element, input_pad);
+
+  flow_user_adapter_push_output (user_adapter);
+
+  return FALSE;
+}
+
+static void
+schedule_io (FlowUserAdapter *user_adapter)
+{
+  if (user_adapter->io_callback_id)
+    return;
+
+  user_adapter->io_callback_id =
+    flow_idle_add_to_current_thread ((GSourceFunc) do_scheduled_io, user_adapter);
+}
+
 /* --- FlowUserAdapter public API --- */
 
 FlowUserAdapter *
@@ -179,8 +220,7 @@ flow_user_adapter_set_input_notify (FlowUserAdapter *user_adapter, FlowNotifyFun
   user_adapter->input_notify_func = func;
   user_adapter->input_notify_data = user_data;
 
-  if (!user_adapter->waiting_for_input && flow_packet_queue_get_length_packets (user_adapter->input_queue))
-    notify_user_of_input (user_adapter);
+  schedule_io (user_adapter);
 }
 
 void
@@ -191,8 +231,7 @@ flow_user_adapter_set_output_notify (FlowUserAdapter *user_adapter, FlowNotifyFu
   user_adapter->output_notify_func = func;
   user_adapter->output_notify_data = user_data;
 
-  if (!user_adapter->waiting_for_output && !flow_packet_queue_get_length_packets (user_adapter->output_queue))
-    notify_user_of_output (user_adapter);
+  schedule_io (user_adapter);
 }
 
 FlowPacketQueue *
@@ -216,7 +255,7 @@ flow_user_adapter_push (FlowUserAdapter *user_adapter)
 {
   g_return_if_fail (FLOW_IS_USER_ADAPTER (user_adapter));
 
-  flow_user_adapter_push_output (user_adapter);
+  schedule_io (user_adapter);
 }
 
 void
@@ -254,6 +293,8 @@ flow_user_adapter_unblock_input (FlowUserAdapter *user_adapter)
   input_pad = g_ptr_array_index (element->input_pads, 0);
 
   flow_pad_unblock (input_pad);
+
+  schedule_io (user_adapter);
 }
 
 void
@@ -271,8 +312,7 @@ flow_user_adapter_unblock_output (FlowUserAdapter *user_adapter)
 
   user_adapter->output_is_blocked = FALSE;
 
-  if (!user_adapter->waiting_for_output && !flow_packet_queue_get_length_packets (user_adapter->output_queue))
-    notify_user_of_output (user_adapter);
+  schedule_io (user_adapter);
 }
 
 void
