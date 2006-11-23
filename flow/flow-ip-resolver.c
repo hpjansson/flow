@@ -33,13 +33,14 @@
 #include "flow-gobject-util.h"
 #include "flow-ip-addr.h"
 #include "flow-ip-resolver.h"
+#include "flow-context-mgmt.h"
 
 #define DEBUG(x)
 
 /* Max lookup attempts when server is returning "temporary failure" */
 #define MAX_LOOKUP_ATTEMPTS 2
 
-#define ID_BITS 28
+#define ID_BITS 24
 
 typedef struct
 {
@@ -52,6 +53,8 @@ typedef struct
 
   gpointer          arg;                   /* (gchar *), or (FlowIPAddr *) on reverse lookup */
   GList            *results;
+
+  GThread          *dispatch_thread;       /* Thread to dispatch result in */
 }
 Lookup;
 
@@ -117,6 +120,8 @@ dispatch_lookup (Lookup *lookup)
 {
   FlowIPResolver *resolver = lookup->resolver;
 
+  g_object_ref (resolver);
+
   g_mutex_lock (resolver->mutex);
 
   if (lookup->is_wanted)
@@ -145,6 +150,8 @@ dispatch_lookup (Lookup *lookup)
   destroy_lookup (lookup);
   g_mutex_unlock (resolver->mutex);
 
+  g_object_unref (resolver);
+
   return FALSE;
 }
 
@@ -155,13 +162,15 @@ do_lookup (Lookup *lookup, FlowIPResolver *resolver)
 
   if (lookup->is_wanted)
   {
-    gboolean is_reverse;
-    gpointer arg;
+    GThread  *dispatch_thread;
+    gboolean  is_reverse;
+    gpointer  arg;
 
     lookup->is_running = TRUE;
 
-    is_reverse = lookup->is_reverse;
-    arg        = lookup->arg;
+    dispatch_thread = lookup->dispatch_thread;
+    is_reverse      = lookup->is_reverse;
+    arg             = lookup->arg;
 
     g_mutex_unlock (lookup->resolver->mutex);
 
@@ -176,7 +185,10 @@ do_lookup (Lookup *lookup, FlowIPResolver *resolver)
       lookup->results = flow_ip_resolver_impl_lookup_by_name (lookup->arg);
     }
 
-    g_idle_add_full (G_PRIORITY_LOW, (GSourceFunc) dispatch_lookup, lookup, NULL);
+    /* FIXME: Might need a destroy notify, in case the context goes away while we
+     * have outstanding events. */
+    flow_idle_add_full (dispatch_thread, G_PRIORITY_DEFAULT_IDLE,
+                        (GSourceFunc) dispatch_lookup, lookup, NULL);
   }
   else
   {
@@ -195,10 +207,14 @@ create_lookup (FlowIPResolver *resolver, gboolean is_reverse, gpointer arg)
 
   lookup = g_new0 (Lookup, 1);
 
-  lookup->resolver   = resolver;
-  lookup->is_reverse = is_reverse;
-  lookup->is_wanted  = TRUE;
-  lookup->arg        = arg;
+  lookup->resolver        = resolver;
+  lookup->is_reverse      = is_reverse;
+  lookup->is_wanted       = TRUE;
+  lookup->arg             = arg;
+  lookup->dispatch_thread = g_thread_self ();
+
+  /* Make sure this thread has a main context that we can dispatch in */
+  flow_get_main_context_for_current_thread ();
 
   g_mutex_lock (resolver->mutex);
 
@@ -219,12 +235,12 @@ create_lookup (FlowIPResolver *resolver, gboolean is_reverse, gpointer arg)
   /* Insert in lookup table */
   g_hash_table_insert (resolver->lookup_table, GUINT_TO_POINTER (id), lookup);
 
-  g_mutex_unlock (resolver->mutex);
-
   /* Queue request */
   g_thread_pool_push (resolver->thread_pool, lookup, NULL);
 
-  return lookup->id;
+  g_mutex_unlock (resolver->mutex);
+
+  return id;
 }
 
 /* --- Class properties --- */
