@@ -33,7 +33,6 @@ GMainContext *flow_get_main_context_for_thread         (GThread *thread);
 void          flow_set_main_context_for_thread         (GThread *thread, GMainContext *main_context);
 
 GMainContext *flow_get_main_context_for_current_thread (void);
-void          flow_set_main_context_for_current_thread (GMainContext *main_context);
 
 guint         flow_idle_add_full                       (GThread *dispatch_thread, gint priority,
                                                         GSourceFunc func, gpointer data, GDestroyNotify notify);
