@@ -27,7 +27,7 @@
 
 /* Test variables; adjustable */
 
-#define SOCKETS_NUM            5
+#define SOCKETS_NUM            15
 #define SOCKETS_CONCURRENT_MAX 5
 
 #define BUFFER_SIZE            5000000   /* Amount of data to transfer */
@@ -142,7 +142,7 @@ subthread_main (void)
 static gboolean
 spawn_subthread (void)
 {
-  if (sockets_running >= SOCKETS_CONCURRENT_MAX)
+  if (sockets_running >= SOCKETS_CONCURRENT_MAX || sockets_done >= SOCKETS_NUM)
     return TRUE;
 
   test_print ("Spawning new subthread\n");
@@ -225,7 +225,7 @@ lost_connection (FlowTcpIO *tcp_io)
   sockets_done++;
   sockets_running--;
 
-  if (sockets_done == SOCKETS_NUM)
+  if (sockets_done >= SOCKETS_NUM && sockets_running == 0)
     g_main_loop_quit (main_loop);
 }
 
