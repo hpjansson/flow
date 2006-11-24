@@ -398,8 +398,8 @@ add_shunt_to_shunt_source (FlowShunt *shunt, ShuntSource *shunt_source)
 
   if (shunt_source)
   {
-    g_source_ref ((GSource *) shunt_source);
     shunt->shunt_source = shunt_source;
+    g_source_ref ((GSource *) shunt_source);
     return;
   }
 
@@ -471,6 +471,8 @@ flow_shunt_init_common (FlowShunt *shunt, ShuntSource *shunt_source)
 static void
 flow_shunt_finalize_common (FlowShunt *shunt)
 {
+  g_assert (shunt->was_destroyed == TRUE);
+
   remove_shunt_from_shunt_source (shunt);
 
   flow_gobject_unref_clear (shunt->read_queue);
@@ -510,6 +512,8 @@ flow_shunt_read_state_changed (FlowShunt *shunt)
 {
   gboolean new_need_reads;
 
+  g_assert (shunt->was_destroyed == FALSE);
+
   /* We watch for reads when these conditions are met:
    * - Either of the following:
    *   - Reading is not blocked AND we have a read function
@@ -540,6 +544,8 @@ static void
 flow_shunt_write_state_changed (FlowShunt *shunt)
 {
   gboolean new_need_writes;
+
+  g_assert (shunt->was_destroyed == FALSE);
 
   /* We watch for writes when these conditions are met:
    * - There are packets in the outgoing queue. */
@@ -643,6 +649,7 @@ void
 flow_shunt_destroy (FlowShunt *shunt)
 {
   g_return_if_fail (shunt != NULL);
+  g_return_if_fail (shunt->was_destroyed == FALSE);
 
   flow_shunt_impl_lock ();
 
@@ -666,6 +673,7 @@ void
 flow_shunt_dispatch_now (FlowShunt *shunt, gint *n_reads_done, gint *n_writes_done)
 {
   g_return_if_fail (shunt != NULL);
+  g_return_if_fail (shunt->was_destroyed == FALSE);
 
   flow_shunt_impl_lock ();
 
@@ -678,6 +686,7 @@ void
 flow_shunt_get_read_func (FlowShunt *shunt, FlowShuntReadFunc **read_func, gpointer *user_data)
 {
   g_return_if_fail (shunt != NULL);
+  g_return_if_fail (shunt->was_destroyed == FALSE);
 
   flow_shunt_impl_lock ();
 
@@ -694,6 +703,7 @@ void
 flow_shunt_set_read_func (FlowShunt *shunt, FlowShuntReadFunc *read_func, gpointer user_data)
 {
   g_return_if_fail (shunt != NULL);
+  g_return_if_fail (shunt->was_destroyed == FALSE);
 
   flow_shunt_impl_lock ();
 
@@ -709,6 +719,7 @@ void
 flow_shunt_get_write_func (FlowShunt *shunt, FlowShuntWriteFunc **write_func, gpointer *user_data)
 {
   g_return_if_fail (shunt != NULL);
+  g_return_if_fail (shunt->was_destroyed == FALSE);
 
   flow_shunt_impl_lock ();
 
@@ -725,6 +736,7 @@ void
 flow_shunt_set_write_func (FlowShunt *shunt, FlowShuntWriteFunc *write_func, gpointer user_data)
 {
   g_return_if_fail (shunt != NULL);
+  g_return_if_fail (shunt->was_destroyed == FALSE);
 
   flow_shunt_impl_lock ();
 
@@ -740,6 +752,7 @@ void
 flow_shunt_block_reads (FlowShunt *shunt)
 {
   g_return_if_fail (shunt != NULL);
+  g_return_if_fail (shunt->was_destroyed == FALSE);
 
   flow_shunt_impl_lock ();
 
@@ -756,6 +769,7 @@ void
 flow_shunt_unblock_reads (FlowShunt *shunt)
 {
   g_return_if_fail (shunt != NULL);
+  g_return_if_fail (shunt->was_destroyed == FALSE);
 
   flow_shunt_impl_lock ();
 
@@ -772,6 +786,7 @@ void
 flow_shunt_block_writes (FlowShunt *shunt)
 {
   g_return_if_fail (shunt != NULL);
+  g_return_if_fail (shunt->was_destroyed == FALSE);
 
   flow_shunt_impl_lock ();
 
@@ -788,6 +803,7 @@ void
 flow_shunt_unblock_writes (FlowShunt *shunt)
 {
   g_return_if_fail (shunt != NULL);
+  g_return_if_fail (shunt->was_destroyed == FALSE);
 
   flow_shunt_impl_lock ();
 
