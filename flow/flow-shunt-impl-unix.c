@@ -717,7 +717,9 @@ close_read_fd (FlowShunt *shunt)
   }
 
   shunt->can_read = FALSE;
-  flow_shunt_read_state_changed (shunt);
+
+  if (!shunt->was_destroyed)
+    flow_shunt_read_state_changed (shunt);
 }
 
 static void
@@ -775,7 +777,9 @@ close_write_fd (FlowShunt *shunt)
   }
 
   shunt->can_write = FALSE;
-  flow_shunt_write_state_changed (shunt);
+
+  if (!shunt->was_destroyed)
+    flow_shunt_write_state_changed (shunt);
 }
 
 static void
@@ -902,6 +906,10 @@ flow_shunt_impl_destroy_shunt (FlowShunt *shunt)
     FileShunt *file_shunt = (FileShunt *) shunt;
 
     g_cond_signal (file_shunt->cond);
+  }
+  else
+  {
+    g_ptr_array_remove_fast (active_socket_shunts, shunt);
   }
 }
 
