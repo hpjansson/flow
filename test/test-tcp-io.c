@@ -220,6 +220,7 @@ lost_connection (FlowTcpIO *tcp_io)
     test_end (TEST_RESULT_FAILED, "main thread did not write all data");
 
   test_print ("Main thread lost connection\n");
+  g_hash_table_remove (transfer_info_table, tcp_io);
   g_object_unref (tcp_io);
 
   sockets_done++;
@@ -316,6 +317,9 @@ short_tests (void)
   flow_tcp_io_sync_disconnect (tcp_reader);
   flow_tcp_io_sync_disconnect (tcp_writer);
 
+  g_object_unref (tcp_reader);
+  g_object_unref (tcp_writer);
+
   test_print ("Short tests end\n");
 }
 
@@ -360,6 +364,15 @@ test_run (void)
   short_tests ();
   long_test ();
 
+  g_hash_table_destroy (transfer_info_table);
+  transfer_info_table = NULL;
+
+  g_object_unref (tcp_listener);
+  tcp_listener = NULL;
+
   g_object_unref (loopback_service);
+  loopback_service = NULL;
+
   g_free (buffer);
+  buffer = NULL;
 }
