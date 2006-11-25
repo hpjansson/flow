@@ -96,6 +96,7 @@ setup_tcp_io (FlowElement *tcp_connector)
   }
 
   flow_bin_add_element (bin, tcp_connector, TCP_CONNECTOR_NAME);
+  g_object_unref (tcp_connector);
 
   /* Connect it to the FlowUserAdapter */
 
