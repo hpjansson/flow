@@ -44,27 +44,27 @@ FLOW_GOBJECT_MAKE_IMPL        (flow_duplex_element, FlowDuplexElement, FLOW_TYPE
 static void
 flow_duplex_element_output_pad_blocked (FlowElement *element, FlowPad *output_pad)
 {
-  gint index;
+  gint input_index;
 
   if (output_pad == g_ptr_array_index (element->output_pads, UPSTREAM_INDEX))
-    index = UPSTREAM_INDEX;
+    input_index = DOWNSTREAM_INDEX;
   else
-    index = DOWNSTREAM_INDEX;
+    input_index = UPSTREAM_INDEX;
 
-  flow_pad_block (g_ptr_array_index (element->input_pads, index));
+  flow_pad_block (g_ptr_array_index (element->input_pads, input_index));
 }
 
 static void
 flow_duplex_element_output_pad_unblocked (FlowElement *element, FlowPad *output_pad)
 {
-  gint index;
+  gint input_index;
 
   if (output_pad == g_ptr_array_index (element->output_pads, UPSTREAM_INDEX))
-    index = UPSTREAM_INDEX;
+    input_index = DOWNSTREAM_INDEX;
   else
-    index = DOWNSTREAM_INDEX;
+    input_index = UPSTREAM_INDEX;
 
-  flow_pad_unblock (g_ptr_array_index (element->input_pads, index));
+  flow_pad_unblock (g_ptr_array_index (element->input_pads, input_index));
 }
 
 static void
@@ -72,19 +72,19 @@ flow_duplex_element_process_input (FlowElement *element, FlowPad *input_pad)
 {
   FlowPacketQueue *packet_queue;
   FlowPacket      *packet;
-  gint             index;
+  gint             output_index;
 
   packet_queue = flow_pad_get_packet_queue (input_pad);
 
   if (input_pad == g_ptr_array_index (element->input_pads, UPSTREAM_INDEX))
-    index = UPSTREAM_INDEX;
+    output_index = DOWNSTREAM_INDEX;
   else
-    index = DOWNSTREAM_INDEX;
+    output_index = UPSTREAM_INDEX;
 
   for ( ; (packet = flow_packet_queue_pop_packet (packet_queue)); )
   {
     flow_handle_universal_events (element, packet);
-    flow_pad_push (g_ptr_array_index (element->output_pads, index), packet);
+    flow_pad_push (g_ptr_array_index (element->output_pads, output_index), packet);
   }
 }
 
@@ -154,7 +154,7 @@ flow_duplex_element_get_downstream_pads (FlowDuplexElement *duplex_element,
   g_return_if_fail (FLOW_IS_DUPLEX_ELEMENT (duplex_element));
 
   if (input_pad)
-    *input_pad = g_ptr_array_index (element->input_pads, UPSTREAM_INDEX);
+    *input_pad = g_ptr_array_index (element->input_pads, DOWNSTREAM_INDEX);
   if (output_pad)
-    *output_pad = g_ptr_array_index (element->output_pads, UPSTREAM_INDEX);
+    *output_pad = g_ptr_array_index (element->output_pads, DOWNSTREAM_INDEX);
 }
