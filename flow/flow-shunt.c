@@ -653,6 +653,8 @@ flow_shunt_destroy (FlowShunt *shunt)
 
   flow_shunt_impl_lock ();
 
+  flow_shunt_impl_destroy_shunt (shunt);
+
   shunt->was_destroyed = TRUE;
 
   if (shunt->wait_dispatch)
@@ -663,8 +665,14 @@ flow_shunt_destroy (FlowShunt *shunt)
     flow_g_ptr_array_remove_sparse (shunt_source->waiting_shunts, shunt);
     flow_g_ptr_array_remove_sparse (shunt_source->dispatching_shunts, shunt);
   }
-
-  flow_shunt_impl_destroy_shunt (shunt);
+  else if (shunt->in_dispatch)
+  {
+    /* Do nothing - it will be finalized in dispatcher */
+  }
+  else
+  {
+    flow_shunt_impl_finalize_shunt (shunt);
+  }
 
   flow_shunt_impl_unlock ();
 }
