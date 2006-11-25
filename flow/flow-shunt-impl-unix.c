@@ -498,7 +498,6 @@ static const gint tcp_connect_fatal_errnos [] =
 static const gint tcp_shutdown_fatal_errnos [] =
 {
   EBADF,
-  ENOTCONN,
   ENOTSOCK,
   0
 };
@@ -685,6 +684,8 @@ close_read_fd (FlowShunt *shunt)
         {
           gint saved_errno = errno;
 
+          /* We may get ENOTCONN here for sockets that got connection refused, so
+           * don't include it in the fatality list. */
           assert_non_fatal_errno (saved_errno, tcp_shutdown_fatal_errnos);
         }
       }
@@ -835,19 +836,17 @@ tcp_socket_set_quality (gint fd, FlowQuality quality)
 static void
 flow_shunt_impl_init (void)
 {
-  volatile GType initialized_type;
+  if (!g_thread_supported ())
+    g_thread_init (NULL);
 
   /* For all types that are used in multiple threads, make sure they're
    * initialized in the main thread first. Otherwise, we get a race condition
    * which may result in two threads trying to initialize it simultaneously. */
 
-  initialized_type = FLOW_TYPE_DETAILED_EVENT;
-  initialized_type = FLOW_TYPE_ANONYMOUS_EVENT;
-  initialized_type = FLOW_TYPE_IP_SERVICE;
-  initialized_type = FLOW_TYPE_POSITION;
-
-  if (!g_thread_supported ())
-    g_thread_init (NULL);
+  g_type_class_ref (FLOW_TYPE_DETAILED_EVENT);
+  g_type_class_ref (FLOW_TYPE_ANONYMOUS_EVENT);
+  g_type_class_ref (FLOW_TYPE_IP_SERVICE);
+  g_type_class_ref (FLOW_TYPE_POSITION);
 
   active_socket_shunts = g_ptr_array_new ();
 
@@ -913,7 +912,7 @@ flow_shunt_impl_destroy_shunt (FlowShunt *shunt)
   }
 }
 
-/* Invoked from generic dispatch_main () */
+/* Invoked from generic dispatch_main () or flow_shunt_destroy () */
 static void
 flow_shunt_impl_finalize_shunt (FlowShunt *shunt)
 {
