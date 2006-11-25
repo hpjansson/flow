@@ -57,7 +57,6 @@ libflow_la_SOURCES = \
 	flow-packet.c \
 	flow-packet-queue.c \
 	flow-pad.c \
-	flow-pipeline.c \
 	flow-position.c \
 	flow-property-event.c \
 	flow-segment-request.c \
@@ -97,7 +96,6 @@ pkginclude_HEADERS = \
 	flow-packet.h \
 	flow-packet-queue.h \
 	flow-pad.h \
-	flow-pipeline.h \
 	flow-position.h \
 	flow-property-event.h \
 	flow-segment-request.h \

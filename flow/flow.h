@@ -23,6 +23,7 @@
  */
 
 #include <flow/flow-anonymous-event.h>
+#include <flow/flow-bin.h>
 #include <flow/flow-duplex-element.h>
 #include <flow/flow-collector.h>
 #include <flow/flow-connector.h>
@@ -42,7 +43,6 @@
 #include <flow/flow-packet.h>
 #include <flow/flow-packet-queue.h>
 #include <flow/flow-pad.h>
-#include <flow/flow-pipeline.h>
 #include <flow/flow-position.h>
 #include <flow/flow-property-event.h>
 #include <flow/flow-segment-request.h>
