@@ -36,6 +36,20 @@ void _flow_tcp_connector_install_connected_shunt (FlowTcpConnector *tcp_connecto
 
 static void shunt_read (FlowShunt *shunt, FlowPacket *packet, FlowTcpListener *tcp_listener);
 
+/* --- FlowTcpListener private data --- */
+
+typedef struct
+{
+  FlowIPService   *local_ip_service;
+  FlowShunt       *shunt;
+
+  GQueue          *connected_shunts;
+
+  guint            waiting_for_pop;
+  GMainLoop       *pop_loop;
+}
+FlowTcpListenerPrivate;
+
 /* --- FlowTcpListener properties --- */
 
 FLOW_GOBJECT_PROPERTIES_BEGIN (flow_tcp_listener)
@@ -50,8 +64,9 @@ FLOW_GOBJECT_MAKE_IMPL        (flow_tcp_listener, FlowTcpListener, G_TYPE_OBJECT
 static void
 shunt_read (FlowShunt *shunt, FlowPacket *packet, FlowTcpListener *tcp_listener)
 {
-  FlowPacketFormat packet_format = flow_packet_get_format (packet);
-  gpointer         packet_data   = flow_packet_get_data (packet);
+  FlowTcpListenerPrivate *priv          = tcp_listener->priv;
+  FlowPacketFormat        packet_format = flow_packet_get_format (packet);
+  gpointer                packet_data   = flow_packet_get_data (packet);
 
   if (packet_format == FLOW_PACKET_FORMAT_OBJECT)
   {
@@ -67,13 +82,13 @@ shunt_read (FlowShunt *shunt, FlowPacket *packet, FlowTcpListener *tcp_listener)
 
       g_assert (connected_shunt != NULL);
 
-      g_queue_push_tail (tcp_listener->connected_shunts, connected_shunt);
+      g_queue_push_tail (priv->connected_shunts, connected_shunt);
 
-      if (tcp_listener->waiting_for_pop)
+      if (priv->waiting_for_pop)
       {
-        g_assert (tcp_listener->pop_loop != NULL);
+        g_assert (priv->pop_loop != NULL);
 
-        g_main_loop_quit (tcp_listener->pop_loop);
+        g_main_loop_quit (priv->pop_loop);
       }
       else
       {
@@ -109,7 +124,9 @@ flow_tcp_listener_class_init (FlowTcpListenerClass *klass)
 static void
 flow_tcp_listener_init (FlowTcpListener *tcp_listener)
 {
-  tcp_listener->connected_shunts = g_queue_new ();
+  FlowTcpListenerPrivate *priv = tcp_listener->priv;
+
+  priv->connected_shunts = g_queue_new ();
 }
 
 static void
@@ -120,39 +137,43 @@ flow_tcp_listener_construct (FlowTcpListener *tcp_listener)
 static void
 flow_tcp_listener_dispose (FlowTcpListener *tcp_listener)
 {
-  flow_gobject_unref_clear (tcp_listener->local_ip_service);
+  FlowTcpListenerPrivate *priv = tcp_listener->priv;
 
-  if (tcp_listener->shunt)
+  flow_gobject_unref_clear (priv->local_ip_service);
+
+  if (priv->shunt)
   {
-    flow_shunt_destroy (tcp_listener->shunt);
-    tcp_listener->shunt = NULL;
+    flow_shunt_destroy (priv->shunt);
+    priv->shunt = NULL;
   }
 }
 
 static void
 flow_tcp_listener_finalize (FlowTcpListener *tcp_listener)
 {
-  FlowShunt *connected_shunt;
+  FlowTcpListenerPrivate *priv = tcp_listener->priv;
+  FlowShunt              *connected_shunt;
 
-  if (tcp_listener->pop_loop)
-    g_main_loop_unref (tcp_listener->pop_loop);
+  if (priv->pop_loop)
+    g_main_loop_unref (priv->pop_loop);
 
-  while ((connected_shunt = g_queue_pop_head (tcp_listener->connected_shunts)))
+  while ((connected_shunt = g_queue_pop_head (priv->connected_shunts)))
   {
     flow_shunt_destroy (connected_shunt);
   }
 
-  g_queue_free (tcp_listener->connected_shunts);
-  tcp_listener->connected_shunts = NULL;
+  g_queue_free (priv->connected_shunts);
+  priv->connected_shunts = NULL;
 }
 
 static FlowTcpConnector *
 pop_connection (FlowTcpListener *tcp_listener)
 {
-  FlowTcpConnector *tcp_connector;
-  FlowShunt        *connected_shunt;
+  FlowTcpListenerPrivate *priv = tcp_listener->priv;
+  FlowTcpConnector       *tcp_connector;
+  FlowShunt              *connected_shunt;
 
-  connected_shunt = g_queue_pop_head (tcp_listener->connected_shunts);
+  connected_shunt = g_queue_pop_head (priv->connected_shunts);
   if (!connected_shunt)
     return NULL;
 
@@ -173,25 +194,32 @@ flow_tcp_listener_new (void)
 FlowIPService *
 flow_tcp_listener_get_local_service (FlowTcpListener *tcp_listener)
 {
+  FlowTcpListenerPrivate *priv;
+
   g_return_val_if_fail (FLOW_IS_TCP_LISTENER (tcp_listener), FALSE);
 
-  return tcp_listener->local_ip_service;
+  priv = tcp_listener->priv;
+
+  return priv->local_ip_service;
 }
 
 gboolean
 flow_tcp_listener_set_local_service (FlowTcpListener *tcp_listener, FlowIPService *ip_service, FlowDetailedEvent **result_event)
 {
-  gboolean  result = TRUE;
+  FlowTcpListenerPrivate *priv;
+  gboolean                result = TRUE;
 
   g_return_val_if_fail (FLOW_IS_TCP_LISTENER (tcp_listener), FALSE);
   g_return_val_if_fail (ip_service == NULL || FLOW_IS_IP_SERVICE (ip_service), FALSE);
 
-  flow_gobject_unref_clear (tcp_listener->local_ip_service);
+  priv = tcp_listener->priv;
 
-  if (tcp_listener->shunt)
+  flow_gobject_unref_clear (priv->local_ip_service);
+
+  if (priv->shunt)
   {
-    flow_shunt_destroy (tcp_listener->shunt);
-    tcp_listener->shunt = NULL;
+    flow_shunt_destroy (priv->shunt);
+    priv->shunt = NULL;
   }
 
   /* If service is NULL, don't listen to anything */
@@ -200,9 +228,9 @@ flow_tcp_listener_set_local_service (FlowTcpListener *tcp_listener, FlowIPServic
   {
     gpointer  object;
 
-    tcp_listener->shunt = flow_open_tcp_listener (ip_service);
+    priv->shunt = flow_open_tcp_listener (ip_service);
 
-    while ((object = flow_read_object_from_shunt (tcp_listener->shunt)))
+    while ((object = flow_read_object_from_shunt (priv->shunt)))
     {
       if (FLOW_IS_DETAILED_EVENT (object))
         break;
@@ -215,14 +243,14 @@ flow_tcp_listener_set_local_service (FlowTcpListener *tcp_listener, FlowIPServic
 
     if (flow_detailed_event_matches (object, FLOW_STREAM_DOMAIN, FLOW_STREAM_BEGIN))
     {
-      tcp_listener->local_ip_service = g_object_ref (ip_service);
-      flow_shunt_set_read_func (tcp_listener->shunt, (FlowShuntReadFunc *) shunt_read, tcp_listener);
+      priv->local_ip_service = g_object_ref (ip_service);
+      flow_shunt_set_read_func (priv->shunt, (FlowShuntReadFunc *) shunt_read, tcp_listener);
       g_object_unref (object);
     }
     else
     {
-      flow_shunt_destroy (tcp_listener->shunt);
-      tcp_listener->shunt = NULL;
+      flow_shunt_destroy (priv->shunt);
+      priv->shunt = NULL;
       result = FALSE;
 
       if (result_event)
@@ -246,24 +274,29 @@ flow_tcp_listener_pop_connection (FlowTcpListener *tcp_listener)
 FlowTcpConnector *
 flow_tcp_listener_sync_pop_connection (FlowTcpListener *tcp_listener)
 {
-  FlowTcpConnector *tcp_connector;
+  FlowTcpListenerPrivate *priv;
+  FlowTcpConnector       *tcp_connector;
 
-  tcp_listener->waiting_for_pop++;
+  g_return_val_if_fail (FLOW_IS_TCP_LISTENER (tcp_listener), NULL);
+
+  priv = tcp_listener->priv;
+
+  priv->waiting_for_pop++;
 
   while (!(tcp_connector = pop_connection (tcp_listener)))
   {
-    if G_UNLIKELY (!tcp_listener->pop_loop)
+    if G_UNLIKELY (!priv->pop_loop)
     {
       GMainContext *main_context;
 
       main_context = flow_get_main_context_for_current_thread ();
-      tcp_listener->pop_loop = g_main_loop_new (main_context, FALSE);
+      priv->pop_loop = g_main_loop_new (main_context, FALSE);
     }
 
-    g_main_loop_run (tcp_listener->pop_loop);
+    g_main_loop_run (priv->pop_loop);
   }
 
-  tcp_listener->waiting_for_pop--;
+  priv->waiting_for_pop--;
 
   return tcp_connector;
 }

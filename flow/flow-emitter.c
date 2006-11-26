@@ -26,6 +26,13 @@
 #include "flow-gobject-util.h"
 #include "flow-emitter.h"
 
+/* --- FlowEmitter private data --- */
+
+typedef struct
+{
+}
+FlowEmitterPrivate;
+
 /* --- FlowEmitter properties --- */
 
 FLOW_GOBJECT_PROPERTIES_BEGIN (flow_emitter)

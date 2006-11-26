@@ -45,6 +45,10 @@ typedef struct _FlowSimplexElementClass FlowSimplexElementClass;
 struct _FlowSimplexElement
 {
   FlowElement    parent;
+
+  /* --- Private --- */
+
+  gpointer       priv;
 };
 
 struct _FlowSimplexElementClass

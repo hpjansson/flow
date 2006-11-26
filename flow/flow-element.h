@@ -46,7 +46,7 @@ struct _FlowElement
 {
   GObject     parent;
 
-  /* Private */
+  /* --- Protected --- */
 
   GPtrArray  *input_pads;
   GPtrArray  *output_pads;
@@ -59,6 +59,10 @@ struct _FlowElement
   guint       dispatch_depth     : 15;
   FlowPad    *current_input;
   GSList     *pending_inputs;
+
+  /* --- Private --- */
+
+  gpointer    priv;
 };
 
 struct _FlowElementClass

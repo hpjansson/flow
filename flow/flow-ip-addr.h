@@ -56,6 +56,8 @@ struct _FlowIPAddr
 {
   GObject          object;
 
+  /* --- Protected --- */
+
   FlowIPAddrFamily family;
   guint8           addr [16];
 };

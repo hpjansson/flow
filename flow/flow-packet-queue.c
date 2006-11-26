@@ -27,6 +27,17 @@
 #include "flow-packet-queue.h"
 #include <string.h>  /* memcpy */
 
+/* --- FlowPacketQueue properties --- */
+
+FLOW_GOBJECT_PROPERTIES_BEGIN (flow_packet_queue)
+FLOW_GOBJECT_PROPERTIES_END   ()
+
+/* --- FlowPacketQueue definition --- */
+
+FLOW_GOBJECT_MAKE_IMPL_NO_PRIVATE (flow_packet_queue, FlowPacketQueue, G_TYPE_OBJECT, 0)
+
+/* --- FlowPacketQueue implementation --- */
+
 /* Because we special-case the first packet pushed to an
  * otherwise empty queue, we need the following three helpers
  * to simplify the push/pop logic.
@@ -123,15 +134,6 @@ clear_queue (FlowPacketQueue *packet_queue)
     flow_packet_free (packet);
   }
 }
-
-/* --- FlowPacketQueue properties --- */
-
-FLOW_GOBJECT_PROPERTIES_BEGIN (flow_packet_queue)
-FLOW_GOBJECT_PROPERTIES_END   ()
-
-/* --- FlowPacketQueue definition --- */
-
-FLOW_GOBJECT_MAKE_IMPL        (flow_packet_queue, FlowPacketQueue, G_TYPE_OBJECT, 0)
 
 static void
 flow_packet_queue_type_init (GType type)

@@ -30,6 +30,13 @@
 #define UPSTREAM_INDEX   0
 #define DOWNSTREAM_INDEX 1
 
+/* --- FlowDuplexElement private data --- */
+
+typedef struct
+{
+}
+FlowDuplexElementPrivate;
+
 /* --- FlowDuplexElement properties --- */
 
 FLOW_GOBJECT_PROPERTIES_BEGIN (flow_duplex_element)

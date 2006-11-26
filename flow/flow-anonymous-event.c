@@ -70,7 +70,7 @@ FLOW_GOBJECT_PROPERTIES_END   ()
 
 /* --- FlowAnonymousEvent definition --- */
 
-FLOW_GOBJECT_MAKE_IMPL        (flow_anonymous_event, FlowAnonymousEvent, FLOW_TYPE_EVENT, 0)
+FLOW_GOBJECT_MAKE_IMPL_NO_PRIVATE (flow_anonymous_event, FlowAnonymousEvent, FLOW_TYPE_EVENT, 0)
 
 /* --- FlowAnonymousEvent implementation --- */
 

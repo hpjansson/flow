@@ -45,6 +45,10 @@ typedef struct _FlowTcpIOListenerClass FlowTcpIOListenerClass;
 struct _FlowTcpIOListener
 {
   FlowTcpListener  parent;
+
+  /* --- Private --- */
+
+  gpointer         priv;
 };
 
 struct _FlowTcpIOListenerClass

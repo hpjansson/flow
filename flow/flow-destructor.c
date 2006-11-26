@@ -26,6 +26,13 @@
 #include "flow-gobject-util.h"
 #include "flow-destructor.h"
 
+/* --- FlowDestructor private data --- */
+
+typedef struct
+{
+}
+FlowDestructorPrivate;
+
 /* --- FlowDestructor properties --- */
 
 FLOW_GOBJECT_PROPERTIES_BEGIN (flow_destructor)

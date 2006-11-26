@@ -42,13 +42,11 @@ typedef struct _FlowPropertyEventClass FlowPropertyEventClass;
 
 struct _FlowPropertyEvent
 {
-  /* --- Private --- */
-
   FlowEvent  parent;
 
-  guint      is_instance : 1;
-  gpointer   instance_or_class;
-  GArray    *props;
+  /* --- Private --- */
+
+  gpointer   priv;
 };
 
 struct _FlowPropertyEventClass

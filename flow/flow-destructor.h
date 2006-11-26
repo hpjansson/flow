@@ -43,6 +43,8 @@ typedef struct _FlowDestructorClass FlowDestructorClass;
 struct _FlowDestructor
 {
   FlowCollector parent;
+
+  gpointer      priv;
 };
 
 struct _FlowDestructorClass

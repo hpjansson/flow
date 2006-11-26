@@ -26,6 +26,13 @@
 #include "flow-gobject-util.h"
 #include "flow-input-pad.h"
 
+/* --- FlowInputPad private data --- */
+
+typedef struct
+{
+}
+FlowInputPadPrivate;
+
 /* --- FlowInputPad properties --- */
 
 FLOW_GOBJECT_PROPERTIES_BEGIN (flow_input_pad)

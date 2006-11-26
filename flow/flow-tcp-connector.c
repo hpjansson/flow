@@ -35,6 +35,17 @@
 static void        shunt_read  (FlowShunt *shunt, FlowPacket *packet, FlowTcpConnector *tcp_connector);
 static FlowPacket *shunt_write (FlowShunt *shunt, FlowTcpConnector *tcp_connector);
 
+/* --- FlowTcpConnector private data --- */
+
+typedef struct
+{
+  FlowIPService   *remote_service;
+  FlowIPService   *next_remote_service;
+
+  FlowShunt       *shunt;
+}
+FlowTcpConnectorPrivate;
+
 /* --- FlowTcpConnector properties --- */
 
 FLOW_GOBJECT_PROPERTIES_BEGIN (flow_tcp_connector)
@@ -49,42 +60,45 @@ FLOW_GOBJECT_MAKE_IMPL        (flow_tcp_connector, FlowTcpConnector, FLOW_TYPE_C
 static void
 setup_shunt (FlowTcpConnector *tcp_connector)
 {
-  FlowPad *output_pad;
+  FlowTcpConnectorPrivate *priv = tcp_connector->priv;
+  FlowPad                 *output_pad;
 
-  flow_shunt_set_read_func (tcp_connector->shunt, (FlowShuntReadFunc *) shunt_read, tcp_connector);
-  flow_shunt_set_write_func (tcp_connector->shunt, (FlowShuntWriteFunc *) shunt_write, tcp_connector);
+  flow_shunt_set_read_func (priv->shunt, (FlowShuntReadFunc *) shunt_read, tcp_connector);
+  flow_shunt_set_write_func (priv->shunt, (FlowShuntWriteFunc *) shunt_write, tcp_connector);
 
   output_pad = FLOW_PAD (flow_simplex_element_get_output_pad (FLOW_SIMPLEX_ELEMENT (tcp_connector)));
 
   if (flow_pad_is_blocked (output_pad))
   {
-    flow_shunt_block_reads (tcp_connector->shunt);
+    flow_shunt_block_reads (priv->shunt);
   }
 }
 
 static void
 connect_to_remote_service (FlowTcpConnector *tcp_connector)
 {
-  g_assert (tcp_connector->shunt == NULL);
+  FlowTcpConnectorPrivate *priv = tcp_connector->priv;
+
+  g_assert (priv->shunt == NULL);
 
   /* FIXME: Need a way to specify local (originating) port */
 
-  if (tcp_connector->next_remote_service)
+  if (priv->next_remote_service)
   {
-    if (tcp_connector->remote_service)
-      g_object_unref (tcp_connector->remote_service);
+    if (priv->remote_service)
+      g_object_unref (priv->remote_service);
 
-    tcp_connector->remote_service = tcp_connector->next_remote_service;
-    tcp_connector->next_remote_service = NULL;
+    priv->remote_service = priv->next_remote_service;
+    priv->next_remote_service = NULL;
   }
 
-  if (!tcp_connector->remote_service)
+  if (!priv->remote_service)
   {
     g_warning ("FlowTcpConnector got STREAM_BEGIN before IP address.");
     return;
   }
 
-  tcp_connector->shunt = flow_connect_to_tcp (tcp_connector->remote_service, -1);
+  priv->shunt = flow_connect_to_tcp (priv->remote_service, -1);
   setup_shunt (tcp_connector);
   flow_connector_set_state_internal (FLOW_CONNECTOR (tcp_connector), FLOW_CONNECTIVITY_CONNECTING);
 }
@@ -92,12 +106,14 @@ connect_to_remote_service (FlowTcpConnector *tcp_connector)
 static void
 set_remote_service (FlowTcpConnector *tcp_connector, FlowIPService *ip_service)
 {
+  FlowTcpConnectorPrivate *priv = tcp_connector->priv;
+
   g_object_ref (ip_service);
 
-  if (tcp_connector->next_remote_service)
-    g_object_unref (tcp_connector->next_remote_service);
+  if (priv->next_remote_service)
+    g_object_unref (priv->next_remote_service);
 
-  tcp_connector->next_remote_service = ip_service;
+  priv->next_remote_service = ip_service;
 }
 
 static FlowPacket *
@@ -139,8 +155,9 @@ handle_outbound_packet (FlowTcpConnector *tcp_connector, FlowPacket *packet)
 static FlowPacket *
 handle_inbound_packet (FlowTcpConnector *tcp_connector, FlowPacket *packet)
 {
-  FlowPacketFormat packet_format = flow_packet_get_format (packet);
-  gpointer         packet_data   = flow_packet_get_data (packet);
+  FlowTcpConnectorPrivate *priv          = tcp_connector->priv;
+  FlowPacketFormat         packet_format = flow_packet_get_format (packet);
+  gpointer                 packet_data   = flow_packet_get_data (packet);
 
   if (packet_format == FLOW_PACKET_FORMAT_OBJECT)
   {
@@ -155,8 +172,8 @@ handle_inbound_packet (FlowTcpConnector *tcp_connector, FlowPacket *packet)
       else if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END) ||
                flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_DENIED))
       {
-        flow_shunt_destroy (tcp_connector->shunt);
-        tcp_connector->shunt = NULL;
+        flow_shunt_destroy (priv->shunt);
+        priv->shunt = NULL;
         flow_connector_set_state_internal (FLOW_CONNECTOR (tcp_connector), FLOW_CONNECTIVITY_DISCONNECTED);
       }
     }
@@ -223,13 +240,14 @@ shunt_write (FlowShunt *shunt, FlowTcpConnector *tcp_connector)
 static void
 flow_tcp_connector_process_input (FlowTcpConnector *tcp_connector, FlowPad *input_pad)
 {
-  FlowPacketQueue *packet_queue;
+  FlowTcpConnectorPrivate *priv = tcp_connector->priv;
+  FlowPacketQueue         *packet_queue;
 
   packet_queue = flow_pad_get_packet_queue (input_pad);
   if (!packet_queue)
     return;
 
-  while (!tcp_connector->shunt)
+  while (!priv->shunt)
   {
     FlowPacket *packet;
  
@@ -252,25 +270,29 @@ flow_tcp_connector_process_input (FlowTcpConnector *tcp_connector, FlowPad *inpu
     flow_pad_block (input_pad);
   }
 
-  if (tcp_connector->shunt)
+  if (priv->shunt)
   {
     /* FIXME: The shunt's locking might be a performance liability. We could cache the state. */
-    flow_shunt_unblock_writes (tcp_connector->shunt);
+    flow_shunt_unblock_writes (priv->shunt);
   }
 }
 
 static void
 flow_tcp_connector_output_pad_blocked (FlowTcpConnector *tcp_connector, FlowPad *output_pad)
 {
-  if (tcp_connector->shunt)
-    flow_shunt_block_reads (tcp_connector->shunt);
+  FlowTcpConnectorPrivate *priv = tcp_connector->priv;
+
+  if (priv->shunt)
+    flow_shunt_block_reads (priv->shunt);
 }
 
 static void
 flow_tcp_connector_output_pad_unblocked (FlowTcpConnector *tcp_connector, FlowPad *output_pad)
 {
-  if (tcp_connector->shunt)
-    flow_shunt_unblock_reads (tcp_connector->shunt);
+  FlowTcpConnectorPrivate *priv = tcp_connector->priv;
+
+  if (priv->shunt)
+    flow_shunt_unblock_reads (priv->shunt);
 }
 
 static void
@@ -301,13 +323,15 @@ flow_tcp_connector_construct (FlowTcpConnector *tcp_connector)
 static void
 flow_tcp_connector_dispose (FlowTcpConnector *tcp_connector)
 {
-  flow_gobject_unref_clear (tcp_connector->remote_service);
-  flow_gobject_unref_clear (tcp_connector->next_remote_service);
+  FlowTcpConnectorPrivate *priv = tcp_connector->priv;
 
-  if (tcp_connector->shunt)
+  flow_gobject_unref_clear (priv->remote_service);
+  flow_gobject_unref_clear (priv->next_remote_service);
+
+  if (priv->shunt)
   {
-    flow_shunt_destroy (tcp_connector->shunt);
-    tcp_connector->shunt = NULL;
+    flow_shunt_destroy (priv->shunt);
+    priv->shunt = NULL;
   }
 }
 
@@ -327,35 +351,42 @@ flow_tcp_connector_new (void)
 FlowIPService *
 flow_tcp_connector_get_remote_service (FlowTcpConnector *tcp_connector)
 {
+  FlowTcpConnectorPrivate *priv;
+
   g_return_val_if_fail (FLOW_IS_TCP_CONNECTOR (tcp_connector), NULL);
 
-  return tcp_connector->remote_service;
+  priv = tcp_connector->priv;
+
+  return priv->remote_service;
 }
 
 /* For use in friend classes (e.g. FlowTcpListener) only */
 void
 _flow_tcp_connector_install_connected_shunt (FlowTcpConnector *tcp_connector, FlowShunt *shunt)
 {
-  FlowConnector *connector;
-  gpointer       object;
+  FlowTcpConnectorPrivate *priv;
+  FlowConnector           *connector;
+  gpointer                 object;
 
   g_return_if_fail (FLOW_IS_TCP_CONNECTOR (tcp_connector));
   g_return_if_fail (shunt != NULL);
 
+  priv = tcp_connector->priv;
+
   connector = FLOW_CONNECTOR (tcp_connector);
 
-  g_assert (tcp_connector->shunt == NULL);
+  g_assert (priv->shunt == NULL);
   g_assert (flow_connector_get_state (connector) == FLOW_CONNECTIVITY_DISCONNECTED);
 
   /* Read remote IP service */
 
   object = flow_read_object_from_shunt (shunt);
   g_assert (FLOW_IS_IP_SERVICE (object));
-  tcp_connector->remote_service = object;
+  priv->remote_service = object;
 
   /* Set up in connecting state */
 
-  tcp_connector->shunt = shunt;
+  priv->shunt = shunt;
   setup_shunt (tcp_connector);
   flow_connector_set_state_internal (connector, FLOW_CONNECTIVITY_CONNECTING);
 }

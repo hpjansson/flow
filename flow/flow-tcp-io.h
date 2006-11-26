@@ -49,13 +49,7 @@ struct _FlowTcpIO
 
   /* --- Private --- */
 
-  FlowConnectivity  connectivity;
-  FlowConnectivity  last_connectivity;
-
-  FlowTcpConnector *tcp_connector;
-  FlowUserAdapter  *user_adapter;
-
-  guint             name_resolution_id;
+  gpointer          priv;
 };
 
 struct _FlowTcpIOClass

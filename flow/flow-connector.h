@@ -54,8 +54,7 @@ struct _FlowConnector
 {
   FlowSimplexElement parent;
 
-  FlowConnectivity   state;
-  FlowConnectivity   last_state;
+  gpointer           priv;
 };
 
 struct _FlowConnectorClass

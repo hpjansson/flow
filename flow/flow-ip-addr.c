@@ -42,7 +42,7 @@ FLOW_GOBJECT_PROPERTIES_BEGIN (flow_ip_addr)
 FLOW_GOBJECT_PROPERTIES_END   ()
 
 /* --- Class definition --- */
-FLOW_GOBJECT_MAKE_IMPL        (flow_ip_addr, FlowIPAddr, G_TYPE_OBJECT, 0)
+FLOW_GOBJECT_MAKE_IMPL_NO_PRIVATE (flow_ip_addr, FlowIPAddr, G_TYPE_OBJECT, 0)
 
 static void
 flow_ip_addr_type_init (GType type)

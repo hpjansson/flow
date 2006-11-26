@@ -27,6 +27,13 @@
 #include "flow-util.h"
 #include "flow-demux.h"
 
+/* --- FlowDemux private data --- */
+
+typedef struct
+{
+}
+FlowDemuxPrivate;
+
 /* --- FlowDemux properties --- */
 
 FLOW_GOBJECT_PROPERTIES_BEGIN (flow_demux)

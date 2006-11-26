@@ -43,9 +43,9 @@ typedef struct _FlowPacketQueueClass FlowPacketQueueClass;
 
 struct _FlowPacketQueue
 {
-  GObject  object;
+  GObject     object;
 
-  /* Private */
+  /* --- Private --- */
 
   FlowPacket *first_packet;
   GQueue     *queue;

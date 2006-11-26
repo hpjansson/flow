@@ -45,6 +45,8 @@ typedef struct _FlowMuxClass FlowMuxClass;
 struct _FlowMux
 {
   FlowElement    parent;
+
+  gpointer       priv;
 };
 
 struct _FlowMuxClass

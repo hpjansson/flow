@@ -45,6 +45,8 @@ typedef struct _FlowDemuxClass FlowDemuxClass;
 struct _FlowDemux
 {
   FlowElement    parent;
+
+  gpointer       priv;
 };
 
 struct _FlowDemuxClass

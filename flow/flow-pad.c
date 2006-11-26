@@ -26,6 +26,13 @@
 #include "flow-gobject-util.h"
 #include "flow-pad.h"
 
+/* --- FlowPad private data --- */
+
+typedef struct
+{
+}
+FlowPadPrivate;
+
 /* --- FlowPad properties --- */
 
 static FlowElement *
@@ -72,7 +79,7 @@ FLOW_GOBJECT_PROPERTIES_END   ()
 
 /* --- FlowPad definition --- */
 
-FLOW_GOBJECT_MAKE_IMPL        (flow_pad, FlowPad, G_TYPE_OBJECT, G_TYPE_FLAG_ABSTRACT)
+FLOW_GOBJECT_MAKE_IMPL (flow_pad, FlowPad, G_TYPE_OBJECT, G_TYPE_FLAG_ABSTRACT)
 
 /* --- FlowPad implementation --- */
 

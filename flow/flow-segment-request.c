@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
 
-/* flow-position.c - A stream position that can be propagated along a pipeline.
+/* flow-segment-request.c - A request to read a segment of data from a stream.
  *
  * Copyright (C) 2006 Hans Petter Jansson
  *
@@ -27,18 +27,30 @@
 #include "flow-enum-types.h"
 #include "flow-segment-request.h"
 
+/* --- FlowSegmentRequest private data --- */
+
+typedef struct
+{
+  gint64 length;
+}
+FlowSegmentRequestPrivate;
+
 /* --- FlowSegmentRequest properties --- */
 
 static gint64
 flow_segment_request_get_length_internal (FlowSegmentRequest *segment_request)
 {
-  return segment_request->length;
+  FlowSegmentRequestPrivate *priv = segment_request->priv;
+
+  return priv->length;
 }
 
 static void
 flow_segment_request_set_length_internal (FlowSegmentRequest *segment_request, gint64 length)
 {
-  segment_request->length = length;
+  FlowSegmentRequestPrivate *priv = segment_request->priv;
+
+  priv->length = length;
 }
 
 FLOW_GOBJECT_PROPERTIES_BEGIN (flow_segment_request)

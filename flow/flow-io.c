@@ -33,10 +33,12 @@
 
 #define return_if_invalid_bin(io) \
   G_STMT_START { \
+    FlowIOPrivate *priv = io->priv; \
+\
     if G_UNLIKELY (io->need_to_check_bin) \
       flow_io_check_bin (io); \
 \
-    if G_UNLIKELY (!io->user_adapter) \
+    if G_UNLIKELY (!priv->user_adapter) \
     { \
       g_warning (G_STRLOC ": Misconfigured bin! Need a FlowUserAdapter."); \
       return; \
@@ -45,15 +47,35 @@
 
 #define return_val_if_invalid_bin(io, val) \
   G_STMT_START { \
+    FlowIOPrivate *priv = io->priv; \
+\
     if G_UNLIKELY (io->need_to_check_bin) \
       flow_io_check_bin (io); \
 \
-    if G_UNLIKELY (!io->user_adapter) \
+    if G_UNLIKELY (!priv->user_adapter) \
     { \
       g_warning (G_STRLOC ": Misconfigured bin! Need a FlowUserAdapter."); \
       return val; \
     } \
   } G_STMT_END
+
+/* --- FlowIO private data --- */
+
+typedef struct
+{
+  guint            reads_are_blocked       : 1;
+  guint            writes_are_blocked      : 1;
+
+  FlowNotifyFunc   read_notify_func;
+  gpointer         read_notify_data;
+
+  FlowNotifyFunc   write_notify_func;
+  gpointer         write_notify_data;
+
+  gint             min_read_buffer;
+  FlowUserAdapter *user_adapter;
+}
+FlowIOPrivate;
 
 /* --- FlowIO properties --- */
 
@@ -96,12 +118,13 @@ handle_object (FlowIO *io, gpointer object)
 static void
 user_adapter_input (FlowIO *io)
 {
+  FlowIOPrivate   *priv   = io->priv;
   FlowPacketQueue *packet_queue;
   FlowPacket      *packet = NULL;
 
   /* Check for events first */
 
-  packet_queue = flow_user_adapter_get_input_queue (io->user_adapter);
+  packet_queue = flow_user_adapter_get_input_queue (priv->user_adapter);
 
   while (flow_packet_queue_peek_packet (packet_queue, &packet, NULL))
   {
@@ -118,15 +141,17 @@ user_adapter_input (FlowIO *io)
   /* If we ran into a packet that's not handled by us, and the user wants
    * to hear about it, notify. */
 
-  if (packet && io->read_notify_func && !io->reads_are_blocked)
-    io->read_notify_func (io->read_notify_data);
+  if (packet && priv->read_notify_func && !priv->reads_are_blocked)
+    priv->read_notify_func (priv->read_notify_data);
 }
 
 static void
 user_adapter_output (FlowIO *io)
 {
-  if (io->write_notify_func && !io->writes_are_blocked)
-    io->write_notify_func (io->write_notify_data);
+  FlowIOPrivate *priv = io->priv;
+
+  if (priv->write_notify_func && !priv->writes_are_blocked)
+    priv->write_notify_func (priv->write_notify_data);
 }
 
 static void
@@ -138,22 +163,25 @@ bin_changed (FlowIO *io)
 static void
 flow_io_check_bin_internal (FlowIO *io)
 {
-  FlowBin *bin = FLOW_BIN (io);
+  FlowIOPrivate *priv = io->priv;
+  FlowBin       *bin  = FLOW_BIN (io);
 
-  flow_gobject_unref_clear (io->user_adapter);
-  io->user_adapter = (FlowUserAdapter *) flow_bin_get_element (bin, USER_ADAPTER_NAME);
+  flow_gobject_unref_clear (priv->user_adapter);
+  priv->user_adapter = (FlowUserAdapter *) flow_bin_get_element (bin, USER_ADAPTER_NAME);
 
-  if (io->user_adapter)
+  if (priv->user_adapter)
   {
-    if (FLOW_IS_USER_ADAPTER (io->user_adapter))
+    if (FLOW_IS_USER_ADAPTER (priv->user_adapter))
     {
-      g_object_ref (io->user_adapter);
+      g_object_ref (priv->user_adapter);
 
-      flow_user_adapter_set_input_notify (io->user_adapter, (FlowNotifyFunc) user_adapter_input, io);
-      flow_user_adapter_set_output_notify (io->user_adapter, (FlowNotifyFunc) user_adapter_output, io);
+      flow_user_adapter_set_input_notify (priv->user_adapter, (FlowNotifyFunc) user_adapter_input, io);
+      flow_user_adapter_set_output_notify (priv->user_adapter, (FlowNotifyFunc) user_adapter_output, io);
     }
     else
-      io->user_adapter = NULL;
+    {
+      priv->user_adapter = NULL;
+    }
   }
 
   io->need_to_check_bin = FALSE;
@@ -182,21 +210,22 @@ flow_io_class_init (FlowIOClass *klass)
 static void
 flow_io_init (FlowIO *io)
 {
-  FlowBin *bin = FLOW_BIN (io);
+  FlowIOPrivate *priv = io->priv;
+  FlowBin       *bin  = FLOW_BIN (io);
 
-  io->min_read_buffer = 1;
+  priv->min_read_buffer = 1;
 
   io->allow_blocking_read  = TRUE;
   io->allow_blocking_write = TRUE;
 
-  io->user_adapter = flow_user_adapter_new ();
-  flow_bin_add_element (bin, FLOW_ELEMENT (io->user_adapter), USER_ADAPTER_NAME);
+  priv->user_adapter = flow_user_adapter_new ();
+  flow_bin_add_element (bin, FLOW_ELEMENT (priv->user_adapter), USER_ADAPTER_NAME);
 
-  flow_user_adapter_block_input (io->user_adapter);
-  flow_user_adapter_block_output (io->user_adapter);
+  flow_user_adapter_block_input (priv->user_adapter);
+  flow_user_adapter_block_output (priv->user_adapter);
 
-  flow_user_adapter_set_input_notify (io->user_adapter, (FlowNotifyFunc) user_adapter_input, io);
-  flow_user_adapter_set_output_notify (io->user_adapter, (FlowNotifyFunc) user_adapter_output, io);
+  flow_user_adapter_set_input_notify (priv->user_adapter, (FlowNotifyFunc) user_adapter_input, io);
+  flow_user_adapter_set_output_notify (priv->user_adapter, (FlowNotifyFunc) user_adapter_output, io);
 
   g_signal_connect (io, "element-added",   G_CALLBACK (bin_changed), NULL);
   g_signal_connect (io, "element-removed", G_CALLBACK (bin_changed), NULL);
@@ -210,7 +239,9 @@ flow_io_construct (FlowIO *io)
 static void
 flow_io_dispose (FlowIO *io)
 {
-  flow_gobject_unref_clear (io->user_adapter);
+  FlowIOPrivate *priv = io->priv;
+
+  flow_gobject_unref_clear (priv->user_adapter);
 }
 
 static void
@@ -221,29 +252,31 @@ flow_io_finalize (FlowIO *io)
 static void
 set_minimum_read_buffer (FlowIO *io, gint min_len)
 {
-  gint old_min_len;
+  FlowIOPrivate *priv = io->priv;
+  gint           old_min_len;
 
-  old_min_len = io->min_read_buffer;
-  io->min_read_buffer = min_len;
+  old_min_len = priv->min_read_buffer;
+  priv->min_read_buffer = min_len;
 
   if (min_len > old_min_len)
   {
-    FlowPacketQueue *packet_queue = flow_user_adapter_get_input_queue (io->user_adapter);
+    FlowPacketQueue *packet_queue = flow_user_adapter_get_input_queue (priv->user_adapter);
 
     if (flow_packet_queue_get_length_data_bytes (packet_queue) < min_len)
-      flow_user_adapter_unblock_input (io->user_adapter);
+      flow_user_adapter_unblock_input (priv->user_adapter);
   }
 }
 
 static gint
 try_read_data (FlowIO *io, gpointer dest_buffer, gint max_len)
 {
+  FlowIOPrivate   *priv   = io->priv;
   FlowPacketQueue *packet_queue;
   FlowPacket      *packet = NULL;
   gint             packet_offset;
   gint             result = 0;
 
-  packet_queue = flow_user_adapter_get_input_queue (io->user_adapter);
+  packet_queue = flow_user_adapter_get_input_queue (priv->user_adapter);
 
   while (flow_packet_queue_peek_packet (packet_queue, &packet, &packet_offset))
   {
@@ -280,12 +313,13 @@ try_read_data (FlowIO *io, gpointer dest_buffer, gint max_len)
 static gboolean
 try_read_object (FlowIO *io, gpointer *object_dest)
 {
+  FlowIOPrivate   *priv       = io->priv;
   FlowPacketQueue *packet_queue;
   FlowPacket      *packet;
   gpointer         object     = NULL;
   gboolean         conclusive = FALSE;
 
-  packet_queue = flow_user_adapter_get_input_queue (io->user_adapter);
+  packet_queue = flow_user_adapter_get_input_queue (priv->user_adapter);
 
   while (flow_packet_queue_peek_packet (packet_queue, &packet, NULL))
   {
@@ -358,6 +392,7 @@ flow_io_read (FlowIO *io, gpointer dest_buffer, gint max_len)
 gboolean
 flow_io_read_exact (FlowIO *io, gpointer dest_buffer, gint exact_len)
 {
+  FlowIOPrivate   *priv;
   FlowPacketQueue *packet_queue;
 
   g_return_val_if_fail (FLOW_IS_IO (io), FALSE);
@@ -365,10 +400,12 @@ flow_io_read_exact (FlowIO *io, gpointer dest_buffer, gint exact_len)
   g_return_val_if_fail (exact_len >= 0, FALSE);
   return_val_if_invalid_bin (io, FALSE);
 
+  priv = io->priv;
+
   set_minimum_read_buffer (io, exact_len);
   prepare_read (io, exact_len);
 
-  packet_queue = flow_user_adapter_get_input_queue (io->user_adapter);
+  packet_queue = flow_user_adapter_get_input_queue (priv->user_adapter);
 
   if (flow_packet_queue_get_length_data_bytes (packet_queue) < exact_len)
     return FALSE;
@@ -405,6 +442,7 @@ flow_io_read_object (FlowIO *io)
 void
 flow_io_write (FlowIO *io, gpointer src_buffer, gint exact_len)
 {
+  FlowIOPrivate   *priv;
   FlowPacketQueue *packet_queue;
 
   g_return_if_fail (FLOW_IS_IO (io));
@@ -412,17 +450,20 @@ flow_io_write (FlowIO *io, gpointer src_buffer, gint exact_len)
   g_return_if_fail (exact_len >= 0);
   return_if_invalid_bin (io);
 
+  priv = io->priv;
+
   prepare_write (io, exact_len);
 
-  packet_queue = flow_user_adapter_get_output_queue (io->user_adapter);
+  packet_queue = flow_user_adapter_get_output_queue (priv->user_adapter);
 
   flow_packet_queue_push_bytes (packet_queue, src_buffer, exact_len);
-  flow_user_adapter_push (io->user_adapter);
+  flow_user_adapter_push (priv->user_adapter);
 }
 
 void
 flow_io_write_object (FlowIO *io, gpointer object)
 {
+  FlowIOPrivate   *priv;
   FlowPacketQueue *packet_queue;
   FlowPacket      *packet;
 
@@ -430,55 +471,66 @@ flow_io_write_object (FlowIO *io, gpointer object)
   g_return_if_fail (object != NULL);
   return_if_invalid_bin (io);
 
+  priv = io->priv;
+
   prepare_write (io, 0);
 
-  packet_queue = flow_user_adapter_get_output_queue (io->user_adapter);
+  packet_queue = flow_user_adapter_get_output_queue (priv->user_adapter);
 
   packet = flow_packet_new (FLOW_PACKET_FORMAT_OBJECT, object, 0);
   flow_packet_queue_push_packet (packet_queue, packet);
 
-  flow_user_adapter_push (io->user_adapter);
+  flow_user_adapter_push (priv->user_adapter);
 }
 
 void
 flow_io_flush (FlowIO *io)
 {
+  FlowIOPrivate   *priv;
   FlowPacketQueue *packet_queue;
   FlowPacket      *packet;
 
   g_return_if_fail (FLOW_IS_IO (io));
   return_if_invalid_bin (io);
 
-  packet_queue = flow_user_adapter_get_output_queue (io->user_adapter);
+  priv = io->priv;
+
+  packet_queue = flow_user_adapter_get_output_queue (priv->user_adapter);
 
   packet = flow_create_simple_event_packet (FLOW_STREAM_DOMAIN, FLOW_STREAM_FLUSH);
   flow_packet_queue_push_packet (packet_queue, packet);
 
-  flow_user_adapter_push (io->user_adapter);
+  flow_user_adapter_push (priv->user_adapter);
 }
 
 static void
 update_user_adapter_blocks (FlowIO *io)
 {
-  if (!io->read_notify_func || io->reads_are_blocked)
-    flow_user_adapter_block_input (io->user_adapter);
-  else
-    flow_user_adapter_unblock_input (io->user_adapter);
+  FlowIOPrivate   *priv = io->priv;
 
-  if (!io->write_notify_func || io->writes_are_blocked)
-    flow_user_adapter_block_output (io->user_adapter);
+  if (!priv->read_notify_func || priv->reads_are_blocked)
+    flow_user_adapter_block_input (priv->user_adapter);
   else
-    flow_user_adapter_unblock_output (io->user_adapter);
+    flow_user_adapter_unblock_input (priv->user_adapter);
+
+  if (!priv->write_notify_func || priv->writes_are_blocked)
+    flow_user_adapter_block_output (priv->user_adapter);
+  else
+    flow_user_adapter_unblock_output (priv->user_adapter);
 }
 
 void
 flow_io_set_read_notify (FlowIO *io, FlowNotifyFunc func, gpointer user_data)
 {
+  FlowIOPrivate   *priv;
+
   g_return_if_fail (FLOW_IS_IO (io));
   return_if_invalid_bin (io);
 
-  io->read_notify_func = func;
-  io->read_notify_data = user_data;
+  priv = io->priv;
+
+  priv->read_notify_func = func;
+  priv->read_notify_data = user_data;
 
   update_user_adapter_blocks (io);
 
@@ -488,11 +540,15 @@ flow_io_set_read_notify (FlowIO *io, FlowNotifyFunc func, gpointer user_data)
 void
 flow_io_set_write_notify (FlowIO *io, FlowNotifyFunc func, gpointer user_data)
 {
+  FlowIOPrivate   *priv;
+
   g_return_if_fail (FLOW_IS_IO (io));
   return_if_invalid_bin (io);
 
-  io->write_notify_func = func;
-  io->write_notify_data = user_data;
+  priv = io->priv;
+
+  priv->write_notify_func = func;
+  priv->write_notify_data = user_data;
 
   update_user_adapter_blocks (io);
 
@@ -502,13 +558,17 @@ flow_io_set_write_notify (FlowIO *io, FlowNotifyFunc func, gpointer user_data)
 void
 flow_io_block_reads (FlowIO *io)
 {
+  FlowIOPrivate   *priv;
+
   g_return_if_fail (FLOW_IS_IO (io));
   return_if_invalid_bin (io);
 
-  if (io->reads_are_blocked)
+  priv = io->priv;
+
+  if (priv->reads_are_blocked)
     return;
 
-  io->reads_are_blocked = TRUE;
+  priv->reads_are_blocked = TRUE;
   update_user_adapter_blocks (io);
 
   /* TODO? */
@@ -517,13 +577,17 @@ flow_io_block_reads (FlowIO *io)
 void
 flow_io_unblock_reads (FlowIO *io)
 {
+  FlowIOPrivate   *priv;
+
   g_return_if_fail (FLOW_IS_IO (io));
   return_if_invalid_bin (io);
 
-  if (!io->reads_are_blocked)
+  priv = io->priv;
+
+  if (!priv->reads_are_blocked)
     return;
 
-  io->reads_are_blocked = FALSE;
+  priv->reads_are_blocked = FALSE;
   update_user_adapter_blocks (io);
 
   /* TODO? */
@@ -532,13 +596,17 @@ flow_io_unblock_reads (FlowIO *io)
 void
 flow_io_block_writes (FlowIO *io)
 {
+  FlowIOPrivate   *priv;
+
   g_return_if_fail (FLOW_IS_IO (io));
   return_if_invalid_bin (io);
 
-  if (io->writes_are_blocked)
+  priv = io->priv;
+
+  if (priv->writes_are_blocked)
     return;
 
-  io->writes_are_blocked = TRUE;
+  priv->writes_are_blocked = TRUE;
   update_user_adapter_blocks (io);
 
   /* TODO? */
@@ -547,13 +615,17 @@ flow_io_block_writes (FlowIO *io)
 void
 flow_io_unblock_writes (FlowIO *io)
 {
+  FlowIOPrivate   *priv;
+
   g_return_if_fail (FLOW_IS_IO (io));
   return_if_invalid_bin (io);
 
-  if (!io->writes_are_blocked)
+  priv = io->priv;
+
+  if (!priv->writes_are_blocked)
     return;
 
-  io->writes_are_blocked = FALSE;
+  priv->writes_are_blocked = FALSE;
   update_user_adapter_blocks (io);
 
   /* TODO? */
@@ -562,6 +634,7 @@ flow_io_unblock_writes (FlowIO *io)
 gint
 flow_io_sync_read (FlowIO *io, gpointer dest_buffer, gint max_len)
 {
+  FlowIOPrivate   *priv;
   FlowPacketQueue *packet_queue;
   gint             result;
 
@@ -570,14 +643,16 @@ flow_io_sync_read (FlowIO *io, gpointer dest_buffer, gint max_len)
   g_return_val_if_fail (max_len >= 0, 0);
   return_val_if_invalid_bin (io, 0);
 
+  priv = io->priv;
+
   set_minimum_read_buffer (io, 1);
   prepare_read (io, max_len);
 
-  packet_queue = flow_user_adapter_get_input_queue (io->user_adapter);
+  packet_queue = flow_user_adapter_get_input_queue (priv->user_adapter);
 
   while (!(result = try_read_data (io, dest_buffer, max_len)) && io->allow_blocking_read)
   {
-    flow_user_adapter_wait_for_input (io->user_adapter);
+    flow_user_adapter_wait_for_input (priv->user_adapter);
   }
 
   return result;
@@ -586,6 +661,7 @@ flow_io_sync_read (FlowIO *io, gpointer dest_buffer, gint max_len)
 gboolean
 flow_io_sync_read_exact (FlowIO *io, gpointer dest_buffer, gint exact_len)
 {
+  FlowIOPrivate   *priv;
   FlowPacketQueue *packet_queue;
   gboolean         result;
 
@@ -594,10 +670,12 @@ flow_io_sync_read_exact (FlowIO *io, gpointer dest_buffer, gint exact_len)
   g_return_val_if_fail (exact_len >= 0, FALSE);
   return_val_if_invalid_bin (io, FALSE);
 
+  priv = io->priv;
+
   set_minimum_read_buffer (io, exact_len);
   prepare_read (io, exact_len);
 
-  packet_queue = flow_user_adapter_get_input_queue (io->user_adapter);
+  packet_queue = flow_user_adapter_get_input_queue (priv->user_adapter);
 
   while (!(result = flow_packet_queue_pop_bytes (packet_queue, dest_buffer, exact_len)))
   {
@@ -614,7 +692,7 @@ flow_io_sync_read_exact (FlowIO *io, gpointer dest_buffer, gint exact_len)
     if (!io->allow_blocking_read)
       break;
 
-    flow_user_adapter_wait_for_input (io->user_adapter);
+    flow_user_adapter_wait_for_input (priv->user_adapter);
   }
 
   return result;
@@ -623,17 +701,20 @@ flow_io_sync_read_exact (FlowIO *io, gpointer dest_buffer, gint exact_len)
 gpointer
 flow_io_sync_read_object (FlowIO *io)
 {
-  gpointer object;
+  FlowIOPrivate   *priv;
+  gpointer         object;
 
   g_return_val_if_fail (FLOW_IS_IO (io), NULL);
   return_val_if_invalid_bin (io, NULL);
+
+  priv = io->priv;
 
   set_minimum_read_buffer (io, 1);
   prepare_read (io, 0);
 
   while (!try_read_object (io, &object) && io->allow_blocking_read)
   {
-    flow_user_adapter_wait_for_input (io->user_adapter);
+    flow_user_adapter_wait_for_input (priv->user_adapter);
   }
 
   return object;
@@ -642,6 +723,7 @@ flow_io_sync_read_object (FlowIO *io)
 void
 flow_io_sync_write (FlowIO *io, gpointer src_buffer, gint exact_len)
 {
+  FlowIOPrivate   *priv;
   FlowPacketQueue *packet_queue;
 
   g_return_if_fail (FLOW_IS_IO (io));
@@ -649,22 +731,25 @@ flow_io_sync_write (FlowIO *io, gpointer src_buffer, gint exact_len)
   g_return_if_fail (exact_len >= 0);
   return_if_invalid_bin (io);
 
+  priv = io->priv;
+
   prepare_write (io, exact_len);
 
-  packet_queue = flow_user_adapter_get_output_queue (io->user_adapter);
+  packet_queue = flow_user_adapter_get_output_queue (priv->user_adapter);
 
   flow_packet_queue_push_bytes (packet_queue, src_buffer, exact_len);
-  flow_user_adapter_push (io->user_adapter);
+  flow_user_adapter_push (priv->user_adapter);
 
   while (io->allow_blocking_write && flow_packet_queue_get_length_packets (packet_queue))
   {
-    flow_user_adapter_wait_for_output (io->user_adapter);
+    flow_user_adapter_wait_for_output (priv->user_adapter);
   }
 }
 
 void
 flow_io_sync_write_object (FlowIO *io, gpointer object)
 {
+  FlowIOPrivate   *priv;
   FlowPacketQueue *packet_queue;
   FlowPacket      *packet;
 
@@ -672,42 +757,47 @@ flow_io_sync_write_object (FlowIO *io, gpointer object)
   g_return_if_fail (object != NULL);
   return_if_invalid_bin (io);
 
+  priv = io->priv;
+
   prepare_write (io, 0);
 
-  packet_queue = flow_user_adapter_get_output_queue (io->user_adapter);
+  packet_queue = flow_user_adapter_get_output_queue (priv->user_adapter);
 
   packet = flow_packet_new (FLOW_PACKET_FORMAT_OBJECT, object, 0);
   flow_packet_queue_push_packet (packet_queue, packet);
 
-  flow_user_adapter_push (io->user_adapter);
+  flow_user_adapter_push (priv->user_adapter);
 
   while (io->allow_blocking_write && flow_packet_queue_get_length_packets (packet_queue))
   {
-    flow_user_adapter_wait_for_output (io->user_adapter);
+    flow_user_adapter_wait_for_output (priv->user_adapter);
   }
 }
 
 void
 flow_io_sync_flush (FlowIO *io)
 {
+  FlowIOPrivate   *priv;
   FlowPacketQueue *packet_queue;
   FlowPacket      *packet;
 
   g_return_if_fail (FLOW_IS_IO (io));
   return_if_invalid_bin (io);
 
+  priv = io->priv;
+
   prepare_write (io, 0);
 
-  packet_queue = flow_user_adapter_get_output_queue (io->user_adapter);
+  packet_queue = flow_user_adapter_get_output_queue (priv->user_adapter);
 
   packet = flow_create_simple_event_packet (FLOW_STREAM_DOMAIN, FLOW_STREAM_FLUSH);
   flow_packet_queue_push_packet (packet_queue, packet);
 
-  flow_user_adapter_push (io->user_adapter);
+  flow_user_adapter_push (priv->user_adapter);
 
   while (io->allow_blocking_write && flow_packet_queue_get_length_packets (packet_queue))
   {
-    flow_user_adapter_wait_for_output (io->user_adapter);
+    flow_user_adapter_wait_for_output (priv->user_adapter);
   }
 }
 
@@ -735,12 +825,15 @@ flow_io_check_bin (FlowIO *io)
 void
 flow_io_check_events (FlowIO *io)
 {
+  FlowIOPrivate   *priv;
   FlowPacketQueue *packet_queue;
   FlowPacket      *packet;
 
   g_return_if_fail (FLOW_IS_IO (io));
 
-  packet_queue = flow_user_adapter_get_input_queue (io->user_adapter);
+  priv = io->priv;
+
+  packet_queue = flow_user_adapter_get_input_queue (priv->user_adapter);
 
   while (flow_packet_queue_peek_packet (packet_queue, &packet, NULL))
   {

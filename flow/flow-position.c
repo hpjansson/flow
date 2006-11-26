@@ -27,30 +27,47 @@
 #include "flow-enum-types.h"
 #include "flow-position.h"
 
+/* --- FlowPosition private data --- */
+
+typedef struct
+{
+  guint     anchor    : 4;
+  gint64    offset;
+}
+FlowPositionPrivate;
+
 /* --- FlowPosition properties --- */
 
 static gint64
 flow_position_get_offset_internal (FlowPosition *position)
 {
-  return position->offset;
+  FlowPositionPrivate *priv = position->priv;
+
+  return priv->offset;
 }
 
 static void
 flow_position_set_offset_internal (FlowPosition *position, gint64 offset)
 {
-  position->offset = offset;
+  FlowPositionPrivate *priv = position->priv;
+
+  priv->offset = offset;
 }
 
 static FlowOffsetAnchor
 flow_position_get_anchor_internal (FlowPosition *position)
 {
-  return position->anchor;
+  FlowPositionPrivate *priv = position->priv;
+
+  return priv->anchor;
 }
 
 static void
 flow_position_set_anchor_internal (FlowPosition *position, FlowOffsetAnchor anchor)
 {
-  position->anchor = anchor;
+  FlowPositionPrivate *priv = position->priv;
+
+  priv->anchor = anchor;
 }
 
 FLOW_GOBJECT_PROPERTIES_BEGIN (flow_position)
@@ -84,8 +101,10 @@ flow_position_class_init (FlowPositionClass *klass)
 static void
 flow_position_init (FlowPosition *position)
 {
-  position->anchor = FLOW_OFFSET_ANCHOR_CURRENT;
-  position->offset = 0;
+  FlowPositionPrivate *priv = position->priv;
+
+  priv->anchor = FLOW_OFFSET_ANCHOR_CURRENT;
+  priv->offset = 0;
 }
 
 static void

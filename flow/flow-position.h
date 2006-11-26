@@ -50,12 +50,11 @@ typedef struct _FlowPositionClass FlowPositionClass;
 
 struct _FlowPosition
 {
-  /* --- Private --- */
-
   FlowEvent parent;
 
-  guint     anchor : 4;
-  gint64    offset;
+  /* --- Private --- */
+
+  gpointer  priv;
 };
 
 struct _FlowPositionClass

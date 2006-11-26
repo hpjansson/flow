@@ -27,6 +27,13 @@
 #include "flow-gobject-util.h"
 #include "flow-simplex-element.h"
 
+/* --- FlowSimplexElement private data --- */
+
+typedef struct
+{
+}
+FlowSimplexElementPrivate;
+
 /* --- FlowSimplexElement properties --- */
 
 FLOW_GOBJECT_PROPERTIES_BEGIN (flow_simplex_element)

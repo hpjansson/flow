@@ -43,35 +43,11 @@ typedef struct _FlowUserAdapterClass FlowUserAdapterClass;
 
 struct _FlowUserAdapter
 {
-  /* --- Private --- */
-
   FlowSimplexElement  parent;
 
-  FlowPacketQueue    *input_queue;
-  FlowPacketQueue    *output_queue;
+  /* --- Private --- */
 
-  GMainLoop          *input_loop;
-  GMainLoop          *output_loop;
-
-  FlowNotifyFunc      input_notify_func;
-  gpointer            input_notify_data;
-
-  FlowNotifyFunc      output_notify_func;
-  gpointer            output_notify_data;
-
-  guint               io_callback_id;
-
-  /* waiting_for_... means the user is in a blocking call. Blocking calls can
-   * be recursive if the GMainContext is shared with other facilities, so we
-   * maintain a depth count.
-   *
-   * This is used to prevent async notifications from firing while we're in
-   * a blocking call (for apps that mix sync and async access). */
-
-  guint               input_is_blocked   :  1;
-  guint               output_is_blocked  :  1;
-  guint               waiting_for_input  : 14;
-  guint               waiting_for_output : 14;
+  gpointer            priv;
 };
 
 struct _FlowUserAdapterClass

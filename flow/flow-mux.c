@@ -27,6 +27,13 @@
 #include "flow-util.h"
 #include "flow-mux.h"
 
+/* --- FlowMux private data --- */
+
+typedef struct
+{
+}
+FlowMuxPrivate;
+
 /* --- FlowMux properties --- */
 
 FLOW_GOBJECT_PROPERTIES_BEGIN (flow_mux)

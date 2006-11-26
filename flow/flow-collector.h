@@ -44,6 +44,8 @@ typedef struct _FlowCollectorClass FlowCollectorClass;
 struct _FlowCollector
 {
   FlowElement    parent;
+
+  gpointer       priv;
 };
 
 struct _FlowCollectorClass

@@ -27,6 +27,15 @@
 #include "flow-gobject-util.h"
 #include "flow-connector.h"
 
+/* --- FlowConnector private data --- */
+
+typedef struct
+{
+  FlowConnectivity   state;
+  FlowConnectivity   last_state;
+}
+FlowConnectorPrivate;
+
 /* --- FlowConnector properties --- */
 
 FLOW_GOBJECT_PROPERTIES_BEGIN (flow_connector)
@@ -68,8 +77,10 @@ flow_connector_class_init (FlowConnectorClass *klass)
 static void
 flow_connector_init (FlowConnector *connector)
 {
-  connector->state      = FLOW_CONNECTIVITY_DISCONNECTED;
-  connector->last_state = FLOW_CONNECTIVITY_DISCONNECTED;
+  FlowConnectorPrivate *priv = connector->priv;
+
+  priv->state      = FLOW_CONNECTIVITY_DISCONNECTED;
+  priv->last_state = FLOW_CONNECTIVITY_DISCONNECTED;
 }
 
 static void
@@ -92,29 +103,41 @@ flow_connector_finalize (FlowConnector *connector)
 FlowConnectivity
 flow_connector_get_state (FlowConnector *connector)
 {
+  FlowConnectorPrivate *priv;
+
   g_return_val_if_fail (FLOW_IS_CONNECTOR (connector), FLOW_CONNECTIVITY_DISCONNECTED);
 
-  return connector->state;
+  priv = connector->priv;
+
+  return priv->state;
 }
 
 FlowConnectivity
 flow_connector_get_last_state (FlowConnector *connector)
 {
+  FlowConnectorPrivate *priv;
+
   g_return_val_if_fail (FLOW_IS_CONNECTOR (connector), FLOW_CONNECTIVITY_DISCONNECTED);
 
-  return connector->last_state;
+  priv = connector->priv;
+
+  return priv->last_state;
 }
 
 void
 flow_connector_set_state_internal (FlowConnector *connector, FlowConnectivity state)
 {
+  FlowConnectorPrivate *priv;
+
   g_return_if_fail (FLOW_IS_CONNECTOR (connector));
 
-  if (state == connector->state)
+  priv = connector->priv;
+
+  if (state == priv->state)
     return;
 
-  connector->last_state = connector->state;
-  connector->state      = state;
+  priv->last_state = priv->state;
+  priv->state      = state;
 
   g_signal_emit_by_name (connector, "connectivity-changed");
 }

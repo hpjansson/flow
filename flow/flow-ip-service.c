@@ -29,12 +29,25 @@
 #include "flow-gobject-util.h"
 #include "flow-ip-service.h"
 
-/* --- Class properties --- */
+/* --- FlowIPService private data --- */
+
+typedef struct
+{
+  gint        port;
+  FlowQuality quality;
+}
+FlowIPServicePrivate;
+
+/* --- FlowIPService properties --- */
+
 FLOW_GOBJECT_PROPERTIES_BEGIN (flow_ip_service)
 FLOW_GOBJECT_PROPERTIES_END   ()
 
-/* --- Class definition --- */
+/* --- FlowIPService definition --- */
+
 FLOW_GOBJECT_MAKE_IMPL        (flow_ip_service, FlowIPService, FLOW_TYPE_IP_ADDR, 0)
+
+/* --- FlowIPService implementation --- */
 
 static void
 flow_ip_service_type_init (GType type)
@@ -49,7 +62,9 @@ flow_ip_service_class_init (FlowIPServiceClass *klass)
 static void
 flow_ip_service_init (FlowIPService *ip_service)
 {
-  ip_service->quality = FLOW_QUALITY_UNSPECIFIED;
+  FlowIPServicePrivate *priv = ip_service->priv;
+
+  priv->quality = FLOW_QUALITY_UNSPECIFIED;
 }
 
 static void
@@ -76,32 +91,48 @@ flow_ip_service_new (void)
 gint
 flow_ip_service_get_port (FlowIPService *ip_service)
 {
+  FlowIPServicePrivate *priv;
+
   g_return_val_if_fail (FLOW_IS_IP_SERVICE (ip_service), 0);
 
-  return ip_service->port;
+  priv = ip_service->priv;
+
+  return priv->port;
 }
 
 void
 flow_ip_service_set_port (FlowIPService *ip_service, gint port)
 {
+  FlowIPServicePrivate *priv;
+
   g_return_if_fail (FLOW_IS_IP_SERVICE (ip_service));
   g_return_if_fail (port >= 0 && port <= 65535);
 
-  ip_service->port = port;
+  priv = ip_service->priv;
+
+  priv->port = port;
 }
 
 FlowQuality
 flow_ip_service_get_quality (FlowIPService *ip_service)
 {
+  FlowIPServicePrivate *priv;
+
   g_return_val_if_fail (FLOW_IS_IP_SERVICE (ip_service), FLOW_QUALITY_UNSPECIFIED);
 
-  return ip_service->quality;
+  priv = ip_service->priv;
+
+  return priv->quality;
 }
 
 void
 flow_ip_service_set_quality (FlowIPService *ip_service, FlowQuality quality)
 {
+  FlowIPServicePrivate *priv;
+
   g_return_if_fail (FLOW_IS_IP_SERVICE (ip_service));
 
-  ip_service->quality = quality;
+  priv = ip_service->priv;
+
+  priv->quality = quality;
 }

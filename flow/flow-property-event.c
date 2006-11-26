@@ -35,6 +35,16 @@ typedef struct
 }
 SetProperty;
 
+/* --- FlowPropertyEvent private data --- */
+
+typedef struct
+{
+  guint      is_instance : 1;
+  gpointer   instance_or_class;
+  GArray    *props;
+}
+FlowPropertyEventPrivate;
+
 /* --- FlowPropertyEvent properties --- */
 
 FLOW_GOBJECT_PROPERTIES_BEGIN (flow_property_event)
@@ -60,20 +70,21 @@ strconcat_replace (gchar *first_toreplace, const gchar *last)
 static void
 update_description (FlowEvent *event)
 {
-  FlowPropertyEvent *property_event = (FlowPropertyEvent *) property_event;
-  gchar             *all_values_str;
-  const gchar       *type_name;
-  gchar             *instance_name;
-  guint              i;
+  FlowPropertyEvent        *property_event = (FlowPropertyEvent *) event;
+  FlowPropertyEventPrivate *priv           = property_event->priv;
+  gchar                    *all_values_str;
+  const gchar              *type_name;
+  gchar                    *instance_name;
+  guint                     i;
 
   if (event->description)
     return;
 
   all_values_str = NULL;
 
-  for (i = 0; i < property_event->props->len; i++)
+  for (i = 0; i < priv->props->len; i++)
   {
-    SetProperty *sprop = &g_array_index (property_event->props, SetProperty, i);
+    SetProperty *sprop = &g_array_index (priv->props, SetProperty, i);
     gchar       *value_str;
     gchar       *temp_str;
 
@@ -88,14 +99,14 @@ update_description (FlowEvent *event)
     g_free (temp_str);
   }
 
-  if (property_event->is_instance)
+  if (priv->is_instance)
   {
-    type_name = G_OBJECT_TYPE_NAME (property_event->instance_or_class);
-    instance_name = g_strdup_printf ("%p", property_event->instance_or_class);
+    type_name = G_OBJECT_TYPE_NAME (priv->instance_or_class);
+    instance_name = g_strdup_printf ("%p", priv->instance_or_class);
   }
   else
   {
-    type_name = G_OBJECT_CLASS_NAME (property_event->instance_or_class);
+    type_name = G_OBJECT_CLASS_NAME (priv->instance_or_class);
     instance_name = g_strdup ("*");
   }
 
@@ -122,7 +133,9 @@ flow_property_event_class_init (FlowPropertyEventClass *klass)
 static void
 flow_property_event_init (FlowPropertyEvent *property_event)
 {
-  property_event->props = g_array_new (FALSE, FALSE, sizeof (SetProperty));
+  FlowPropertyEventPrivate *priv = property_event->priv;
+
+  priv->props = g_array_new (FALSE, FALSE, sizeof (SetProperty));
 }
 
 static void
@@ -138,32 +151,35 @@ flow_property_event_dispose (FlowPropertyEvent *property_event)
 static void
 flow_property_event_finalize (FlowPropertyEvent *property_event)
 {
-  guint i;
+  FlowPropertyEventPrivate *priv = property_event->priv;
+  guint                     i;
 
-  for (i = 0; i < property_event->props->len; i++)
+  for (i = 0; i < priv->props->len; i++)
   {
-    SetProperty *sprop = &g_array_index (property_event->props, SetProperty, i);
+    SetProperty *sprop = &g_array_index (priv->props, SetProperty, i);
 
     g_free (sprop->name);
     g_value_unset (&sprop->value);
   }
 
-  g_array_free (property_event->props, TRUE);
-  property_event->props = NULL;
+  g_array_free (priv->props, TRUE);
+  priv->props = NULL;
 }
 
 static FlowPropertyEvent *
 flow_property_event_new_valist (gpointer instance_or_class, gboolean is_instance,
                                 const gchar *first_property_name, va_list var_args)
 {
-  FlowPropertyEvent *property_event;
-  GObjectClass      *klass;
-  const gchar       *name;
+  FlowPropertyEvent        *property_event;
+  FlowPropertyEventPrivate *priv;
+  GObjectClass             *klass;
+  const gchar              *name;
 
   property_event = g_object_new (FLOW_TYPE_PROPERTY_EVENT, NULL);
+  priv = property_event->priv;
 
-  property_event->is_instance       = is_instance;
-  property_event->instance_or_class = instance_or_class;
+  priv->is_instance       = is_instance;
+  priv->instance_or_class = instance_or_class;
 
   if (is_instance)
     klass = instance_or_class;
@@ -214,7 +230,7 @@ flow_property_event_new_valist (gpointer instance_or_class, gboolean is_instance
     }
 
     sprop.name = g_strdup (name);
-    g_array_append_val (property_event->props, sprop);
+    g_array_append_val (priv->props, sprop);
   }
 
   return property_event;
@@ -223,11 +239,12 @@ flow_property_event_new_valist (gpointer instance_or_class, gboolean is_instance
 static void
 apply_properties (FlowPropertyEvent *property_event, GObject *instance)
 {
-  guint i;
+  FlowPropertyEventPrivate *priv = property_event->priv;
+  guint                     i;
 
-  for (i = 0; i < property_event->props->len; i++)
+  for (i = 0; i < priv->props->len; i++)
   {
-    SetProperty *sprop = &g_array_index (property_event->props, SetProperty, i);
+    SetProperty *sprop = &g_array_index (priv->props, SetProperty, i);
 
     g_object_set_property (instance, sprop->name, &sprop->value);
   }
@@ -308,20 +325,23 @@ flow_property_event_new_for_instance (gpointer instance, const gchar *first_prop
 gboolean
 flow_property_event_try_apply (FlowPropertyEvent *property_event, gpointer instance)
 {
-  gboolean result = FALSE;
+  FlowPropertyEventPrivate *priv;
+  gboolean                  result = FALSE;
 
   g_return_val_if_fail (FLOW_IS_PROPERTY_EVENT (property_event), FALSE);
   g_return_val_if_fail (G_IS_OBJECT (instance), FALSE);
 
-  if (property_event->is_instance)
+  priv = property_event->priv;
+
+  if (priv->is_instance)
   {
-    if (instance == property_event->instance_or_class)
+    if (instance == priv->instance_or_class)
     {
       apply_properties (property_event, instance);
       result = TRUE;
     }
   }
-  else if (G_OBJECT_GET_CLASS (instance) == property_event->instance_or_class)
+  else if (G_OBJECT_GET_CLASS (instance) == priv->instance_or_class)
   {
     apply_properties (property_event, instance);
     result = TRUE;

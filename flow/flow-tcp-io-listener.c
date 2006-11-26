@@ -31,6 +31,13 @@
 #define USER_ADAPTER_NAME  "user-adapter"
 #define TCP_CONNECTOR_NAME "tcp-connector"
 
+/* --- FlowTcpIOListener private data --- */
+
+typedef struct
+{
+}
+FlowTcpIOListenerPrivate;
+
 /* --- FlowTcpIOListener properties --- */
 
 FLOW_GOBJECT_PROPERTIES_BEGIN (flow_tcp_io_listener)

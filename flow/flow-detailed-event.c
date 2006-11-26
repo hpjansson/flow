@@ -28,6 +28,12 @@
 
 typedef struct
 {
+  GSList      *codes;
+}
+FlowDetailedEventPrivate;
+
+typedef struct
+{
   gint         code;
   const gchar *domain;
 }
@@ -89,12 +95,13 @@ flow_detailed_event_dispose (FlowDetailedEvent *detailed_event)
 static void
 flow_detailed_event_finalize (FlowDetailedEvent *detailed_event)
 {
-  GSList *l;
+  FlowDetailedEventPrivate *priv = detailed_event->priv;
+  GSList                   *l;
 
-  for (l = detailed_event->codes; l; l = g_slist_next (l))
+  for (l = priv->codes; l; l = g_slist_next (l))
     g_slice_free (DomainCode, l->data);
 
-  g_slist_free (detailed_event->codes);
+  g_slist_free (priv->codes);
 }
 
 static FlowDetailedEvent *
@@ -182,16 +189,19 @@ flow_detailed_event_add_code (FlowDetailedEvent *detailed_event,
                               const gchar       *domain,
                               gint               code)
 {
-  DomainCode *domain_code;
+  FlowDetailedEventPrivate *priv;
+  DomainCode               *domain_code;
 
   g_return_if_fail (FLOW_IS_DETAILED_EVENT (detailed_event));
   g_return_if_fail (domain != NULL);
+
+  priv = detailed_event->priv;
 
   domain_code = g_slice_new (DomainCode);
   domain_code->domain = g_intern_string (domain);
   domain_code->code   = code;
 
-  detailed_event->codes = g_slist_prepend (detailed_event->codes, domain_code);
+  priv->codes = g_slist_prepend (priv->codes, domain_code);
 }
 
 /**
@@ -210,11 +220,14 @@ flow_detailed_event_matches (FlowDetailedEvent *detailed_event,
                              const gchar       *domain,
                              gint               code)
 {
-  GSList *l;
+  FlowDetailedEventPrivate *priv;
+  GSList                   *l;
 
   g_return_val_if_fail (FLOW_IS_DETAILED_EVENT (detailed_event), FALSE);
 
-  for (l = detailed_event->codes; l; l = g_slist_next (l))
+  priv = detailed_event->priv;
+
+  for (l = priv->codes; l; l = g_slist_next (l))
   {
     DomainCode *domain_code = l->data;
 

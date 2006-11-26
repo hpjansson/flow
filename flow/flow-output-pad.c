@@ -26,6 +26,13 @@
 #include "flow-gobject-util.h"
 #include "flow-output-pad.h"
 
+/* --- FlowOutpudPad private data --- */
+
+typedef struct
+{
+}
+FlowOutputPadPrivate;
+
 /* --- FlowOutputPad properties --- */
 
 FLOW_GOBJECT_PROPERTIES_BEGIN (flow_output_pad)

@@ -55,8 +55,7 @@ struct _FlowIPService
 
   /* --- Private --- */
 
-  gint        port;
-  FlowQuality quality;
+  gpointer    priv;
 };
 
 struct _FlowIPServiceClass

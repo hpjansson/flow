@@ -44,6 +44,8 @@ typedef struct _FlowEmitterClass FlowEmitterClass;
 struct _FlowEmitter
 {
   FlowElement    parent;
+
+  gpointer       priv;
 };
 
 struct _FlowEmitterClass

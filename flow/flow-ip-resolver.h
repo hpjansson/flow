@@ -44,11 +44,9 @@ struct _FlowIPResolver
 {
   GObject      object;
 
-  GMutex      *mutex;
-  GThreadPool *thread_pool;
-  GHashTable  *lookup_table;
+  /* --- Private --- */
 
-  guint        next_lookup_id;
+  gpointer     priv;
 };
 
 struct _FlowIPResolverClass

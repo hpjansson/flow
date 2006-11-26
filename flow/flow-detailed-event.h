@@ -42,11 +42,11 @@ typedef struct _FlowDetailedEventClass FlowDetailedEventClass;
 
 struct _FlowDetailedEvent
 {
-  /* --- Private --- */
-
   FlowEvent    parent;
 
-  GSList      *codes;
+  /* --- Private --- */
+
+  gpointer     priv;
 };
 
 struct _FlowDetailedEventClass

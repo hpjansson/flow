@@ -47,7 +47,7 @@ struct _FlowPad
 {
   GObject          parent;
 
-  /* Protected */
+  /* --- Protected --- */
 
   guint            is_blocked     : 1;
   guint            was_disposed   : 1;
@@ -56,6 +56,10 @@ struct _FlowPad
   FlowPacketQueue *packet_queue;
   FlowElement     *owner_element;
   FlowPad         *connected_pad;
+
+  /* --- Private --- */
+
+  gpointer         priv;
 };
 
 struct _FlowPadClass

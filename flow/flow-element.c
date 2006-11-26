@@ -26,6 +26,13 @@
 #include "flow-gobject-util.h"
 #include "flow-element.h"
 
+/* --- FlowElement private data --- */
+
+typedef struct
+{
+}
+FlowElementPrivate;
+
 /* --- FlowElement properties --- */
 
 FLOW_GOBJECT_PROPERTIES_BEGIN (flow_element)

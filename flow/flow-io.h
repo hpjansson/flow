@@ -53,17 +53,7 @@ struct _FlowIO
 
   /* --- Private --- */
 
-  guint            reads_are_blocked       : 1;
-  guint            writes_are_blocked      : 1;
-
-  FlowNotifyFunc   read_notify_func;
-  gpointer         read_notify_data;
-
-  FlowNotifyFunc   write_notify_func;
-  gpointer         write_notify_data;
-
-  gint             min_read_buffer;
-  FlowUserAdapter *user_adapter;
+  gpointer         priv;
 };
 
 struct _FlowIOClass

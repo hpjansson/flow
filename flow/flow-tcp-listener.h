@@ -47,13 +47,9 @@ struct _FlowTcpListener
 {
   GObject          parent;
 
-  FlowIPService   *local_ip_service;
-  FlowShunt       *shunt;
+  /* --- Private --- */
 
-  GQueue          *connected_shunts;
-
-  guint            waiting_for_pop;
-  GMainLoop       *pop_loop;
+  gpointer         priv;
 };
 
 struct _FlowTcpListenerClass

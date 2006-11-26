@@ -27,6 +27,13 @@
 #include "flow-gobject-util.h"
 #include "flow-collector.h"
 
+/* --- FlowCollector private data --- */
+
+typedef struct
+{
+}
+FlowCollectorPrivate;
+
 /* --- FlowCollector properties --- */
 
 FLOW_GOBJECT_PROPERTIES_BEGIN (flow_collector)

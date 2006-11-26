@@ -46,10 +46,9 @@ struct _FlowTcpConnector
 {
   FlowConnector    parent;
 
-  FlowIPService   *remote_service;
-  FlowIPService   *next_remote_service;
+  /* --- Private --- */
 
-  FlowShunt       *shunt;
+  gpointer         priv;
 };
 
 struct _FlowTcpConnectorClass

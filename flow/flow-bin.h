@@ -45,8 +45,7 @@ struct _FlowBin
 {
   GObject     parent;
 
-  GHashTable *string_to_element;
-  GHashTable *element_to_string;
+  gpointer    priv;
 };
 
 struct _FlowBinClass

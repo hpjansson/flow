@@ -42,12 +42,16 @@ typedef struct _FlowEventClass FlowEventClass;
 
 struct _FlowEvent
 {
-  /* --- Private --- */
-
   GObject      parent;
+
+  /* --- Protected --- */
 
   FlowElement *source_element;
   gchar       *description;
+
+  /* --- Private --- */
+
+  gpointer     priv;
 };
 
 struct _FlowEventClass

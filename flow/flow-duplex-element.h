@@ -45,6 +45,8 @@ typedef struct _FlowDuplexElementClass FlowDuplexElementClass;
 struct _FlowDuplexElement
 {
   FlowElement    parent;
+
+  gpointer       priv;
 };
 
 struct _FlowDuplexElementClass

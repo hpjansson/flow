@@ -42,11 +42,11 @@ typedef struct _FlowSegmentRequestClass FlowSegmentRequestClass;
 
 struct _FlowSegmentRequest
 {
-  /* --- Private --- */
-
   FlowEvent parent;
 
-  gint64    length;
+  /* --- Private --- */
+
+  gpointer  priv;
 };
 
 struct _FlowSegmentRequestClass

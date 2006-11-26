@@ -42,7 +42,9 @@ typedef struct _FlowOutputPadClass FlowOutputPadClass;
 
 struct _FlowOutputPad
 {
-  FlowPad parent;
+  FlowPad  parent;
+
+  gpointer priv;
 };
 
 struct _FlowOutputPadClass

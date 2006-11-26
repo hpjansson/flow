@@ -26,6 +26,13 @@
 #include "flow-gobject-util.h"
 #include "flow-event.h"
 
+/* --- FlowEvent private data --- */
+
+typedef struct
+{
+}
+FlowEventPrivate;
+
 /* --- FlowEvent properties --- */
 
 static FlowElement *

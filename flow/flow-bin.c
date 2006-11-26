@@ -26,6 +26,15 @@
 #include "flow-gobject-util.h"
 #include "flow-bin.h"
 
+/* --- FlowBin private data --- */
+
+typedef struct
+{
+  GHashTable *string_to_element;
+  GHashTable *element_to_string;
+}
+FlowBinPrivate;
+
 /* --- FlowBin properties --- */
 
 FLOW_GOBJECT_PROPERTIES_BEGIN (flow_bin)
@@ -69,10 +78,12 @@ flow_bin_class_init (FlowBinClass *klass)
 static void
 flow_bin_init (FlowBin *bin)
 {
+  FlowBinPrivate *priv = bin->priv;
+
   /* We can't g_object_unref() on removal, because we want to emit a signal
    * after removal, but before unref. */
-  bin->element_to_string = g_hash_table_new_full (g_direct_hash, g_direct_equal, NULL, NULL);
-  bin->string_to_element = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+  priv->element_to_string = g_hash_table_new_full (g_direct_hash, g_direct_equal, NULL, NULL);
+  priv->string_to_element = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 }
 
 static void
@@ -88,22 +99,28 @@ flow_bin_dispose (FlowBin *bin)
 static void
 flow_bin_finalize (FlowBin *bin)
 {
-  g_hash_table_foreach (bin->element_to_string, (GHFunc) g_object_unref, NULL);
+  FlowBinPrivate *priv = bin->priv;
 
-  g_hash_table_destroy (bin->element_to_string);
-  g_hash_table_destroy (bin->string_to_element);
+  g_hash_table_foreach (priv->element_to_string, (GHFunc) g_object_unref, NULL);
+
+  g_hash_table_destroy (priv->element_to_string);
+  g_hash_table_destroy (priv->string_to_element);
 }
 
 static gboolean
 find_element_by_ptr (FlowBin *bin, FlowElement *element, const gchar **name_out)
 {
-  return g_hash_table_lookup_extended (bin->element_to_string, element, NULL, (gpointer *) name_out);
+  FlowBinPrivate *priv = bin->priv;
+
+  return g_hash_table_lookup_extended (priv->element_to_string, element, NULL, (gpointer *) name_out);
 }
 
 static FlowElement *
 find_element_by_name (FlowBin *bin, const gchar *name)
 {
-  return g_hash_table_lookup (bin->string_to_element, name);
+  FlowBinPrivate *priv = bin->priv;
+
+  return g_hash_table_lookup (priv->string_to_element, name);
 }
 
 static void
@@ -164,10 +181,13 @@ flow_bin_new (void)
 void
 flow_bin_add_element (FlowBin *bin, FlowElement *element, const gchar *element_name)
 {
-  gchar *element_name_copy = NULL;
+  FlowBinPrivate *priv;
+  gchar          *element_name_copy = NULL;
 
   g_return_if_fail (FLOW_IS_BIN (bin));
   g_return_if_fail (FLOW_IS_ELEMENT (element));
+
+  priv = bin->priv;
 
   if (find_element_by_ptr (bin, element, NULL))
   {
@@ -186,10 +206,10 @@ flow_bin_add_element (FlowBin *bin, FlowElement *element, const gchar *element_n
   if (element_name)
   {
     element_name_copy = g_strdup (element_name);
-    g_hash_table_insert (bin->string_to_element, element_name_copy, element);
+    g_hash_table_insert (priv->string_to_element, element_name_copy, element);
   }
 
-  g_hash_table_insert (bin->element_to_string, element, element_name_copy);
+  g_hash_table_insert (priv->element_to_string, element, element_name_copy);
 
   g_signal_emit_by_name (bin, "element-added", element);
 }
@@ -197,10 +217,13 @@ flow_bin_add_element (FlowBin *bin, FlowElement *element, const gchar *element_n
 void
 flow_bin_remove_element (FlowBin *bin, FlowElement *element)
 {
-  const gchar *element_name;
+  FlowBinPrivate *priv;
+  const gchar    *element_name;
 
   g_return_if_fail (FLOW_IS_BIN (bin));
   g_return_if_fail (FLOW_IS_ELEMENT (element));
+
+  priv = bin->priv;
 
   if (!find_element_by_ptr (bin, element, &element_name))
   {
@@ -209,9 +232,9 @@ flow_bin_remove_element (FlowBin *bin, FlowElement *element)
   }
 
   if (element_name)
-    g_hash_table_remove (bin->string_to_element, element_name);
+    g_hash_table_remove (priv->string_to_element, element_name);
 
-  g_hash_table_remove (bin->element_to_string, element);
+  g_hash_table_remove (priv->element_to_string, element);
 
   g_signal_emit_by_name (bin, "element-removed", element);
   g_object_unref (element);
@@ -252,32 +275,41 @@ flow_bin_get_element_name (FlowBin *bin, FlowElement *element)
 GList *
 flow_bin_list_elements (FlowBin *bin)
 {
-  GList *element_list = NULL;
+  FlowBinPrivate *priv;
+  GList          *element_list = NULL;
 
   g_return_val_if_fail (FLOW_IS_BIN (bin), NULL);
 
-  g_hash_table_foreach (bin->element_to_string, add_element_to_list, &element_list);
+  priv = bin->priv;
+
+  g_hash_table_foreach (priv->element_to_string, add_element_to_list, &element_list);
   return element_list;
 }
 
 GList *
 flow_bin_list_unconnected_input_pads (FlowBin *bin)
 {
-  GList *input_pad_list = NULL;
+  FlowBinPrivate *priv;
+  GList          *input_pad_list = NULL;
 
   g_return_val_if_fail (FLOW_IS_BIN (bin), NULL);
 
-  g_hash_table_foreach (bin->element_to_string, add_unconnected_input_pads_to_list, &input_pad_list);
+  priv = bin->priv;
+
+  g_hash_table_foreach (priv->element_to_string, add_unconnected_input_pads_to_list, &input_pad_list);
   return input_pad_list;
 }
 
 GList *
 flow_bin_list_unconnected_output_pads (FlowBin *bin)
 {
-  GList *output_pad_list = NULL;
+  FlowBinPrivate *priv;
+  GList          *output_pad_list = NULL;
 
   g_return_val_if_fail (FLOW_IS_BIN (bin), NULL);
 
-  g_hash_table_foreach (bin->element_to_string, add_unconnected_output_pads_to_list, &output_pad_list);
+  priv = bin->priv;
+
+  g_hash_table_foreach (priv->element_to_string, add_unconnected_output_pads_to_list, &output_pad_list);
   return output_pad_list;
 }

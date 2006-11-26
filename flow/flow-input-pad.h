@@ -42,7 +42,11 @@ typedef struct _FlowInputPadClass FlowInputPadClass;
 
 struct _FlowInputPad
 {
-  FlowPad parent;
+  FlowPad     parent;
+
+  /* --- Private --- */
+
+  gpointer    priv;
 };
 
 struct _FlowInputPadClass
