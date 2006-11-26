@@ -135,6 +135,59 @@ clear_queue (FlowPacketQueue *packet_queue)
   }
 }
 
+static gint
+pop_bytes (FlowPacketQueue *packet_queue, gpointer dest, gint max)
+{
+  FlowPacket *packet;
+  gint        dequeued_bytes; 
+  gint        remain;
+  guint8     *p;
+
+  /* Dequeue */
+
+  /* FIXME: This is pretty much equivalent to the dequeue section in
+   * flow_packet_queue_pop_bytes_exact (). Split out the code and test. */
+
+  for (p = dest, remain = max; remain; )
+  {
+    guint8     *data;
+    gint        packet_len;
+    gint        increment;
+
+    packet = peek_packet (packet_queue);
+    if (!packet || flow_packet_get_format (packet) != FLOW_PACKET_FORMAT_BUFFER)
+      break;
+
+    data = flow_packet_get_data (packet);
+
+    packet_len = flow_packet_get_size (packet);
+    increment  = packet_len - packet_queue->packet_position;
+    increment  = MIN (increment, remain);
+
+    if (dest)
+      memcpy (p, data + packet_queue->packet_position, increment);
+
+    remain                        -= increment;
+    p                             += increment;
+    packet_queue->packet_position += increment;
+
+    if (packet_queue->packet_position == packet_len)
+    {
+      packet = pop_packet (packet_queue);
+      flow_packet_free (packet);
+
+      packet_queue->packet_position = 0;
+    }
+  }
+
+  dequeued_bytes = max - remain;
+
+  packet_queue->bytes_in_queue      -= dequeued_bytes;
+  packet_queue->data_bytes_in_queue -= dequeued_bytes;
+
+  return dequeued_bytes;
+}
+
 static void
 flow_packet_queue_type_init (GType type)
 {
@@ -333,8 +386,17 @@ flow_packet_queue_pop_packet (FlowPacketQueue *packet_queue)
   return new_packet;
 }
 
+gint
+flow_packet_queue_pop_bytes (FlowPacketQueue *packet_queue, gpointer dest, gint n_max)
+{
+  g_return_val_if_fail (FLOW_IS_PACKET_QUEUE (packet_queue), 0);
+  g_return_val_if_fail (n_max >= 0, 0);
+
+  return pop_bytes (packet_queue, dest, n_max);
+}
+
 /**
- * flow_packet_queue_pop_bytes:
+ * flow_packet_queue_pop_bytes_exact:
  * 
  * @packet_queue: A packet queue.
  * @dest:         A pointer at which to store the data, or %NULL to discard.
@@ -349,13 +411,12 @@ flow_packet_queue_pop_packet (FlowPacketQueue *packet_queue)
  * Return value: %TRUE if the request could be satisfied, %FALSE otherwise.
  **/
 gboolean
-flow_packet_queue_pop_bytes (FlowPacketQueue *packet_queue, gpointer dest, gint n)
+flow_packet_queue_pop_bytes_exact (FlowPacketQueue *packet_queue, gpointer dest, gint n)
 {
   FlowPacket *packet;
   gint        n_contiguous_bytes; 
-  guint8     *p;
+  gint        dequeued_bytes;
   GList      *l;
-  gint        i;
 
   g_return_val_if_fail (FLOW_IS_PACKET_QUEUE (packet_queue), FALSE);
   g_return_val_if_fail (n >= 0, FALSE);
@@ -391,39 +452,9 @@ flow_packet_queue_pop_bytes (FlowPacketQueue *packet_queue, gpointer dest, gint 
 
   /* Dequeue */
 
-  for (p = dest, i = n; i; )
-  {
-    guint8     *data;
-    gint        packet_len;
-    gint        increment;
+  dequeued_bytes = pop_bytes (packet_queue, dest, n);
+  g_assert (dequeued_bytes == n);
 
-    packet = peek_packet (packet_queue);
-    g_assert (packet != NULL);
-
-    data = flow_packet_get_data (packet);
-
-    packet_len = flow_packet_get_size (packet);
-    increment  = packet_len - packet_queue->packet_position;
-    increment  = MIN (increment, i);
-
-    if (dest)
-      memcpy (p, data + packet_queue->packet_position, increment);
-
-    i                             -= increment;
-    p                             += increment;
-    packet_queue->packet_position += increment;
-
-    if (packet_queue->packet_position == packet_len)
-    {
-      packet = pop_packet (packet_queue);
-      flow_packet_free (packet);
-
-      packet_queue->packet_position = 0;
-    }
-  }
-
-  packet_queue->bytes_in_queue      -= n;
-  packet_queue->data_bytes_in_queue -= n;
   return TRUE;
 }
 
@@ -560,7 +591,7 @@ flow_packet_queue_steal (FlowPacketQueue *packet_queue, gint n_packets, gint n_b
  * not of format #FLOW_PACKET_FORMAT_BUFFER and returns it to you,
  * without removing it from the queue.
  * 
- * When using flow_packet_queue_pop_bytes (), you may encounter the
+ * When using flow_packet_queue_pop_bytes_exact (), you may encounter the
  * situation where you have a few bytes of buffer data, followed by
  * an object indicating a status change, followed by more buffer data.
  * 
@@ -619,7 +650,7 @@ flow_packet_queue_peek_first_object (FlowPacketQueue *packet_queue)
  * not of format #FLOW_PACKET_FORMAT_BUFFER and returns it to you,
  * removing it from the queue.
  * 
- * Useful for removing an obstruction to flow_packet_queue_pop_bytes ().
+ * Useful for removing an obstruction to flow_packet_queue_pop_bytes_exact ().
  * 
  * See the documentation for flow_packet_queue_peek_first_object ()
  * for a detailed discussion.
@@ -681,7 +712,7 @@ flow_packet_queue_pop_first_object (FlowPacketQueue *packet_queue)
  * #FLOW_PACKET_FORMAT_BUFFER. If no such packet is found, the whole
  * queue is emptied.
  * 
- * Useful for re-synchronizing a stream for flow_packet_queue_pop_bytes ().
+ * Useful for re-synchronizing a stream for flow_packet_queue_pop_bytes_exact ().
  * 
  * See the documentation for flow_packet_queue_peek_first_object ()
  * for a detailed discussion.

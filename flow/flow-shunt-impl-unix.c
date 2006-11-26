@@ -1372,7 +1372,7 @@ socket_shunt_write (FlowShunt *shunt)
       else if (result < buffer_len)
       {
         /* Partial write */
-        flow_packet_queue_pop_bytes (shunt->write_queue, NULL, result);
+        flow_packet_queue_pop_bytes_exact (shunt->write_queue, NULL, result);
         break;
       }
       else
@@ -1830,7 +1830,7 @@ file_shunt_write (FlowShunt *shunt)
       else if (result < buffer_len)
       {
         /* Partial write */
-        flow_packet_queue_pop_bytes (shunt->write_queue, NULL, result);
+        flow_packet_queue_pop_bytes_exact (shunt->write_queue, NULL, result);
         shunt->offset_changed = TRUE;
         break;
       }

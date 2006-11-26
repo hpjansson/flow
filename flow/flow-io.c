@@ -302,7 +302,7 @@ try_read_data (FlowIO *io, gpointer dest_buffer, gint max_len)
     }
     else
     {
-      flow_packet_queue_pop_bytes (packet_queue, dest_buffer, max_len);
+      flow_packet_queue_pop_bytes_exact (packet_queue, dest_buffer, max_len);
       result = max_len;
     }
   }
@@ -410,7 +410,7 @@ flow_io_read_exact (FlowIO *io, gpointer dest_buffer, gint exact_len)
   if (flow_packet_queue_get_length_data_bytes (packet_queue) < exact_len)
     return FALSE;
 
-  while (!flow_packet_queue_pop_bytes (packet_queue, dest_buffer, exact_len))
+  while (!flow_packet_queue_pop_bytes_exact (packet_queue, dest_buffer, exact_len))
   {
     FlowPacket *packet;
 
@@ -677,7 +677,7 @@ flow_io_sync_read_exact (FlowIO *io, gpointer dest_buffer, gint exact_len)
 
   packet_queue = flow_user_adapter_get_input_queue (priv->user_adapter);
 
-  while (!(result = flow_packet_queue_pop_bytes (packet_queue, dest_buffer, exact_len)))
+  while (!(result = flow_packet_queue_pop_bytes_exact (packet_queue, dest_buffer, exact_len)))
   {
     FlowPacket *packet;
 
