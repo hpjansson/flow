@@ -58,20 +58,21 @@ typedef struct
 }
 TransferInfo;
 
-static guchar            *buffer              = NULL;
+static guchar            *buffer                 = NULL;
 
-static FlowIPService     *loopback_service    = NULL;
-static FlowTcpIOListener *tcp_listener        = NULL;
-static FlowTcpIO         *tcp_reader          = NULL;
-static FlowTcpIO         *tcp_writer          = NULL;
+static FlowIPService     *loopback_service       = NULL;
+static FlowIPService     *bad_loopback_service   = NULL;
+static FlowTcpIOListener *tcp_listener           = NULL;
+static FlowTcpIO         *tcp_reader             = NULL;
+static FlowTcpIO         *tcp_writer             = NULL;
 
-static GHashTable        *transfer_info_table = NULL;
+static GHashTable        *transfer_info_table    = NULL;
 
-static GMainLoop         *main_loop           = NULL;
-static gint               sockets_done        = 0;
-static gint               sockets_running     = 0;
+static GMainLoop         *main_loop              = NULL;
+static gint               sockets_done           = 0;
+static gint               sockets_running        = 0;
 
-static FlowTcpIO         *main_tcp_io         = NULL;
+static FlowTcpIO         *main_tcp_io            = NULL;
 
 static void
 transfer_info_free (TransferInfo *transfer_info)
@@ -276,6 +277,10 @@ short_tests (void)
   test_print ("Short tests begin\n");
 
   tcp_writer = flow_tcp_io_new ();
+
+  if (flow_tcp_io_sync_connect (tcp_writer, bad_loopback_service))
+    test_end (TEST_RESULT_FAILED, "bad connect did not fail as expected");
+
   if (!flow_tcp_io_sync_connect (tcp_writer, loopback_service))
     test_end (TEST_RESULT_FAILED, "could not connect to short-test listener");
 
@@ -356,6 +361,10 @@ test_run (void)
   loopback_service = flow_ip_service_new ();
   flow_ip_addr_set_string (FLOW_IP_ADDR (loopback_service), "127.0.0.1");
   flow_ip_service_set_port (loopback_service, 2533);
+
+  bad_loopback_service = flow_ip_service_new ();
+  flow_ip_addr_set_string (FLOW_IP_ADDR (bad_loopback_service), "127.0.0.1");
+  flow_ip_service_set_port (bad_loopback_service, 12505);
 
   tcp_listener = flow_tcp_io_listener_new ();
   if (!flow_tcp_listener_set_local_service (FLOW_TCP_LISTENER (tcp_listener), loopback_service, NULL))
