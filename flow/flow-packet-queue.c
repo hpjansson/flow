@@ -90,6 +90,56 @@ push_packet (FlowPacketQueue *packet_queue, FlowPacket *packet)
   g_queue_push_tail (packet_queue->queue, packet);
 }
 
+static gint
+pop_bytes (FlowPacketQueue *packet_queue, gpointer dest, gint max)
+{
+  FlowPacket *packet;
+  gint        dequeued_bytes; 
+  gint        remain;
+  guint8     *p;
+
+  /* Dequeue */
+
+  for (p = dest, remain = max; remain; )
+  {
+    guint8     *data;
+    gint        packet_len;
+    gint        increment;
+
+    packet = peek_packet (packet_queue);
+    if (!packet || flow_packet_get_format (packet) != FLOW_PACKET_FORMAT_BUFFER)
+      break;
+
+    data = flow_packet_get_data (packet);
+
+    packet_len = flow_packet_get_size (packet);
+    increment  = packet_len - packet_queue->packet_position;
+    increment  = MIN (increment, remain);
+
+    if (dest)
+      memcpy (p, data + packet_queue->packet_position, increment);
+
+    remain                        -= increment;
+    p                             += increment;
+    packet_queue->packet_position += increment;
+
+    if (packet_queue->packet_position == packet_len)
+    {
+      packet = pop_packet (packet_queue);
+      flow_packet_free (packet);
+
+      packet_queue->packet_position = 0;
+    }
+  }
+
+  dequeued_bytes = max - remain;
+
+  packet_queue->bytes_in_queue      -= dequeued_bytes;
+  packet_queue->data_bytes_in_queue -= dequeued_bytes;
+
+  return dequeued_bytes;
+}
+
 static void
 consolidate_partial_packet (FlowPacketQueue *packet_queue)
 {
@@ -133,59 +183,6 @@ clear_queue (FlowPacketQueue *packet_queue)
   {
     flow_packet_free (packet);
   }
-}
-
-static gint
-pop_bytes (FlowPacketQueue *packet_queue, gpointer dest, gint max)
-{
-  FlowPacket *packet;
-  gint        dequeued_bytes; 
-  gint        remain;
-  guint8     *p;
-
-  /* Dequeue */
-
-  /* FIXME: This is pretty much equivalent to the dequeue section in
-   * flow_packet_queue_pop_bytes_exact (). Split out the code and test. */
-
-  for (p = dest, remain = max; remain; )
-  {
-    guint8     *data;
-    gint        packet_len;
-    gint        increment;
-
-    packet = peek_packet (packet_queue);
-    if (!packet || flow_packet_get_format (packet) != FLOW_PACKET_FORMAT_BUFFER)
-      break;
-
-    data = flow_packet_get_data (packet);
-
-    packet_len = flow_packet_get_size (packet);
-    increment  = packet_len - packet_queue->packet_position;
-    increment  = MIN (increment, remain);
-
-    if (dest)
-      memcpy (p, data + packet_queue->packet_position, increment);
-
-    remain                        -= increment;
-    p                             += increment;
-    packet_queue->packet_position += increment;
-
-    if (packet_queue->packet_position == packet_len)
-    {
-      packet = pop_packet (packet_queue);
-      flow_packet_free (packet);
-
-      packet_queue->packet_position = 0;
-    }
-  }
-
-  dequeued_bytes = max - remain;
-
-  packet_queue->bytes_in_queue      -= dequeued_bytes;
-  packet_queue->data_bytes_in_queue -= dequeued_bytes;
-
-  return dequeued_bytes;
 }
 
 static void
