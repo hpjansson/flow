@@ -23,5 +23,21 @@ flow_offset_anchor_get_type (void)
   return etype;
 }
 
+/* Enumerations from "flow-tls-protocol.h" */
+GType
+flow_agent_role_get_type (void)
+{
+  static GType etype = 0;
+  if (etype == 0) {
+    static const GEnumValue values[] = {
+      { FLOW_AGENT_ROLE_SERVER, "FLOW_AGENT_ROLE_SERVER", "server" },
+      { FLOW_AGENT_ROLE_CLIENT, "FLOW_AGENT_ROLE_CLIENT", "client" },
+      { 0, NULL, NULL }
+    };
+    etype = g_enum_register_static ("FlowAgentRole", values);
+  }
+  return etype;
+}
+
 /* Generated data ends here */
 

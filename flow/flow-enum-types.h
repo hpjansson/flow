@@ -10,6 +10,9 @@ G_BEGIN_DECLS
 /* Enumerations from "flow-position.h" */
 GType flow_offset_anchor_get_type (void);
 #define FLOW_TYPE_OFFSET_ANCHOR (flow_offset_anchor_get_type())
+/* Enumerations from "flow-tls-protocol.h" */
+GType flow_agent_role_get_type (void);
+#define FLOW_TYPE_AGENT_ROLE (flow_agent_role_get_type())
 G_END_DECLS
 
 #endif /* _FLOW_ENUM_TYPES_H */

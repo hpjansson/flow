@@ -23,3 +23,4 @@
  */
 
 #include "flow-position.h"
+#include "flow-tls-protocol.h"

@@ -7,7 +7,8 @@ pkgconfigdir       = $(libdir)/pkgconfig
 pkgconfig_DATA     = flow.pc
 
 flow_headers_to_scan_for_enums = \
-	flow-position.h
+	flow-position.h \
+	flow-tls-protocol.h
 
 EXTRA_DIST         = flow.pc.in
 CLEANFILES         = flow.pc
@@ -66,6 +67,7 @@ libflow_la_SOURCES = \
 	flow-tcp-io.c \
 	flow-tcp-io-listener.c \
 	flow-tcp-listener.c \
+	flow-tls-protocol.c \
 	flow-user-adapter.c \
 	flow-util.c \
 	$(flow_built_sources)
@@ -105,6 +107,7 @@ pkginclude_HEADERS = \
 	flow-tcp-io.h \
 	flow-tcp-io-listener.h \
 	flow-tcp-listener.h \
+	flow-tls-protocol.h \
 	flow-user-adapter.h \
 	flow-util.h
 

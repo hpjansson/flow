@@ -5,6 +5,7 @@ dnl Automake/autoconf input file
 dnl ----------------------------
 
 GLIB_REQUIRED=2.10.0
+GNUTLS_REQUIRED=1.4.0
 
 dnl --- Package configuration ---
 
@@ -35,7 +36,8 @@ dnl --- Dependency checks ---
 PKG_CHECK_MODULES(BASE, \
     glib-2.0 >= $GLIB_REQUIRED
     gobject-2.0 >= $GLIB_REQUIRED
-    gthread-2.0 >= $GLIB_REQUIRED)
+    gthread-2.0 >= $GLIB_REQUIRED
+    gnutls >= $GNUTLS_REQUIRED)
 
 # The check is likely redundant, but this defines GLIB_GENMARSHAL,
 # GLIB_MKENUMS and GOBJECT_QUERY for us:
