@@ -86,6 +86,35 @@ FLOW_GOBJECT_MAKE_IMPL        (flow_tcp_io, FlowTcpIO, FLOW_TYPE_IO, 0)
 /* --- FlowTcpIO implementation --- */
 
 static void
+write_stream_begin (FlowTcpIO *tcp_io)
+{
+  FlowDetailedEvent *detailed_event;
+
+  detailed_event = flow_detailed_event_new (NULL);
+  flow_detailed_event_add_code (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_BEGIN);
+
+  flow_io_write_object (FLOW_IO (tcp_io), detailed_event);
+
+  g_object_unref (detailed_event);
+}
+
+static void
+write_stream_end (FlowTcpIO *tcp_io, gboolean close_both_directions)
+{
+  FlowDetailedEvent *detailed_event;
+
+  detailed_event = flow_detailed_event_new (NULL);
+  flow_detailed_event_add_code (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END);
+
+  if (close_both_directions)
+    flow_detailed_event_add_code (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END_CONVERSE);
+
+  flow_io_write_object (FLOW_IO (tcp_io), detailed_event);
+
+  g_object_unref (detailed_event);
+}
+
+static void
 query_remote_connectivity (FlowTcpIO *tcp_io)
 {
   FlowTcpIOPrivate *priv = tcp_io->priv;
@@ -206,6 +235,8 @@ flow_tcp_io_handle_input_object (FlowTcpIO *tcp_io, gpointer object)
       io->allow_blocking_read  = FALSE;
       io->allow_blocking_write = FALSE;
 
+      write_stream_end (tcp_io, FALSE);
+
       set_connectivity (tcp_io, FLOW_CONNECTIVITY_DISCONNECTED);
 
       result = TRUE;
@@ -289,35 +320,6 @@ flow_tcp_io_dispose (FlowTcpIO *tcp_io)
 static void
 flow_tcp_io_finalize (FlowTcpIO *tcp_io)
 {
-}
-
-static void
-write_stream_begin (FlowTcpIO *tcp_io)
-{
-  FlowDetailedEvent *detailed_event;
-
-  detailed_event = flow_detailed_event_new (NULL);
-  flow_detailed_event_add_code (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_BEGIN);
-
-  flow_io_write_object (FLOW_IO (tcp_io), detailed_event);
-
-  g_object_unref (detailed_event);
-}
-
-static void
-write_stream_end (FlowTcpIO *tcp_io, gboolean close_both_directions)
-{
-  FlowDetailedEvent *detailed_event;
-
-  detailed_event = flow_detailed_event_new (NULL);
-  flow_detailed_event_add_code (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END);
-
-  if (close_both_directions)
-    flow_detailed_event_add_code (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END_CONVERSE);
-
-  flow_io_write_object (FLOW_IO (tcp_io), detailed_event);
-
-  g_object_unref (detailed_event);
 }
 
 /* --- FlowTcpIO public API --- */
