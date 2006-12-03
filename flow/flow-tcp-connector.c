@@ -100,7 +100,7 @@ connect_to_remote_service (FlowTcpConnector *tcp_connector)
 
   if (!priv->remote_service)
   {
-    g_warning ("FlowTcpConnector got STREAM_BEGIN before IP address.");
+    g_warning ("FlowTcpConnector got FLOW_STREAM_BEGIN before IP address.");
     return;
   }
 
