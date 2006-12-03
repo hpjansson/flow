@@ -46,10 +46,7 @@ typedef enum
   STATE_OPEN,
   STATE_CLOSED,
 
-  /* Downstream only */
-
-  STATE_HANDSHAKING,
-  STATE_QUITTING
+  STATE_OPENING
 }
 State;
 
@@ -62,13 +59,19 @@ static gnutls_dh_params_t gnutls_dh_parameters;
 
 typedef struct
 {
-  guint8                           upstream_state;
-  guint8                           downstream_state;
-  guint16                          session_initialized : 1;
-  FlowAgentRole                    agent_role;
-  gnutls_session_t                 gnutls_session;
-  gnutls_anon_client_credentials_t anon_creds;
-  gnutls_anon_server_credentials_t server_anon_creds;
+  guint                            from_downstream_state   : 4;
+  guint                            from_upstream_state     : 4;
+
+  guint                            agent_role              : 2;
+  guint                            session_initialized     : 1;
+
+  gnutls_session_t                 tls_session;
+
+  /* We assume that the gnutls_*_credentials_t types are just
+   * aliases for pointers. This makes it a lot less complicated
+   * for us. */
+
+  gpointer                         creds;
 }
 FlowTlsProtocolPrivate;
 
@@ -138,13 +141,6 @@ mutex_unlock_gcrypt (void **mutex_ptr)
 }
 
 static void
-tls_log_func (gint level, const gchar *buf)
-{
-  g_print (buf);
-  g_print ("\n");
-}
-
-static void
 global_ref_gnutls (void)
 {
   static struct gcry_thread_cbs gcrypt_thread_callbacks =
@@ -183,11 +179,6 @@ global_ref_gnutls (void)
 
   if (gnutls_global_init ())
     g_error (G_STRLOC ": Failed to initialize GNU TLS.");
-
-#if 0
-  gnutls_global_set_log_level (10);
-  gnutls_global_set_log_function ((gnutls_log_func) tls_log_func);
-#endif
 
   g_static_mutex_unlock (&gnutls_mutex);
 }
@@ -239,7 +230,7 @@ recv_for_gnutls (FlowTlsProtocol *tls_protocol, gpointer dest, size_t len)
      * in GnuTLS 1.6 onwards, which just came out (November 2006). Wait until
      * it's available in major distros before fixing.
      *
-     * gnutls_transport_set_errno (priv->gnutls_session, EAGAIN); */
+     * gnutls_transport_set_errno (priv->tls_session, EAGAIN); */
 
     errno = EAGAIN;
     return -1;
@@ -256,69 +247,17 @@ recv_for_gnutls (FlowTlsProtocol *tls_protocol, gpointer dest, size_t len)
 }
 
 static void
-do_downstream_tasks (FlowTlsProtocol *tls_protocol)
-{
-  FlowTlsProtocolPrivate *priv    = tls_protocol->priv;
-  FlowElement            *element = (FlowElement *) tls_protocol;
-  gint                    result;
-
-  if (priv->downstream_state == STATE_HANDSHAKING)
-  {
-    result = gnutls_handshake (priv->gnutls_session);
-
-    if (result == 0)
-    {
-      /* Handshake done */
-
-      priv->downstream_state = STATE_OPEN;
-
-      if (!flow_pad_is_blocked (g_ptr_array_index (element->output_pads, DOWNSTREAM_INDEX)))
-        flow_pad_unblock (g_ptr_array_index (element->input_pads, UPSTREAM_INDEX));
-
-      flow_tls_protocol_process_input ((FlowElement *) tls_protocol,
-                                       g_ptr_array_index (element->input_pads, UPSTREAM_INDEX));
-    }
-#if 0
-    else
-    {
-      gnutls_perror (result);
-    }
-#endif
-  }
-  else if (priv->downstream_state == STATE_QUITTING)
-  {
-    result = gnutls_bye (priv->gnutls_session, GNUTLS_SHUT_RDWR);
-
-    if (result == 0)
-    {
-      /* Quit done */
-
-      priv->downstream_state = STATE_CLOSED;
-
-      if (!flow_pad_is_blocked (g_ptr_array_index (element->output_pads, DOWNSTREAM_INDEX)))
-        flow_pad_unblock (g_ptr_array_index (element->input_pads, UPSTREAM_INDEX));
-
-      flow_tls_protocol_process_input ((FlowElement *) tls_protocol,
-                                       g_ptr_array_index (element->input_pads, UPSTREAM_INDEX));
-    }
-  }
-}
-
-static void
 initialize_server_params (void)
 {
   g_static_mutex_lock (&gnutls_mutex);
 
-  if (gnutls_server_is_initialized)
+  if (!gnutls_server_is_initialized)
   {
-    g_static_mutex_unlock (&gnutls_mutex);
-    return;
+    gnutls_dh_params_init (&gnutls_dh_parameters);
+    gnutls_dh_params_generate2 (gnutls_dh_parameters, DH_BITS_DEFAULT);
+
+    gnutls_server_is_initialized = TRUE;
   }
-
-  gnutls_dh_params_init (&gnutls_dh_parameters);
-  gnutls_dh_params_generate2 (gnutls_dh_parameters, DH_BITS_DEFAULT);
-
-  gnutls_server_is_initialized = TRUE;
 
   g_static_mutex_unlock (&gnutls_mutex);
 }
@@ -338,35 +277,35 @@ initialize_session (FlowTlsProtocol *tls_protocol)
   {
     initialize_server_params ();
 
-    gnutls_anon_allocate_server_credentials (&priv->server_anon_creds);
-    gnutls_anon_set_server_dh_params (priv->server_anon_creds, gnutls_dh_parameters);
+    gnutls_anon_allocate_server_credentials ((gpointer) &priv->creds);
+    gnutls_anon_set_server_dh_params (priv->creds, gnutls_dh_parameters);
 
-    gnutls_init (&priv->gnutls_session, GNUTLS_SERVER);
+    gnutls_init (&priv->tls_session, GNUTLS_SERVER);
 
-  gnutls_set_default_priority (priv->gnutls_session);
-  gnutls_kx_set_priority (priv->gnutls_session, kx_prio);
+  gnutls_set_default_priority (priv->tls_session);
+  gnutls_kx_set_priority (priv->tls_session, kx_prio);
 
-    gnutls_credentials_set (priv->gnutls_session, GNUTLS_CRD_ANON, priv->server_anon_creds);
+    gnutls_credentials_set (priv->tls_session, GNUTLS_CRD_ANON, priv->creds);
 
-    gnutls_dh_set_prime_bits (priv->gnutls_session, DH_BITS_DEFAULT);
+    gnutls_dh_set_prime_bits (priv->tls_session, DH_BITS_DEFAULT);
   }
   else
   {
-    gnutls_init (&priv->gnutls_session, GNUTLS_CLIENT);
+    gnutls_init (&priv->tls_session, GNUTLS_CLIENT);
 
-  gnutls_set_default_priority (priv->gnutls_session);
-  gnutls_kx_set_priority (priv->gnutls_session, kx_prio);
+  gnutls_set_default_priority (priv->tls_session);
+  gnutls_kx_set_priority (priv->tls_session, kx_prio);
 
-    gnutls_anon_allocate_client_credentials (&priv->anon_creds);
-    gnutls_credentials_set (priv->gnutls_session, GNUTLS_CRD_ANON, priv->anon_creds);
+    gnutls_anon_allocate_client_credentials ((gpointer) &priv->creds);
+    gnutls_credentials_set (priv->tls_session, GNUTLS_CRD_ANON, priv->creds);
   }
 
-  gnutls_transport_set_lowat (priv->gnutls_session, 0);
-  gnutls_transport_set_push_function (priv->gnutls_session,
+  gnutls_transport_set_lowat (priv->tls_session, 0);
+  gnutls_transport_set_push_function (priv->tls_session,
                                       (gnutls_push_func) send_for_gnutls);
-  gnutls_transport_set_pull_function (priv->gnutls_session,
+  gnutls_transport_set_pull_function (priv->tls_session,
                                       (gnutls_pull_func) recv_for_gnutls);
-  gnutls_transport_set_ptr (priv->gnutls_session, tls_protocol);
+  gnutls_transport_set_ptr (priv->tls_session, tls_protocol);
 
   priv->session_initialized = TRUE;
 }
@@ -379,88 +318,10 @@ finalize_session (FlowTlsProtocol *tls_protocol)
   if (!priv->session_initialized)
     return;
 
-  gnutls_deinit (priv->gnutls_session);
+  gnutls_deinit (priv->tls_session);
   global_unref_gnutls ();
 
   priv->session_initialized = FALSE;
-}
-
-static gboolean
-begin_session (FlowTlsProtocol *tls_protocol, gint input_index)
-{
-  FlowTlsProtocolPrivate *priv    = tls_protocol->priv;
-  FlowElement            *element = (FlowElement *) tls_protocol;
-
-  initialize_session (tls_protocol);
-
-  /* Upstream */
-
-  if (input_index == UPSTREAM_INDEX)
-  {
-    if (priv->upstream_state != STATE_CLOSED)
-    {
-      /* Bogus FLOW_STREAM_BEGIN? */
-      return FALSE;
-    }
-
-    priv->upstream_state   = STATE_OPEN;
-    priv->downstream_state = STATE_HANDSHAKING;
-
-    flow_pad_unblock (g_ptr_array_index (element->input_pads, DOWNSTREAM_INDEX));
-    return FALSE;
-  }
-
-  /* Downstream */
-
-  if (priv->downstream_state == STATE_CLOSED)
-  {
-    /* We have to block further input until the handshake is done, but the
-     * FLOW_STREAM_BEGIN packed must be allowed through, so the physical connection
-     * will be opened. */
-
-    priv->downstream_state = STATE_HANDSHAKING;
-
-    flow_pad_block (g_ptr_array_index (element->input_pads, UPSTREAM_INDEX));
-  }
-
-  return FALSE;
-}
-
-static gboolean
-end_session (FlowTlsProtocol *tls_protocol, gint input_index)
-{
-  FlowTlsProtocolPrivate *priv = tls_protocol->priv;
-
-  /* Upstream */
-
-  if (input_index == UPSTREAM_INDEX)
-  {
-    if (priv->upstream_state == STATE_OPEN)
-    {
-      priv->upstream_state = STATE_CLOSED;
-
-      if (priv->downstream_state == STATE_CLOSED)
-      {
-        finalize_session (tls_protocol);
-        return FALSE;
-      }
-
-      priv->downstream_state = STATE_QUITTING;
-      do_downstream_tasks (tls_protocol);
-      return TRUE;
-    }
-
-    /* Bogus FLOW_STREAM_END? */
-    return FALSE;
-  }
-
-  /* Downstream */
-
-  if (priv->upstream_state == STATE_CLOSED)
-    finalize_session (tls_protocol);
-
-  priv->downstream_state = STATE_CLOSED;
-  return FALSE;
 }
 
 static void
@@ -473,10 +334,9 @@ flow_tls_protocol_output_pad_blocked (FlowElement *element, FlowPad *output_pad)
   if (output_pad == g_ptr_array_index (element->output_pads, UPSTREAM_INDEX))
   {
     /* We can't block data coming from downstream while we're in a handshake
-     * or quit sequence. */
+     * sequence. */
 
-    if (priv->downstream_state == STATE_HANDSHAKING ||
-        priv->downstream_state == STATE_QUITTING)
+    if (priv->from_downstream_state == STATE_OPENING)
       return;
 
     input_index = DOWNSTREAM_INDEX;
@@ -503,13 +363,9 @@ flow_tls_protocol_output_pad_unblocked (FlowElement *element, FlowPad *output_pa
   else
   {
     /* We have to finish the handshake sequence before we can let upstream
-     * send more data.
-     *
-     * We have to finish the quit sequence before we can let the FLOW_STREAM_END
-     * through and close the connection. */
+     * send more data. */
 
-    if (priv->downstream_state == STATE_HANDSHAKING ||
-        priv->downstream_state == STATE_QUITTING)
+    if (priv->from_downstream_state == STATE_OPENING)
       return;
 
     input_index = UPSTREAM_INDEX;
@@ -518,105 +374,369 @@ flow_tls_protocol_output_pad_unblocked (FlowElement *element, FlowPad *output_pa
   flow_pad_unblock (g_ptr_array_index (element->input_pads, input_index));
 }
 
-static FlowPacket *
-try_recv_from_gnutls (FlowTlsProtocol *tls_protocol)
+static void
+block_from_upstream (FlowTlsProtocol *tls_protocol)
 {
-  FlowTlsProtocolPrivate *priv = tls_protocol->priv;
-  FlowPacket             *packet;
-  guint8                  buf [MAX_READ];
-  ssize_t                 result;
+  FlowElement *element = (FlowElement *) tls_protocol;
 
-  result = gnutls_record_recv (priv->gnutls_session, buf, MAX_READ);
-  if (result < 0)
-  {
-#if 0
-    gnutls_perror (result);
-#endif
-    return NULL;
-  }
-  else if (result == 0)
-  {
-    if (priv->downstream_state != STATE_CLOSED)
-    {
-      gnutls_bye (priv->gnutls_session, SHUT_WR);
-      priv->downstream_state = STATE_CLOSED;
-    }
-
-    return NULL;
-  }
-
-  packet = flow_packet_new (FLOW_PACKET_FORMAT_BUFFER, buf, result);
-  return packet;
+  flow_pad_block (g_ptr_array_index (element->input_pads, UPSTREAM_INDEX));
 }
 
-static gboolean
-process_data (FlowTlsProtocol *tls_protocol)
+static void
+unblock_from_upstream (FlowTlsProtocol *tls_protocol)
 {
-  FlowTlsProtocolPrivate *priv                = tls_protocol->priv;
-  FlowElement            *element             = (FlowElement *) tls_protocol;
-  gboolean                processed_some_data = FALSE;
-  FlowPacketQueue        *packet_queue;
-  FlowPad                *input_pad;
-  FlowPad                *output_pad;
+  FlowElement *element = (FlowElement *) tls_protocol;
+
+  flow_pad_unblock (g_ptr_array_index (element->input_pads, UPSTREAM_INDEX));
+}
+
+static void
+close_from_upstream (FlowTlsProtocol *tls_protocol, gint tls_error)
+{
+  FlowTlsProtocolPrivate *priv    = tls_protocol->priv;
+  FlowElement            *element = (FlowElement *) tls_protocol;
+  FlowDetailedEvent      *detailed_event;
   FlowPacket             *packet;
-  gint                    packet_offset;
+
+  if (priv->from_upstream_state != STATE_CLOSED)
+  {
+    priv->from_upstream_state = STATE_CLOSED;
+
+    if (tls_error < 0)
+    {
+      detailed_event = flow_detailed_event_new_literal (gnutls_strerror (tls_error));
+      flow_detailed_event_add_code (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_ERROR);
+      flow_detailed_event_add_code (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END);
+
+      packet = flow_packet_new_take_object (detailed_event, 0);
+    }
+    else
+    {
+      packet = flow_create_simple_event_packet (FLOW_STREAM_DOMAIN, FLOW_STREAM_END);
+    }
+
+    flow_pad_push (g_ptr_array_index (element->output_pads, DOWNSTREAM_INDEX), packet);
+
+    if (priv->from_upstream_state   == STATE_CLOSED &&
+        priv->from_downstream_state == STATE_CLOSED)
+      finalize_session (tls_protocol);
+  }
+}
+
+static void
+close_from_downstream (FlowTlsProtocol *tls_protocol, gint tls_error)
+{
+  FlowTlsProtocolPrivate *priv    = tls_protocol->priv;
+  FlowElement            *element = (FlowElement *) tls_protocol;
+  FlowDetailedEvent      *detailed_event;
+  FlowPacket             *packet;
+
+  if (priv->from_downstream_state != STATE_CLOSED)
+  {
+    priv->from_downstream_state = STATE_CLOSED;
+
+    if (tls_error < 0)
+    {
+      detailed_event = flow_detailed_event_new_literal (gnutls_strerror (tls_error));
+      flow_detailed_event_add_code (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_ERROR);
+      flow_detailed_event_add_code (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END);
+
+      packet = flow_packet_new_take_object (detailed_event, 0);
+    }
+    else
+    {
+      packet = flow_create_simple_event_packet (FLOW_STREAM_DOMAIN, FLOW_STREAM_END);
+    }
+
+    flow_pad_push (g_ptr_array_index (element->output_pads, UPSTREAM_INDEX), packet);
+
+    if (priv->from_upstream_state   == STATE_CLOSED &&
+        priv->from_downstream_state == STATE_CLOSED)
+      finalize_session (tls_protocol);
+  }
+}
+
+static void process_input_from_upstream (FlowTlsProtocol *tls_protocol, FlowPad *input_pad);
+static void process_input_from_downstream (FlowTlsProtocol *tls_protocol, FlowPad *input_pad);
+
+static void
+do_handshake (FlowTlsProtocol *tls_protocol)
+{
+  FlowTlsProtocolPrivate *priv    = tls_protocol->priv;
+  FlowElement            *element = (FlowElement *) tls_protocol;
   ssize_t                 result;
 
-  /* Push data going downstream */
+  result = gnutls_handshake (priv->tls_session);
 
-  input_pad = g_ptr_array_index (element->input_pads, UPSTREAM_INDEX);
+  if (result == 0)
+  {
+    /* Handshake done */
+
+    priv->from_downstream_state = STATE_OPEN;
+    unblock_from_upstream (tls_protocol);
+#if 0
+    process_input_from_upstream (tls_protocol, g_ptr_array_index (element->input_pads, UPSTREAM_INDEX));
+    process_input_from_downstream (tls_protocol, g_ptr_array_index (element->input_pads, DOWNSTREAM_INDEX));
+#endif
+  }
+  else if (gnutls_error_is_fatal (result))
+  {
+    /* Protocol error */
+
+    g_print ("[%p] Handshake error\n", tls_protocol);
+
+    close_from_upstream (tls_protocol, result);
+    close_from_downstream (tls_protocol, result);
+  }
+}
+
+static void
+process_object_from_upstream (FlowTlsProtocol *tls_protocol, FlowPacket *packet)
+{
+  FlowTlsProtocolPrivate *priv    = tls_protocol->priv;
+  FlowElement            *element = (FlowElement *) tls_protocol;
+  gpointer                object  = flow_packet_get_data (packet);
+
+  flow_handle_universal_events (element, packet);
+
+  if (FLOW_IS_DETAILED_EVENT (object))
+  {
+    if (flow_detailed_event_matches (object, FLOW_STREAM_DOMAIN, FLOW_STREAM_BEGIN))
+    {
+      if (priv->from_upstream_state == STATE_CLOSED)
+      {
+        priv->from_upstream_state = STATE_OPEN;
+
+        flow_pad_push (g_ptr_array_index (element->output_pads, DOWNSTREAM_INDEX), packet);
+        packet = NULL;
+
+        if (priv->from_downstream_state == STATE_CLOSED)
+        {
+          initialize_session (tls_protocol);
+          block_from_upstream (tls_protocol);
+        }
+      }
+      else if (priv->from_upstream_state == STATE_OPEN)
+      {
+        /* Downstream has already seen FLOW_STREAM_BEGIN */
+        flow_packet_free (packet);
+        packet = NULL;
+      }
+      else
+      {
+        g_assert_not_reached ();
+      }
+    }
+    else if (flow_detailed_event_matches (object, FLOW_STREAM_DOMAIN, FLOW_STREAM_END))
+    {
+      flow_packet_free (packet);
+      packet = NULL;
+
+      if (priv->from_upstream_state != STATE_CLOSED)
+      {
+        /* This can't fail */
+        gnutls_bye (priv->tls_session, GNUTLS_SHUT_WR);
+        close_from_upstream (tls_protocol, 0);
+      }
+    }
+    else if (flow_detailed_event_matches (object, FLOW_STREAM_DOMAIN, FLOW_STREAM_FLUSH))
+    {
+      /* GNU TLS always syncs. */
+    }
+  }
+
+  if (packet)
+    flow_pad_push (g_ptr_array_index (element->output_pads, DOWNSTREAM_INDEX), packet);
+}
+
+static void
+process_object_from_downstream (FlowTlsProtocol *tls_protocol, FlowPacket *packet)
+{
+  FlowTlsProtocolPrivate *priv    = tls_protocol->priv;
+  FlowElement            *element = (FlowElement *) tls_protocol;
+  gpointer                object  = flow_packet_get_data (packet);
+
+  flow_handle_universal_events (element, packet);
+
+  if (FLOW_IS_DETAILED_EVENT (object))
+  {
+    if (flow_detailed_event_matches (object, FLOW_STREAM_DOMAIN, FLOW_STREAM_BEGIN))
+    {
+      if (priv->from_downstream_state == STATE_CLOSED)
+      {
+        if (priv->from_upstream_state == STATE_CLOSED)
+          initialize_session (tls_protocol);
+
+        priv->from_downstream_state = STATE_OPENING;
+        priv->from_upstream_state   = STATE_OPEN;
+        block_from_upstream (tls_protocol);
+
+        flow_pad_push (g_ptr_array_index (element->output_pads, DOWNSTREAM_INDEX),
+                       flow_create_simple_event_packet (FLOW_STREAM_DOMAIN, FLOW_STREAM_BEGIN));
+
+        do_handshake (tls_protocol);
+      }
+      else
+      {
+        /* Upstream has already seen FLOW_STREAM_BEGIN */
+        flow_packet_free (packet);
+        packet = NULL;
+      }
+    }
+    else if (flow_detailed_event_matches (object, FLOW_STREAM_DOMAIN, FLOW_STREAM_END))
+    {
+      /* If we didn't receive a "bye" first, this is irregular. However, there are
+       * legit TLS implementations that omit it. The upshot is that we can't tell if
+       * the peer terminated the session or if the EOF was forged by a third party. */
+
+      flow_packet_free (packet);
+      packet = NULL;
+
+      close_from_downstream (tls_protocol, 0);
+    }
+  }
+
+  if (packet)
+    flow_pad_push (g_ptr_array_index (element->output_pads, UPSTREAM_INDEX), packet);
+}
+
+static void
+process_input_from_upstream (FlowTlsProtocol *tls_protocol, FlowPad *input_pad)
+{
+  FlowTlsProtocolPrivate *priv = tls_protocol->priv;
+  FlowPacketQueue        *packet_queue;
+  FlowPacket             *packet;
+  gint                    packet_offset;
 
   packet_queue = flow_pad_get_packet_queue (input_pad);
+  if (!packet_queue)
+    return;
 
-  if (packet_queue)
+  while (flow_packet_queue_peek_packet (packet_queue, &packet, &packet_offset))
   {
-    for ( ; flow_packet_queue_peek_packet (packet_queue, &packet, &packet_offset); )
+    ssize_t result;
+
+    if G_UNLIKELY (flow_packet_get_format (packet) == FLOW_PACKET_FORMAT_OBJECT)
+    {
+      flow_packet_queue_pop_packet (packet_queue);
+      process_object_from_upstream (tls_protocol, packet);
+    }
+    else if (priv->from_downstream_state == STATE_OPENING)
+    {
+      /* We're handshaking, so can't send data. This shouldn't happen, because we
+       * block data coming from upstream while we're handshaking. */
+
+      g_assert_not_reached ();
+    }
+    else if G_LIKELY (priv->from_upstream_state == STATE_OPEN)
     {
       guint8 *data;
       gint    len;
 
-      if (flow_packet_get_format (packet) != FLOW_PACKET_FORMAT_BUFFER)
-        break;
-
       len  = flow_packet_get_size (packet) - packet_offset;
       data = flow_packet_get_data (packet) + packet_offset;
 
-      result = gnutls_record_send (priv->gnutls_session, data, len);
-
-      if (result < 1)
-        break;
-
-      processed_some_data = TRUE;
+      result = gnutls_record_send (priv->tls_session, data, len);
 
       if (result == len)
+      {
         flow_packet_queue_drop_packet (packet_queue);
-      else
+      }
+      else if (result > 0)
+      {
         flow_packet_queue_pop_bytes_exact (packet_queue, NULL, result);
+      }
+      else
+      {
+        /* Send can't fail because our helper always accepts and queues outbound data. */
+        g_assert_not_reached ();
+      }
+    }
+    else if (priv->from_upstream_state == STATE_CLOSED)
+    {
+      g_print ("[%p] Ate %d bytes (from upstream)\n", tls_protocol, flow_packet_get_size (packet));
+
+      /* When the stream is closed (TLS bye or physically), eat data packets. */
+      flow_packet_queue_pop_packet (packet_queue);
+      flow_packet_free (packet);
+    }
+    else
+    {
+      g_assert_not_reached ();
     }
   }
+}
 
-  /* Pull data going upstream */
+static void
+process_input_from_downstream (FlowTlsProtocol *tls_protocol, FlowPad *input_pad)
+{
+  FlowTlsProtocolPrivate *priv    = tls_protocol->priv;
+  FlowElement            *element = (FlowElement *) tls_protocol;
+  FlowPacketQueue        *packet_queue;
+  FlowPacket             *packet;
 
-  output_pad = g_ptr_array_index (element->output_pads, UPSTREAM_INDEX);
+  packet_queue = flow_pad_get_packet_queue (input_pad);
+  if (!packet_queue)
+    return;
 
-  for ( ; (packet = try_recv_from_gnutls (tls_protocol)); )
+  while (flow_packet_queue_peek_packet (packet_queue, &packet, NULL))
   {
-    processed_some_data = TRUE;
-    flow_pad_push (output_pad, packet);
-  }
+    ssize_t result;
 
-  return processed_some_data;
+    if G_UNLIKELY (flow_packet_get_format (packet) == FLOW_PACKET_FORMAT_OBJECT)
+    {
+      flow_packet_queue_pop_packet (packet_queue);
+      process_object_from_downstream (tls_protocol, packet);
+    }
+    else if G_LIKELY (priv->from_downstream_state == STATE_OPEN)
+    {
+      guint8 buf [MAX_READ];
+
+      while ((result = gnutls_record_recv (priv->tls_session, buf, MAX_READ)) > 0)
+      {
+        packet = flow_packet_new (FLOW_PACKET_FORMAT_BUFFER, buf, result);
+        flow_pad_push (g_ptr_array_index (element->output_pads, UPSTREAM_INDEX), packet);
+      }
+
+      if (result == 0)
+      {
+        /* Got bye from remote end */
+
+        close_from_downstream (tls_protocol, 0);
+      }
+      else if (gnutls_error_is_fatal (result))
+      {
+        /* Crypto error */
+
+        g_print ("[%p] Crypto error (from downstream)\n", tls_protocol);
+
+        close_from_downstream (tls_protocol, result);
+      }
+    }
+    else if (priv->from_downstream_state == STATE_OPENING)
+    {
+      do_handshake (tls_protocol);
+    }
+    else if (priv->from_downstream_state == STATE_CLOSED)
+    {
+      g_print ("[%p] Ate %d bytes (from downstream)\n", tls_protocol, flow_packet_get_size (packet));
+
+      /* When the stream is closed (TLS bye or physically), eat data packets. */
+      flow_packet_queue_pop_packet (packet_queue);
+      flow_packet_free (packet);
+    }
+    else
+    {
+      g_assert_not_reached ();
+    }
+  }
 }
 
 static void
 flow_tls_protocol_process_input (FlowElement *element, FlowPad *input_pad)
 {
   FlowTlsProtocol        *tls_protocol = FLOW_TLS_PROTOCOL (element);
-  FlowTlsProtocolPrivate *priv         = tls_protocol->priv;
   FlowPacketQueue        *packet_queue;
-  FlowPacket             *packet;
-  gint                    input_index;
-  gint                    output_index;
 
   packet_queue = flow_pad_get_packet_queue (input_pad);
   if (!packet_queue)
@@ -624,73 +744,11 @@ flow_tls_protocol_process_input (FlowElement *element, FlowPad *input_pad)
 
   if (input_pad == g_ptr_array_index (element->input_pads, UPSTREAM_INDEX))
   {
-    input_index  = UPSTREAM_INDEX;
-    output_index = DOWNSTREAM_INDEX;
+    process_input_from_upstream (tls_protocol, input_pad);
   }
   else
   {
-    input_index  = DOWNSTREAM_INDEX;
-    output_index = UPSTREAM_INDEX;
-  }
-
-  for ( ; flow_packet_queue_peek_packet (packet_queue, &packet, NULL); )
-  {
-    gboolean retain_packet = FALSE;
-
-    if G_UNLIKELY (flow_packet_get_format (packet) == FLOW_PACKET_FORMAT_OBJECT)
-    {
-      gpointer object = flow_packet_get_data (packet);
-
-      flow_handle_universal_events (element, packet);
-
-      if (FLOW_IS_DETAILED_EVENT (object))
-      {
-        if (flow_detailed_event_matches (object, FLOW_STREAM_DOMAIN, FLOW_STREAM_BEGIN))
-        {
-          retain_packet = begin_session (tls_protocol, input_index);
-        }
-        else if (flow_detailed_event_matches (object, FLOW_STREAM_DOMAIN, FLOW_STREAM_END) ||
-                 flow_detailed_event_matches (object, FLOW_STREAM_DOMAIN, FLOW_STREAM_DENIED))
-        {
-          retain_packet = end_session (tls_protocol, input_index);
-        }
-      }
-
-      if (retain_packet)
-      {
-        flow_pad_block (input_pad);
-        break;
-      }
-      else
-      {
-        flow_packet_queue_pop_packet (packet_queue);
-        flow_pad_push (g_ptr_array_index (element->output_pads, output_index), packet);
-
-        do_downstream_tasks (tls_protocol); /* ew */
-      }
-    }
-    else
-    {
-      /* We have data */
-
-      /* If TLS subsystem is not processing data packages (maybe because it's blocking
-       * on data going in the other direction), break out of loop. However, we want to
-       * process events if there are any at the head of the queue. */
-
-      if (priv->downstream_state == STATE_OPEN)
-      {
-        if (!process_data (tls_protocol))
-          break;
-      }
-      else if (input_index == DOWNSTREAM_INDEX)
-      {
-        do_downstream_tasks (tls_protocol);
-      }
-      else
-      {
-        break;
-      }
-    }
+    process_input_from_downstream (tls_protocol, input_pad);
   }
 }
 
@@ -717,8 +775,10 @@ flow_tls_protocol_init (FlowTlsProtocol *tls_protocol)
   if (!g_thread_supported ())
     g_thread_init (NULL);
 
-  priv->upstream_state   = STATE_CLOSED;
-  priv->downstream_state = STATE_CLOSED;
+  priv->agent_role = FLOW_AGENT_ROLE_CLIENT;
+
+  priv->from_upstream_state   = STATE_CLOSED;
+  priv->from_downstream_state = STATE_CLOSED;
 }
 
 static void
