@@ -30,7 +30,7 @@
 #define SOCKETS_NUM            15
 #define SOCKETS_CONCURRENT_MAX 5
 
-#define BUFFER_SIZE            5000000   /* Amount of data to transfer */
+#define BUFFER_SIZE            1000000   /* Amount of data to transfer */
 #define PACKET_MAX_SIZE        8192      /* Max transfer unit */
 #define PACKET_MIN_SIZE        1         /* Min transfer unit */
 
@@ -114,12 +114,29 @@ add_tls (FlowTcpIO *tcp_io, FlowAgentRole agent_role)
                     tls_upstream_pads [0]);
 }
 
+static gboolean
+subthread_stalled_in_read (TransferInfo *transfer_info)
+{
+  test_print ("Subthread stalled in read: read_offset=%d write_offset=%d\n",
+              transfer_info->read_offset, transfer_info->write_offset);
+  return TRUE;  /* So we can remove it unconditionally */
+}
+
+static gboolean
+subthread_stalled_in_write (TransferInfo *transfer_info)
+{
+  test_print ("Subthread stalled in write: read_offset=%d write_offset=%d\n",
+              transfer_info->read_offset, transfer_info->write_offset);
+  return TRUE;  /* So we can remove it unconditionally */
+}
+
 static void
 subthread_main (void)
 {
   FlowTcpIO    *tcp_io;
   TransferInfo  transfer_info;
   guchar        temp_buffer [PACKET_MAX_SIZE];
+  guint         id;
 
   test_print ("Subthread connecting to main thread\n");
 
@@ -142,8 +159,12 @@ subthread_main (void)
       len = g_random_int_range (PACKET_MIN_SIZE, PACKET_MAX_SIZE);
       len = MIN (len, BUFFER_SIZE - transfer_info.write_offset);
 
+      id = flow_timeout_add_to_current_thread (5000, (GSourceFunc) subthread_stalled_in_write, &transfer_info);
+
       flow_io_sync_write (FLOW_IO (tcp_io), buffer + transfer_info.write_offset, len);
       test_print ("Subthread wrote %d bytes\n", len);
+
+      flow_source_remove_from_current_thread (id);
 
       transfer_info.write_offset += len;
     }
@@ -155,8 +176,12 @@ subthread_main (void)
       len = g_random_int_range (PACKET_MIN_SIZE, PACKET_MAX_SIZE);
       len = MIN (len, BUFFER_SIZE - transfer_info.read_offset);
 
+      id = flow_timeout_add_to_current_thread (5000, (GSourceFunc) subthread_stalled_in_read, &transfer_info);
+
       if (!flow_io_sync_read_exact (FLOW_IO (tcp_io), temp_buffer, len))
         test_end (TEST_RESULT_FAILED, "subthread short read");
+
+      flow_source_remove_from_current_thread (id);
 
       test_print ("Subthread read %d bytes\n", len);
 
@@ -189,6 +214,23 @@ spawn_subthread (void)
 }
 
 static void
+print_tcp_io_status (FlowTcpIO *tcp_io, TransferInfo *transfer_info)
+{
+  test_print ("[%p] read_offset=%d write_offset=%d\n",
+              tcp_io, transfer_info->read_offset, transfer_info->write_offset);
+}
+
+static gboolean
+print_status (void)
+{
+  test_print ("Active sockets (main thread):\n");
+
+  g_hash_table_foreach (transfer_info_table, (GHFunc) print_tcp_io_status, NULL);
+
+  return TRUE;
+}
+
+static void
 read_notify (FlowTcpIO *tcp_io)
 {
   TransferInfo *transfer_info;
@@ -200,16 +242,18 @@ read_notify (FlowTcpIO *tcp_io)
   transfer_info = g_hash_table_lookup (transfer_info_table, tcp_io);
   g_assert (transfer_info != NULL);
 
-  len = flow_io_read (FLOW_IO (tcp_io), temp_buffer, PACKET_MAX_SIZE);
-  test_print ("Main thread read %d bytes\n", len);
+  while ((len = flow_io_read (FLOW_IO (tcp_io), temp_buffer, PACKET_MAX_SIZE)))
+  {
+    test_print ("Main thread read %d bytes\n", len);
 
-  if (memcmp (buffer + transfer_info->read_offset, temp_buffer, len))
-    test_end (TEST_RESULT_FAILED, "main thread read mismatch");
+    if (memcmp (buffer + transfer_info->read_offset, temp_buffer, len))
+      test_end (TEST_RESULT_FAILED, "main thread read mismatch");
 
-  transfer_info->read_offset += len;
+    transfer_info->read_offset += len;
 
-  if (transfer_info->read_offset > BUFFER_SIZE)
-    test_end (TEST_RESULT_FAILED, "main thread read past buffer length");
+    if (transfer_info->read_offset > BUFFER_SIZE)
+      test_end (TEST_RESULT_FAILED, "main thread read past buffer length");
+  }
 }
 
 static void
@@ -233,8 +277,9 @@ write_notify (FlowTcpIO *tcp_io)
 
   if (transfer_info->write_offset == BUFFER_SIZE)
   {
+    flow_io_flush (FLOW_IO (tcp_io));
     flow_io_set_write_notify (FLOW_IO (tcp_io), NULL, NULL);
-    test_print ("Main thread read done\n");
+    test_print ("Main thread write done\n");
   }
 }
 
@@ -299,6 +344,7 @@ long_test (void)
   test_print ("Long test begin\n");
 
   g_timeout_add (250, (GSourceFunc) spawn_subthread, NULL);
+  g_timeout_add (5000, (GSourceFunc) print_status, NULL);
 
   g_signal_connect (tcp_listener, "new-connection", (GCallback) new_connection, NULL);
 
