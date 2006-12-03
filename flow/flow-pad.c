@@ -24,6 +24,7 @@
 
 #include "config.h"
 #include "flow-gobject-util.h"
+#include "flow-context-mgmt.h"
 #include "flow-pad.h"
 
 /* --- FlowPad private data --- */
@@ -155,6 +156,47 @@ flow_pad_finalize (FlowPad *pad)
 {
 }
 
+/* - Functions to schedule a push when it can't be done immediately - */
+
+typedef struct
+{
+  FlowPad *pad;
+  guint    idle_id;
+}
+DelayedPushInfo;
+
+static void
+cancel_delayed_push (DelayedPushInfo *delayed_push_info, gpointer dead_pad)
+{
+  flow_source_remove_from_current_thread (delayed_push_info->idle_id);
+
+  g_slice_free (DelayedPushInfo, delayed_push_info);
+}
+
+static gboolean
+delayed_push (DelayedPushInfo *delayed_push_info)
+{
+  FlowPad *pad = delayed_push_info->pad;
+
+  FLOW_PAD_GET_CLASS (pad)->push (pad, NULL);
+
+  g_object_weak_unref ((GObject *) pad, (GWeakNotify) cancel_delayed_push, delayed_push_info);
+  g_slice_free (DelayedPushInfo, delayed_push_info);
+  return FALSE;
+}
+
+static void
+prepare_delayed_push (FlowPad *pad)
+{
+  DelayedPushInfo *delayed_push_info;
+
+  delayed_push_info = g_slice_new (DelayedPushInfo);
+
+  delayed_push_info->pad = pad;
+  delayed_push_info->idle_id = flow_idle_add_to_current_thread ((GSourceFunc) delayed_push, delayed_push_info);
+  g_object_weak_ref ((GObject *) pad, (GWeakNotify) cancel_delayed_push, delayed_push_info);
+}
+
 /* --- FlowPad public API --- */
 
 void
@@ -189,9 +231,9 @@ flow_pad_connect (FlowPad *pad, FlowPad *other_pad)
   /* Stimulate data flow across new connection */
 
   if (pad_ref)
-    FLOW_PAD_GET_CLASS (pad)->push (pad, NULL);
+    prepare_delayed_push (pad);
   if (other_pad_ref)
-    FLOW_PAD_GET_CLASS (other_pad)->push (other_pad, NULL);
+    prepare_delayed_push (other_pad);
 
   /* Clean up */
 
