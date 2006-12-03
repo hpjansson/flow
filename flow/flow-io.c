@@ -65,6 +65,7 @@ typedef struct
 {
   guint            reads_are_blocked       : 1;
   guint            writes_are_blocked      : 1;
+  guint            wrote_stream_begin      : 1;
 
   FlowNotifyFunc   read_notify_func;
   gpointer         read_notify_data;
@@ -367,6 +368,55 @@ prepare_write (FlowIO *io, guint request_len)
     io_klass->prepare_write (io, request_len);
 }
 
+/* This is called before every data read function actually writes data, to ensure
+ * we'll send FLOW_STREAM_BEGIN first. However, we don't enforce it for objects, as
+ * they may be needed to set parameters before the stream is opened. */
+static void
+ensure_downstream_open (FlowIO *io)
+{
+  FlowIOPrivate     *priv = io->priv;
+  FlowDetailedEvent *detailed_event;
+  FlowPacketQueue   *packet_queue;
+  FlowPacket        *packet;
+
+  if (priv->wrote_stream_begin)
+    return;
+
+  priv->wrote_stream_begin = TRUE;
+
+  detailed_event = flow_detailed_event_new (NULL);
+  flow_detailed_event_add_code (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_BEGIN);
+
+  packet_queue = flow_user_adapter_get_output_queue (priv->user_adapter);
+
+  packet = flow_packet_new (FLOW_PACKET_FORMAT_OBJECT, detailed_event, 0);
+  flow_packet_queue_push_packet (packet_queue, packet);
+
+  g_object_unref (detailed_event);
+}
+
+/* Checks if the user wrote a stream begin/end event, so we know not to send ours
+ * in ensure_downstream_open (). */
+static void
+check_downstream_state_change (FlowIO *io, gpointer object)
+{
+  FlowIOPrivate *priv = io->priv;
+
+  /* Monitor events written by user to see if we need to write a FLOW_STREAM_BEGIN */
+
+  if (FLOW_IS_DETAILED_EVENT (object))
+  {
+    if (flow_detailed_event_matches (object, FLOW_STREAM_DOMAIN, FLOW_STREAM_BEGIN))
+    {
+      priv->wrote_stream_begin = TRUE;
+    }
+    else if (flow_detailed_event_matches (object, FLOW_STREAM_DOMAIN, FLOW_STREAM_END))
+    {
+      priv->wrote_stream_begin = FALSE;
+    }
+  }
+}
+
 /* --- FlowIO public API --- */
 
 FlowIO *
@@ -452,6 +502,7 @@ flow_io_write (FlowIO *io, gpointer src_buffer, gint exact_len)
 
   priv = io->priv;
 
+  ensure_downstream_open (io);
   prepare_write (io, exact_len);
 
   packet_queue = flow_user_adapter_get_output_queue (priv->user_adapter);
@@ -474,6 +525,7 @@ flow_io_write_object (FlowIO *io, gpointer object)
   priv = io->priv;
 
   prepare_write (io, 0);
+  check_downstream_state_change (io, object);
 
   packet_queue = flow_user_adapter_get_output_queue (priv->user_adapter);
 
@@ -494,6 +546,8 @@ flow_io_flush (FlowIO *io)
   return_if_invalid_bin (io);
 
   priv = io->priv;
+
+  ensure_downstream_open (io);
 
   packet_queue = flow_user_adapter_get_output_queue (priv->user_adapter);
 
@@ -733,6 +787,7 @@ flow_io_sync_write (FlowIO *io, gpointer src_buffer, gint exact_len)
 
   priv = io->priv;
 
+  ensure_downstream_open (io);
   prepare_write (io, exact_len);
 
   packet_queue = flow_user_adapter_get_output_queue (priv->user_adapter);
@@ -759,6 +814,7 @@ flow_io_sync_write_object (FlowIO *io, gpointer object)
 
   priv = io->priv;
 
+  check_downstream_state_change (io, object);
   prepare_write (io, 0);
 
   packet_queue = flow_user_adapter_get_output_queue (priv->user_adapter);
@@ -786,6 +842,7 @@ flow_io_sync_flush (FlowIO *io)
 
   priv = io->priv;
 
+  ensure_downstream_open (io);
   prepare_write (io, 0);
 
   packet_queue = flow_user_adapter_get_output_queue (priv->user_adapter);
