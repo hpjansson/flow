@@ -70,6 +70,7 @@ typedef struct
   FlowTcpConnector *tcp_connector;
   FlowUserAdapter  *user_adapter;
 
+  guint             wrote_stream_begin : 1;
   guint             name_resolution_id;
 }
 FlowTcpIOPrivate;
@@ -88,7 +89,12 @@ FLOW_GOBJECT_MAKE_IMPL        (flow_tcp_io, FlowTcpIO, FLOW_TYPE_IO, 0)
 static void
 write_stream_begin (FlowTcpIO *tcp_io)
 {
+  FlowTcpIOPrivate  *priv = tcp_io->priv;
   FlowDetailedEvent *detailed_event;
+
+  g_assert (priv->wrote_stream_begin == FALSE);
+
+  priv->wrote_stream_begin = TRUE;
 
   detailed_event = flow_detailed_event_new (NULL);
   flow_detailed_event_add_code (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_BEGIN);
@@ -101,7 +107,13 @@ write_stream_begin (FlowTcpIO *tcp_io)
 static void
 write_stream_end (FlowTcpIO *tcp_io, gboolean close_both_directions)
 {
+  FlowTcpIOPrivate  *priv = tcp_io->priv;
   FlowDetailedEvent *detailed_event;
+
+  if (!priv->wrote_stream_begin)
+    write_stream_begin (tcp_io);
+
+  priv->wrote_stream_begin = FALSE;
 
   detailed_event = flow_detailed_event_new (NULL);
   flow_detailed_event_add_code (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END);
