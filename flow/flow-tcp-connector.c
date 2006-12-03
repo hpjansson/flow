@@ -79,7 +79,13 @@ connect_to_remote_service (FlowTcpConnector *tcp_connector)
 {
   FlowTcpConnectorPrivate *priv = tcp_connector->priv;
 
-  g_assert (priv->shunt == NULL);
+  if (priv->shunt)
+  {
+    /* We already have an active shunt. This can happen when a shunt has
+     * been installed using _flow_tcp_connector_install_connected_shunt (). */
+
+    return;
+  }
 
   /* FIXME: Need a way to specify local (originating) port */
 
