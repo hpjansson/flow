@@ -201,9 +201,11 @@ static void self_prefix##_simple_init (GObject *object)                         
 GType self_prefix##_get_type (void)                                               \
 {                                                                                 \
   static GType type = 0;                                                          \
-  if (!type)                                                                      \
+                                                                                  \
+  if (!g_atomic_int_get (&type))                                                  \
   {                                                                               \
-    static GTypeInfo const object_info =                                          \
+    static GStaticMutex     mutex = G_STATIC_MUTEX_INIT;                          \
+    static GTypeInfo const  object_info =                                         \
     {                                                                             \
       sizeof (self_type##Class),                                                  \
                                                                                   \
@@ -219,8 +221,16 @@ GType self_prefix##_get_type (void)                                             
       (GInstanceInitFunc) self_prefix##_simple_init,                              \
       NULL                                                                        \
     };                                                                            \
-    type = g_type_register_static (parent_type, #self_type, &object_info, reg_flags); \
-    self_prefix##_type_init (type);  /* User func */                              \
+                                                                                  \
+    g_static_mutex_lock (&mutex);                                                 \
+    if (!type)                                                                    \
+    {                                                                             \
+      GType temp_type;                                                            \
+      temp_type = g_type_register_static (parent_type, #self_type, &object_info, reg_flags); \
+      self_prefix##_type_init (type);  /* User func */                            \
+      g_atomic_int_set (&type, temp_type);                                        \
+    }                                                                             \
+    g_static_mutex_unlock (&mutex);                                               \
   }                                                                               \
   return type;                                                                    \
 }
