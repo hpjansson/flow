@@ -146,6 +146,7 @@ mutex_unlock_gcrypt (void **mutex_ptr)
 static void
 global_ref_gnutls (void)
 {
+  guchar buf [1];
   static struct gcry_thread_cbs gcrypt_thread_callbacks =
   {
     GCRY_THREAD_OPTION_USER,
@@ -175,6 +176,7 @@ global_ref_gnutls (void)
                                      (gnutls_free_function)      g_free);
 
     gcry_control (GCRYCTL_SET_THREAD_CBS, &gcrypt_thread_callbacks);
+
     gnutls_is_initialized = TRUE;
   }
 
@@ -182,6 +184,13 @@ global_ref_gnutls (void)
 
   if (gnutls_global_init ())
     g_error (G_STRLOC ": Failed to initialize GNU TLS.");
+
+  /* Run the GCrypt randomizer so it'll do its non-threadsafe initialization
+   * while we hold a lock. This is a workaround for a bug in GCrypt 1.2.3. If
+   * someone initializes GCrypt in another part of the program that can
+   * run concurrently with us, we're fucked */
+
+  gcry_randomize (buf, 1, 0);
 
   g_static_mutex_unlock (&gnutls_mutex);
 }
