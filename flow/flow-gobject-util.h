@@ -173,6 +173,10 @@ static void self_prefix##_simple_finalize (GObject *object)                     
                                                                                   \
 static void self_prefix##_class_simple_init (GObjectClass *object_class)          \
 {                                                                                 \
+  static GStaticMutex mutex = G_STATIC_MUTEX_INIT;                                \
+                                                                                  \
+  g_static_mutex_lock (&mutex);                                                   \
+                                                                                  \
   self_prefix##_parent_class = g_type_class_ref (parent_type);                    \
   object_class->get_property = self_prefix##_simple_get_property;                 \
   object_class->set_property = self_prefix##_simple_set_property;                 \
@@ -186,6 +190,8 @@ static void self_prefix##_class_simple_init (GObjectClass *object_class)        
   flow_gobject_class_install_properties (object_class, self_prefix##_prop_list,   \
                                          G_N_ELEMENTS (self_prefix##_prop_list)); \
   self_prefix##_class_init ((self_type##Class *) object_class);  /* User func */  \
+                                                                                  \
+  g_static_mutex_unlock (&mutex);                                                 \
 }                                                                                 \
                                                                                   \
 static void self_prefix##_simple_init (GObject *object)                           \
@@ -223,11 +229,11 @@ GType self_prefix##_get_type (void)                                             
     };                                                                            \
                                                                                   \
     g_static_mutex_lock (&mutex);                                                 \
-    if (!type)                                                                    \
+    if (!g_atomic_int_get (&type))                                                \
     {                                                                             \
       GType temp_type;                                                            \
       temp_type = g_type_register_static (parent_type, #self_type, &object_info, reg_flags); \
-      self_prefix##_type_init (type);  /* User func */                            \
+      self_prefix##_type_init (temp_type);  /* User func */                       \
       g_atomic_int_set (&type, temp_type);                                        \
     }                                                                             \
     g_static_mutex_unlock (&mutex);                                               \
@@ -295,6 +301,10 @@ static void self_prefix##_simple_finalize (GObject *object)                     
                                                                                   \
 static void self_prefix##_class_simple_init (GObjectClass *object_class)          \
 {                                                                                 \
+  static GStaticMutex mutex = G_STATIC_MUTEX_INIT;                                \
+                                                                                  \
+  g_static_mutex_lock (&mutex);                                                   \
+                                                                                  \
   self_prefix##_parent_class = g_type_class_ref (parent_type);                    \
   object_class->get_property = self_prefix##_simple_get_property;                 \
   object_class->set_property = self_prefix##_simple_set_property;                 \
@@ -304,6 +314,8 @@ static void self_prefix##_class_simple_init (GObjectClass *object_class)        
   flow_gobject_class_install_properties (object_class, self_prefix##_prop_list,   \
                                          G_N_ELEMENTS (self_prefix##_prop_list)); \
   self_prefix##_class_init ((self_type##Class *) object_class);  /* User func */  \
+                                                                                  \
+  g_static_mutex_unlock (&mutex);                                                 \
 }                                                                                 \
                                                                                   \
 static void self_prefix##_simple_init (GObject *object)                           \
@@ -314,9 +326,11 @@ static void self_prefix##_simple_init (GObject *object)                         
 GType self_prefix##_get_type (void)                                               \
 {                                                                                 \
   static GType type = 0;                                                          \
-  if (!type)                                                                      \
+                                                                                  \
+  if (!g_atomic_int_get (&type))                                                  \
   {                                                                               \
-    static GTypeInfo const object_info =                                          \
+    static GStaticMutex     mutex = G_STATIC_MUTEX_INIT;                          \
+    static GTypeInfo const  object_info =                                         \
     {                                                                             \
       sizeof (self_type##Class),                                                  \
                                                                                   \
@@ -332,8 +346,16 @@ GType self_prefix##_get_type (void)                                             
       (GInstanceInitFunc) self_prefix##_simple_init,                              \
       NULL                                                                        \
     };                                                                            \
-    type = g_type_register_static (parent_type, #self_type, &object_info, reg_flags); \
-    self_prefix##_type_init (type);  /* User func */                              \
+                                                                                  \
+    g_static_mutex_lock (&mutex);                                                 \
+    if (!g_atomic_int_get (&type))                                                \
+    {                                                                             \
+      GType temp_type;                                                            \
+      temp_type = g_type_register_static (parent_type, #self_type, &object_info, reg_flags); \
+      self_prefix##_type_init (temp_type);  /* User func */                       \
+      g_atomic_int_set (&type, temp_type);                                        \
+    }                                                                             \
+    g_static_mutex_unlock (&mutex);                                               \
   }                                                                               \
   return type;                                                                    \
 }
