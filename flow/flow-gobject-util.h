@@ -173,23 +173,28 @@ static void self_prefix##_simple_finalize (GObject *object)                     
                                                                                   \
 static void self_prefix##_class_simple_init (GObjectClass *object_class)          \
 {                                                                                 \
-  static GStaticMutex mutex = G_STATIC_MUTEX_INIT;                                \
+  static GStaticMutex mutex          = G_STATIC_MUTEX_INIT;                       \
+  static gboolean     is_initialized = FALSE;                                     \
                                                                                   \
   g_static_mutex_lock (&mutex);                                                   \
                                                                                   \
-  self_prefix##_parent_class = g_type_class_ref (parent_type);                    \
-  object_class->get_property = self_prefix##_simple_get_property;                 \
-  object_class->set_property = self_prefix##_simple_set_property;                 \
-  object_class->constructor = self_prefix##_simple_construct;                     \
-  object_class->dispose = self_prefix##_simple_dispose;                           \
-  object_class->finalize = self_prefix##_simple_finalize;                         \
+  if (!is_initialized)                                                            \
+  {                                                                               \
+    is_initialized = TRUE;                                                        \
+    self_prefix##_parent_class = g_type_class_ref (parent_type);                  \
+    object_class->get_property = self_prefix##_simple_get_property;               \
+    object_class->set_property = self_prefix##_simple_set_property;               \
+    object_class->constructor = self_prefix##_simple_construct;                   \
+    object_class->dispose = self_prefix##_simple_dispose;                         \
+    object_class->finalize = self_prefix##_simple_finalize;                       \
                                                                                   \
-  if (sizeof (self_type##Private) > 0)                                            \
-    g_type_class_add_private (object_class, sizeof (self_type##Private));         \
+    if (sizeof (self_type##Private) > 0)                                          \
+      g_type_class_add_private (object_class, sizeof (self_type##Private));       \
                                                                                   \
-  flow_gobject_class_install_properties (object_class, self_prefix##_prop_list,   \
-                                         G_N_ELEMENTS (self_prefix##_prop_list)); \
-  self_prefix##_class_init ((self_type##Class *) object_class);  /* User func */  \
+    flow_gobject_class_install_properties (object_class, self_prefix##_prop_list, \
+                                           G_N_ELEMENTS (self_prefix##_prop_list)); \
+    self_prefix##_class_init ((self_type##Class *) object_class);  /* User func */ \
+  }                                                                               \
                                                                                   \
   g_static_mutex_unlock (&mutex);                                                 \
 }                                                                                 \
@@ -301,19 +306,24 @@ static void self_prefix##_simple_finalize (GObject *object)                     
                                                                                   \
 static void self_prefix##_class_simple_init (GObjectClass *object_class)          \
 {                                                                                 \
-  static GStaticMutex mutex = G_STATIC_MUTEX_INIT;                                \
+  static GStaticMutex mutex          = G_STATIC_MUTEX_INIT;                       \
+  static gboolean     is_initialized = FALSE;                                     \
                                                                                   \
   g_static_mutex_lock (&mutex);                                                   \
                                                                                   \
-  self_prefix##_parent_class = g_type_class_ref (parent_type);                    \
-  object_class->get_property = self_prefix##_simple_get_property;                 \
-  object_class->set_property = self_prefix##_simple_set_property;                 \
-  object_class->constructor = self_prefix##_simple_construct;                     \
-  object_class->dispose = self_prefix##_simple_dispose;                           \
-  object_class->finalize = self_prefix##_simple_finalize;                         \
-  flow_gobject_class_install_properties (object_class, self_prefix##_prop_list,   \
-                                         G_N_ELEMENTS (self_prefix##_prop_list)); \
-  self_prefix##_class_init ((self_type##Class *) object_class);  /* User func */  \
+  if (!is_initialized)                                                            \
+  {                                                                               \
+    is_initialized = TRUE;                                                        \
+    self_prefix##_parent_class = g_type_class_ref (parent_type);                  \
+    object_class->get_property = self_prefix##_simple_get_property;               \
+    object_class->set_property = self_prefix##_simple_set_property;               \
+    object_class->constructor = self_prefix##_simple_construct;                   \
+    object_class->dispose = self_prefix##_simple_dispose;                         \
+    object_class->finalize = self_prefix##_simple_finalize;                       \
+    flow_gobject_class_install_properties (object_class, self_prefix##_prop_list, \
+                                           G_N_ELEMENTS (self_prefix##_prop_list)); \
+    self_prefix##_class_init ((self_type##Class *) object_class);  /* User func */ \
+  }                                                                               \
                                                                                   \
   g_static_mutex_unlock (&mutex);                                                 \
 }                                                                                 \
