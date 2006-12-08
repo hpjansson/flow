@@ -33,8 +33,8 @@ while true; do
   for i in $(cat tests.list); do
     gdb -q -batch -x .gdb-commands .libs/lt-$i >out 2>&1
 
-    if ! grep -L ': passed' out >/dev/null 2>&1; then
-      echo 'Failure: ' $i
+    if ! grep -L 'passed$' out >/dev/null 2>&1; then
+      echo -e '\nFailure: ' $i
       mv out stress-gdb-failure-$n.log
       let n=$n+1
     fi
