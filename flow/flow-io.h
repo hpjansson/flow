@@ -75,33 +75,36 @@ struct _FlowIOClass
   void (*_pad_4) (void);
 };
 
-FlowIO   *flow_io_new               (void);
+FlowIO          *flow_io_new               (void);
 
-gint      flow_io_read              (FlowIO *io, gpointer dest_buffer, gint max_len);
-gboolean  flow_io_read_exact        (FlowIO *io, gpointer dest_buffer, gint exact_len);
-gpointer  flow_io_read_object       (FlowIO *io);
-void      flow_io_write             (FlowIO *io, gpointer src_buffer,  gint exact_len);
-void      flow_io_write_object      (FlowIO *io, gpointer object);
-void      flow_io_flush             (FlowIO *io);
+gint             flow_io_read              (FlowIO *io, gpointer dest_buffer, gint max_len);
+gboolean         flow_io_read_exact        (FlowIO *io, gpointer dest_buffer, gint exact_len);
+gpointer         flow_io_read_object       (FlowIO *io);
+void             flow_io_write             (FlowIO *io, gpointer src_buffer,  gint exact_len);
+void             flow_io_write_object      (FlowIO *io, gpointer object);
+void             flow_io_flush             (FlowIO *io);
 
-void      flow_io_set_read_notify   (FlowIO *io, FlowNotifyFunc func, gpointer user_data);
-void      flow_io_set_write_notify  (FlowIO *io, FlowNotifyFunc func, gpointer user_data);
+void             flow_io_set_read_notify   (FlowIO *io, FlowNotifyFunc func, gpointer user_data);
+void             flow_io_set_write_notify  (FlowIO *io, FlowNotifyFunc func, gpointer user_data);
 
-void      flow_io_block_reads       (FlowIO *io);
-void      flow_io_unblock_reads     (FlowIO *io);
+void             flow_io_block_reads       (FlowIO *io);
+void             flow_io_unblock_reads     (FlowIO *io);
 
-void      flow_io_block_writes      (FlowIO *io);
-void      flow_io_unblock_writes    (FlowIO *io);
+void             flow_io_block_writes      (FlowIO *io);
+void             flow_io_unblock_writes    (FlowIO *io);
 
-gint      flow_io_sync_read         (FlowIO *io, gpointer dest_buffer, gint max_len);
-gboolean  flow_io_sync_read_exact   (FlowIO *io, gpointer dest_buffer, gint exact_len);
-gpointer  flow_io_sync_read_object  (FlowIO *io);
-void      flow_io_sync_write        (FlowIO *io, gpointer src_buffer,  gint exact_len);
-void      flow_io_sync_write_object (FlowIO *io, gpointer object);
-void      flow_io_sync_flush        (FlowIO *io);
+gint             flow_io_sync_read         (FlowIO *io, gpointer dest_buffer, gint max_len);
+gboolean         flow_io_sync_read_exact   (FlowIO *io, gpointer dest_buffer, gint exact_len);
+gpointer         flow_io_sync_read_object  (FlowIO *io);
+void             flow_io_sync_write        (FlowIO *io, gpointer src_buffer,  gint exact_len);
+void             flow_io_sync_write_object (FlowIO *io, gpointer object);
+void             flow_io_sync_flush        (FlowIO *io);
 
-void      flow_io_check_bin         (FlowIO *io);
-void      flow_io_check_events      (FlowIO *io);
+FlowUserAdapter *flow_io_get_user_adapter  (FlowIO *io);
+void             flow_io_set_user_adapter  (FlowIO *io, FlowUserAdapter *user_adapter);
+
+void             flow_io_check_bin         (FlowIO *io);
+void             flow_io_check_events      (FlowIO *io);
 
 G_END_DECLS
 

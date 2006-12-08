@@ -29,7 +29,6 @@
 #include "flow-event-codes.h"
 #include "flow-tcp-io.h"
 
-#define USER_ADAPTER_NAME  "user-adapter"
 #define TCP_CONNECTOR_NAME "tcp-connector"
 
 #define return_if_invalid_bin(tcp_io) \
@@ -175,7 +174,7 @@ flow_tcp_io_check_bin (FlowTcpIO *tcp_io)
   flow_gobject_unref_clear (priv->user_adapter);
   flow_gobject_unref_clear (priv->tcp_connector);
 
-  priv->user_adapter  = (FlowUserAdapter *)  flow_bin_get_element (bin, USER_ADAPTER_NAME);
+  priv->user_adapter  = flow_io_get_user_adapter (FLOW_IO (tcp_io));
   priv->tcp_connector = (FlowTcpConnector *) flow_bin_get_element (bin, TCP_CONNECTOR_NAME);
 
   if (priv->user_adapter)
@@ -294,16 +293,16 @@ flow_tcp_io_init (FlowTcpIO *tcp_io)
   FlowIO           *io   = FLOW_IO  (tcp_io);
   FlowBin          *bin  = FLOW_BIN (tcp_io);
 
-  priv->user_adapter = FLOW_USER_ADAPTER (flow_bin_get_element (bin, USER_ADAPTER_NAME));
+  priv->user_adapter = flow_io_get_user_adapter (io);
   g_object_ref (priv->user_adapter);
 
   priv->tcp_connector = flow_tcp_connector_new ();
   flow_bin_add_element (bin, FLOW_ELEMENT (priv->tcp_connector), TCP_CONNECTOR_NAME);
 
-  flow_pad_connect (FLOW_PAD (flow_simplex_element_get_input_pad (FLOW_SIMPLEX_ELEMENT (priv->tcp_connector))),
-                    FLOW_PAD (flow_simplex_element_get_output_pad (FLOW_SIMPLEX_ELEMENT (priv->user_adapter))));
-  flow_pad_connect (FLOW_PAD (flow_simplex_element_get_output_pad (FLOW_SIMPLEX_ELEMENT (priv->tcp_connector))),
-                    FLOW_PAD (flow_simplex_element_get_input_pad (FLOW_SIMPLEX_ELEMENT (priv->user_adapter))));
+  flow_connect_simplex__simplex (FLOW_SIMPLEX_ELEMENT (priv->tcp_connector),
+                                 FLOW_SIMPLEX_ELEMENT (priv->user_adapter));
+  flow_connect_simplex__simplex (FLOW_SIMPLEX_ELEMENT (priv->user_adapter),
+                                 FLOW_SIMPLEX_ELEMENT (priv->tcp_connector));
 
   g_signal_connect_swapped (priv->tcp_connector, "connectivity-changed",
                             G_CALLBACK (remote_connectivity_changed), tcp_io);
@@ -520,4 +519,30 @@ flow_tcp_io_get_last_connectivity (FlowTcpIO *tcp_io)
   priv = tcp_io->priv;
 
   return priv->last_connectivity;
+}
+
+FlowTcpConnector *
+flow_tcp_io_get_tcp_connector (FlowTcpIO *tcp_io)
+{
+  g_return_val_if_fail (FLOW_IS_TCP_IO (tcp_io), NULL);
+
+  return FLOW_TCP_CONNECTOR (flow_bin_get_element (FLOW_BIN (tcp_io), TCP_CONNECTOR_NAME));
+}
+
+void
+flow_tcp_io_set_tcp_connector (FlowTcpIO *tcp_io, FlowTcpConnector *tcp_connector)
+{
+  FlowElement *old_tcp_connector;
+  FlowBin     *bin;
+
+  g_return_if_fail (FLOW_IS_TCP_IO (tcp_io));
+  g_return_if_fail (FLOW_IS_TCP_CONNECTOR (tcp_connector));
+
+  bin = FLOW_BIN (tcp_io);
+
+  old_tcp_connector = flow_bin_get_element (bin, TCP_CONNECTOR_NAME);
+  if (old_tcp_connector)
+    flow_bin_remove_element (bin, old_tcp_connector);
+
+  flow_bin_add_element (bin, FLOW_ELEMENT (tcp_connector), TCP_CONNECTOR_NAME);
 }

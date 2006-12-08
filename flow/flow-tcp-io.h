@@ -27,7 +27,6 @@
 
 #include <flow/flow-detailed-event.h>
 #include <flow/flow-io.h>
-#include <flow/flow-user-adapter.h>
 #include <flow/flow-tcp-connector.h>
 
 G_BEGIN_DECLS
@@ -77,6 +76,9 @@ void              flow_tcp_io_sync_disconnect       (FlowTcpIO *tcp_io);
 FlowIPService    *flow_tcp_io_get_remote_service    (FlowTcpIO *tcp_io);
 FlowConnectivity  flow_tcp_io_get_connectivity      (FlowTcpIO *tcp_io);
 FlowConnectivity  flow_tcp_io_get_last_connectivity (FlowTcpIO *tcp_io);
+
+FlowTcpConnector *flow_tcp_io_get_tcp_connector     (FlowTcpIO *io);
+void              flow_tcp_io_set_tcp_connector     (FlowTcpIO *io, FlowTcpConnector *tcp_connector);
 
 G_END_DECLS
 

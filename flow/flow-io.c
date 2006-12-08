@@ -156,36 +156,58 @@ user_adapter_output (FlowIO *io)
 }
 
 static void
-bin_changed (FlowIO *io)
+update_user_adapter_blocks (FlowIO *io)
 {
-  io->need_to_check_bin = TRUE;
+  FlowIOPrivate *priv = io->priv;
+
+  if (!priv->read_notify_func || priv->reads_are_blocked)
+    flow_user_adapter_block_input (priv->user_adapter);
+  else
+    flow_user_adapter_unblock_input (priv->user_adapter);
+
+  if (!priv->write_notify_func || priv->writes_are_blocked)
+    flow_user_adapter_block_output (priv->user_adapter);
+  else
+    flow_user_adapter_unblock_output (priv->user_adapter);
+}
+
+static void
+install_user_adapter (FlowIO *io, FlowUserAdapter *user_adapter)
+{
+  FlowIOPrivate *priv = io->priv;
+
+  flow_gobject_unref_clear (priv->user_adapter);
+
+  if (!user_adapter)
+    return;
+
+  if (!FLOW_IS_USER_ADAPTER (user_adapter))
+    return;
+
+  priv->user_adapter = g_object_ref (user_adapter);
+
+  flow_user_adapter_set_input_notify  (user_adapter, (FlowNotifyFunc) user_adapter_input,  io);
+  flow_user_adapter_set_output_notify (user_adapter, (FlowNotifyFunc) user_adapter_output, io);
+
+  update_user_adapter_blocks (io);
 }
 
 static void
 flow_io_check_bin_internal (FlowIO *io)
 {
-  FlowIOPrivate *priv = io->priv;
-  FlowBin       *bin  = FLOW_BIN (io);
+  FlowBin         *bin  = FLOW_BIN (io);
+  FlowUserAdapter *user_adapter;
 
-  flow_gobject_unref_clear (priv->user_adapter);
-  priv->user_adapter = (FlowUserAdapter *) flow_bin_get_element (bin, USER_ADAPTER_NAME);
-
-  if (priv->user_adapter)
-  {
-    if (FLOW_IS_USER_ADAPTER (priv->user_adapter))
-    {
-      g_object_ref (priv->user_adapter);
-
-      flow_user_adapter_set_input_notify (priv->user_adapter, (FlowNotifyFunc) user_adapter_input, io);
-      flow_user_adapter_set_output_notify (priv->user_adapter, (FlowNotifyFunc) user_adapter_output, io);
-    }
-    else
-    {
-      priv->user_adapter = NULL;
-    }
-  }
+  user_adapter = (FlowUserAdapter *) flow_bin_get_element (bin, USER_ADAPTER_NAME);
+  install_user_adapter (io, user_adapter);
 
   io->need_to_check_bin = FALSE;
+}
+
+static void
+bin_changed (FlowIO *io)
+{
+  io->need_to_check_bin = TRUE;
 }
 
 static gboolean
@@ -219,17 +241,14 @@ flow_io_init (FlowIO *io)
   io->allow_blocking_read  = TRUE;
   io->allow_blocking_write = TRUE;
 
-  priv->user_adapter = flow_user_adapter_new ();
-  flow_bin_add_element (bin, FLOW_ELEMENT (priv->user_adapter), USER_ADAPTER_NAME);
-
-  flow_user_adapter_block_input (priv->user_adapter);
-  flow_user_adapter_block_output (priv->user_adapter);
-
-  flow_user_adapter_set_input_notify (priv->user_adapter, (FlowNotifyFunc) user_adapter_input, io);
-  flow_user_adapter_set_output_notify (priv->user_adapter, (FlowNotifyFunc) user_adapter_output, io);
-
   g_signal_connect (io, "element-added",   G_CALLBACK (bin_changed), NULL);
   g_signal_connect (io, "element-removed", G_CALLBACK (bin_changed), NULL);
+
+  /* Adding the element will eventually trigger flow_io_check_bin_internal, which
+   * does the rest of the setup */
+
+  priv->user_adapter = flow_user_adapter_new ();
+  flow_bin_add_element (bin, FLOW_ELEMENT (priv->user_adapter), USER_ADAPTER_NAME);
 }
 
 static void
@@ -555,22 +574,6 @@ flow_io_flush (FlowIO *io)
   flow_packet_queue_push_packet (packet_queue, packet);
 
   flow_user_adapter_push (priv->user_adapter);
-}
-
-static void
-update_user_adapter_blocks (FlowIO *io)
-{
-  FlowIOPrivate   *priv = io->priv;
-
-  if (!priv->read_notify_func || priv->reads_are_blocked)
-    flow_user_adapter_block_input (priv->user_adapter);
-  else
-    flow_user_adapter_unblock_input (priv->user_adapter);
-
-  if (!priv->write_notify_func || priv->writes_are_blocked)
-    flow_user_adapter_block_output (priv->user_adapter);
-  else
-    flow_user_adapter_unblock_output (priv->user_adapter);
 }
 
 void
@@ -906,4 +909,30 @@ flow_io_check_events (FlowIO *io)
 
     flow_packet_queue_drop_packet (packet_queue);
   }
+}
+
+FlowUserAdapter *
+flow_io_get_user_adapter (FlowIO *io)
+{
+  g_return_val_if_fail (FLOW_IS_IO (io), NULL);
+
+  return FLOW_USER_ADAPTER (flow_bin_get_element (FLOW_BIN (io), USER_ADAPTER_NAME));
+}
+
+void
+flow_io_set_user_adapter (FlowIO *io, FlowUserAdapter *user_adapter)
+{
+  FlowElement *old_user_adapter;
+  FlowBin     *bin;
+
+  g_return_if_fail (FLOW_IS_IO (io));
+  g_return_if_fail (FLOW_IS_USER_ADAPTER (user_adapter));
+
+  bin = FLOW_BIN (io);
+
+  old_user_adapter = flow_bin_get_element (bin, USER_ADAPTER_NAME);
+  if (old_user_adapter)
+    flow_bin_remove_element (bin, old_user_adapter);
+
+  flow_bin_add_element (bin, FLOW_ELEMENT (user_adapter), USER_ADAPTER_NAME);
 }
