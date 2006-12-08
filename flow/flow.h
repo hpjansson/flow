@@ -53,5 +53,7 @@
 #include <flow/flow-tcp-io-listener.h>
 #include <flow/flow-tcp-listener.h>
 #include <flow/flow-tls-protocol.h>
+#include <flow/flow-tls-tcp-io.h>
+#include <flow/flow-tls-tcp-io-listener.h>
 #include <flow/flow-user-adapter.h>
 #include <flow/flow-util.h>
