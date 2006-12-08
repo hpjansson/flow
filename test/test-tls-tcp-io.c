@@ -58,60 +58,26 @@ typedef struct
 }
 TransferInfo;
 
-static guchar            *buffer                 = NULL;
+static guchar               *buffer                 = NULL;
 
-static FlowIPService     *loopback_service       = NULL;
-static FlowIPService     *bad_loopback_service   = NULL;
-static FlowTcpIOListener *tcp_listener           = NULL;
-static FlowTcpIO         *tcp_reader             = NULL;
-static FlowTcpIO         *tcp_writer             = NULL;
+static FlowIPService        *loopback_service       = NULL;
+static FlowIPService        *bad_loopback_service   = NULL;
+static FlowTlsTcpIOListener *tls_tcp_listener       = NULL;
+static FlowTlsTcpIO         *tls_tcp_reader         = NULL;
+static FlowTlsTcpIO         *tls_tcp_writer         = NULL;
 
-static GHashTable        *transfer_info_table    = NULL;
+static GHashTable           *transfer_info_table    = NULL;
 
-static GMainLoop         *main_loop              = NULL;
-static gint               sockets_done           = 0;
-static gint               sockets_running        = 0;
+static GMainLoop            *main_loop              = NULL;
+static gint                  sockets_done           = 0;
+static gint                  sockets_running        = 0;
 
-static FlowTcpIO         *main_tcp_io            = NULL;
+static FlowTlsTcpIO         *main_tls_tcp_io        = NULL;
 
 static void
 transfer_info_free (TransferInfo *transfer_info)
 {
   g_slice_free (TransferInfo, transfer_info);
-}
-
-static void
-add_tls (FlowTcpIO *tcp_io, FlowAgentRole agent_role)
-{
-  FlowTlsProtocol    *tls_protocol;
-  FlowSimplexElement *user_adapter;
-  FlowSimplexElement *tcp_connector;
-  FlowPad            *tls_upstream_pads   [2];  /* Input, output */
-  FlowPad            *tls_downstream_pads [2];  /* Input, output */
-
-  tls_protocol = flow_tls_protocol_new (agent_role);
-  flow_bin_add_element (FLOW_BIN (tcp_io), FLOW_ELEMENT (tls_protocol), "tls-protocol");
-  g_object_unref (tls_protocol);
-
-  flow_duplex_element_get_upstream_pads   (FLOW_DUPLEX_ELEMENT (tls_protocol),
-                                           (FlowInputPad **) &tls_upstream_pads [0],
-                                           (FlowOutputPad **) &tls_upstream_pads [1]);
-  flow_duplex_element_get_downstream_pads (FLOW_DUPLEX_ELEMENT (tls_protocol),
-                                           (FlowInputPad **) &tls_downstream_pads [0],
-                                           (FlowOutputPad **) &tls_downstream_pads [1]);
-
-  user_adapter  = FLOW_SIMPLEX_ELEMENT (flow_bin_get_element (FLOW_BIN (tcp_io), "user-adapter"));
-  tcp_connector = FLOW_SIMPLEX_ELEMENT (flow_bin_get_element (FLOW_BIN (tcp_io), "tcp-connector"));
-
-  flow_pad_connect (FLOW_PAD (flow_simplex_element_get_input_pad (tcp_connector)),
-                    tls_downstream_pads [1]);
-  flow_pad_connect (FLOW_PAD (flow_simplex_element_get_output_pad (tcp_connector)),
-                    tls_downstream_pads [0]);
-
-  flow_pad_connect (FLOW_PAD (flow_simplex_element_get_input_pad (user_adapter)),
-                    tls_upstream_pads [1]);
-  flow_pad_connect (FLOW_PAD (flow_simplex_element_get_output_pad (user_adapter)),
-                    tls_upstream_pads [0]);
 }
 
 static gboolean
@@ -133,16 +99,15 @@ subthread_stalled_in_write (TransferInfo *transfer_info)
 static void
 subthread_main (void)
 {
-  FlowTcpIO    *tcp_io;
+  FlowTlsTcpIO *tls_tcp_io;
   TransferInfo  transfer_info;
   guchar        temp_buffer [PACKET_MAX_SIZE];
   guint         id;
 
   test_print ("Subthread connecting to main thread\n");
 
-  tcp_io = flow_tcp_io_new ();
-  add_tls (tcp_io, FLOW_AGENT_ROLE_CLIENT);
-  flow_tcp_io_sync_connect (tcp_io, loopback_service);
+  tls_tcp_io = flow_tls_tcp_io_new ();
+  flow_tcp_io_sync_connect (FLOW_TCP_IO (tls_tcp_io), loopback_service);
 
   test_print ("Subthread connected to main thread\n");
 
@@ -161,7 +126,7 @@ subthread_main (void)
 
       id = flow_timeout_add_to_current_thread (5000, (GSourceFunc) subthread_stalled_in_write, &transfer_info);
 
-      flow_io_sync_write (FLOW_IO (tcp_io), buffer + transfer_info.write_offset, len);
+      flow_io_sync_write (FLOW_IO (tls_tcp_io), buffer + transfer_info.write_offset, len);
       test_print ("Subthread wrote %d bytes\n", len);
 
       flow_source_remove_from_current_thread (id);
@@ -178,7 +143,7 @@ subthread_main (void)
 
       id = flow_timeout_add_to_current_thread (5000, (GSourceFunc) subthread_stalled_in_read, &transfer_info);
 
-      if (!flow_io_sync_read_exact (FLOW_IO (tcp_io), temp_buffer, len))
+      if (!flow_io_sync_read_exact (FLOW_IO (tls_tcp_io), temp_buffer, len))
         test_end (TEST_RESULT_FAILED, "subthread short read");
 
       flow_source_remove_from_current_thread (id);
@@ -193,10 +158,10 @@ subthread_main (void)
   }
 
   test_print ("Subthread disconnecting\n");
-  flow_tcp_io_sync_disconnect (tcp_io);
+  flow_tcp_io_sync_disconnect (FLOW_TCP_IO (tls_tcp_io));
   test_print ("Subthread disconnected\n");
 
-  g_object_unref (tcp_io);
+  g_object_unref (tls_tcp_io);
   test_print ("Subthread cleaned up\n");
 }
 
@@ -214,10 +179,10 @@ spawn_subthread (void)
 }
 
 static void
-print_tcp_io_status (FlowTcpIO *tcp_io, TransferInfo *transfer_info)
+print_tls_tcp_io_status (FlowTlsTcpIO *tls_tcp_io, TransferInfo *transfer_info)
 {
   test_print ("[%p] read_offset=%d write_offset=%d\n",
-              tcp_io, transfer_info->read_offset, transfer_info->write_offset);
+              tls_tcp_io, transfer_info->read_offset, transfer_info->write_offset);
 }
 
 static gboolean
@@ -225,24 +190,24 @@ print_status (void)
 {
   test_print ("Active sockets (main thread):\n");
 
-  g_hash_table_foreach (transfer_info_table, (GHFunc) print_tcp_io_status, NULL);
+  g_hash_table_foreach (transfer_info_table, (GHFunc) print_tls_tcp_io_status, NULL);
 
   return TRUE;
 }
 
 static void
-read_notify (FlowTcpIO *tcp_io)
+read_notify (FlowTlsTcpIO *tls_tcp_io)
 {
   TransferInfo *transfer_info;
   guchar        temp_buffer [PACKET_MAX_SIZE];
   gint          len;
 
-  test_print ("Main thread read notify (%p)\n", tcp_io);
+  test_print ("Main thread read notify (%p)\n", tls_tcp_io);
 
-  transfer_info = g_hash_table_lookup (transfer_info_table, tcp_io);
+  transfer_info = g_hash_table_lookup (transfer_info_table, tls_tcp_io);
   g_assert (transfer_info != NULL);
 
-  while ((len = flow_io_read (FLOW_IO (tcp_io), temp_buffer, PACKET_MAX_SIZE)))
+  while ((len = flow_io_read (FLOW_IO (tls_tcp_io), temp_buffer, PACKET_MAX_SIZE)))
   {
     test_print ("Main thread read %d bytes\n", len);
 
@@ -257,43 +222,43 @@ read_notify (FlowTcpIO *tcp_io)
 }
 
 static void
-write_notify (FlowTcpIO *tcp_io)
+write_notify (FlowTlsTcpIO *tls_tcp_io)
 {
   TransferInfo *transfer_info;
   gint          len;
 
-  test_print ("Main thread write notify (%p)\n", tcp_io);
+  test_print ("Main thread write notify (%p)\n", tls_tcp_io);
 
-  transfer_info = g_hash_table_lookup (transfer_info_table, tcp_io);
+  transfer_info = g_hash_table_lookup (transfer_info_table, tls_tcp_io);
   g_assert (transfer_info != NULL);
 
   len = g_random_int_range (PACKET_MIN_SIZE, PACKET_MAX_SIZE);
   len = MIN (len, BUFFER_SIZE - transfer_info->write_offset);
 
-  flow_io_write (FLOW_IO (tcp_io), buffer + transfer_info->write_offset, len);
+  flow_io_write (FLOW_IO (tls_tcp_io), buffer + transfer_info->write_offset, len);
   test_print ("Main thread wrote %d bytes\n", len);
 
   transfer_info->write_offset += len;
 
   if (transfer_info->write_offset == BUFFER_SIZE)
   {
-    flow_io_flush (FLOW_IO (tcp_io));
-    flow_io_set_write_notify (FLOW_IO (tcp_io), NULL, NULL);
+    flow_io_flush (FLOW_IO (tls_tcp_io));
+    flow_io_set_write_notify (FLOW_IO (tls_tcp_io), NULL, NULL);
     test_print ("Main thread write done\n");
   }
 }
 
 static void
-lost_connection (FlowTcpIO *tcp_io)
+lost_connection (FlowTlsTcpIO *tls_tcp_io)
 {
   TransferInfo *transfer_info;
 
   test_print ("Main thread got connectivity change\n");
 
-  if (flow_tcp_io_get_connectivity (tcp_io) != FLOW_CONNECTIVITY_DISCONNECTED)
+  if (flow_tcp_io_get_connectivity (FLOW_TCP_IO (tls_tcp_io)) != FLOW_CONNECTIVITY_DISCONNECTED)
     return;
 
-  transfer_info = g_hash_table_lookup (transfer_info_table, tcp_io);
+  transfer_info = g_hash_table_lookup (transfer_info_table, tls_tcp_io);
   g_assert (transfer_info != NULL);
 
   if (transfer_info->read_offset < BUFFER_SIZE)
@@ -303,8 +268,8 @@ lost_connection (FlowTcpIO *tcp_io)
     test_end (TEST_RESULT_FAILED, "main thread did not write all data");
 
   test_print ("Main thread lost connection\n");
-  g_hash_table_remove (transfer_info_table, tcp_io);
-  g_object_unref (tcp_io);
+  g_hash_table_remove (transfer_info_table, tls_tcp_io);
+  g_object_unref (tls_tcp_io);
 
   sockets_done++;
   sockets_running--;
@@ -316,26 +281,24 @@ lost_connection (FlowTcpIO *tcp_io)
 static void
 new_connection (void)
 {
-  FlowTcpIO    *tcp_io;
+  FlowTlsTcpIO *tls_tcp_io;
   TransferInfo *transfer_info;
 
-  tcp_io = flow_tcp_io_listener_pop_connection (tcp_listener);
-  if (!tcp_io)
+  tls_tcp_io = flow_tls_tcp_io_listener_pop_connection (tls_tcp_listener);
+  if (!tls_tcp_io)
     return;
 
-  add_tls (tcp_io, FLOW_AGENT_ROLE_SERVER);
-
-  main_tcp_io = tcp_io;
+  main_tls_tcp_io = tls_tcp_io;
 
   test_print ("Main thread received connection\n");
 
   transfer_info = g_slice_new0 (TransferInfo);
-  g_hash_table_insert (transfer_info_table, tcp_io, transfer_info);
+  g_hash_table_insert (transfer_info_table, tls_tcp_io, transfer_info);
 
-  flow_io_set_read_notify  (FLOW_IO (tcp_io), (FlowNotifyFunc) read_notify, tcp_io);
-  flow_io_set_write_notify (FLOW_IO (tcp_io), (FlowNotifyFunc) write_notify, tcp_io);
+  flow_io_set_read_notify  (FLOW_IO (tls_tcp_io), (FlowNotifyFunc) read_notify, tls_tcp_io);
+  flow_io_set_write_notify (FLOW_IO (tls_tcp_io), (FlowNotifyFunc) write_notify, tls_tcp_io);
 
-  g_signal_connect (tcp_io, "connectivity-changed", (GCallback) lost_connection, NULL);
+  g_signal_connect (tls_tcp_io, "connectivity-changed", (GCallback) lost_connection, NULL);
 }
 
 static void
@@ -346,7 +309,7 @@ long_test (void)
   g_timeout_add (250, (GSourceFunc) spawn_subthread, NULL);
   g_timeout_add (5000, (GSourceFunc) print_status, NULL);
 
-  g_signal_connect (tcp_listener, "new-connection", (GCallback) new_connection, NULL);
+  g_signal_connect (tls_tcp_listener, "new-connection", (GCallback) new_connection, NULL);
 
   main_loop = g_main_loop_new (g_main_context_default (), FALSE);
   g_main_loop_run (main_loop);
@@ -361,39 +324,36 @@ short_tests (void)
 
   test_print ("Short tests begin\n");
 
-  tcp_writer = flow_tcp_io_new ();
-  add_tls (tcp_writer, FLOW_AGENT_ROLE_CLIENT);
+  tls_tcp_writer = flow_tls_tcp_io_new ();
 
 #if 0
-  if (flow_tcp_io_sync_connect (tcp_writer, bad_loopback_service))
+  if (flow_tcp_io_sync_connect (FLOW_TCP_IO (tls_tcp_writer), bad_loopback_service))
     test_end (TEST_RESULT_FAILED, "bad connect did not fail as expected");
 
   test_print ("Bad connect failed as expected\n");
 #endif
 
-  if (!flow_tcp_io_sync_connect (tcp_writer, loopback_service))
+  if (!flow_tcp_io_sync_connect (FLOW_TCP_IO (tls_tcp_writer), loopback_service))
     test_end (TEST_RESULT_FAILED, "could not connect to short-test listener");
 
   test_print ("Client connect ok\n");
 
-  tcp_reader = flow_tcp_io_listener_sync_pop_connection (tcp_listener);
-  if (!tcp_reader)
+  tls_tcp_reader = flow_tls_tcp_io_listener_sync_pop_connection (tls_tcp_listener);
+  if (!tls_tcp_reader)
     test_end (TEST_RESULT_FAILED, "missed connection on listener end");
-
-  add_tls (tcp_reader, FLOW_AGENT_ROLE_SERVER);
 
   test_print ("Server connect ok\n");
 
-  flow_io_write (FLOW_IO (tcp_writer), buffer,        512);
-  flow_io_write (FLOW_IO (tcp_writer), buffer +  512, 512);
-  flow_io_write (FLOW_IO (tcp_writer), buffer + 1024, 512);
-  flow_io_write (FLOW_IO (tcp_writer), buffer + 1536, 512);
+  flow_io_write (FLOW_IO (tls_tcp_writer), buffer,        512);
+  flow_io_write (FLOW_IO (tls_tcp_writer), buffer +  512, 512);
+  flow_io_write (FLOW_IO (tls_tcp_writer), buffer + 1024, 512);
+  flow_io_write (FLOW_IO (tls_tcp_writer), buffer + 1536, 512);
 
   test_print ("Wrote data\n");
 
   /* Partial read */
 
-  flow_io_sync_read_exact (FLOW_IO (tcp_reader), read_buffer, 2000);
+  flow_io_sync_read_exact (FLOW_IO (tls_tcp_reader), read_buffer, 2000);
 
   /* Check read */
 
@@ -402,7 +362,7 @@ short_tests (void)
 
   /* Read remaining bytes with an oversized request */
 
-  if (flow_io_sync_read (FLOW_IO (tcp_reader), read_buffer, 100) != 48)
+  if (flow_io_sync_read (FLOW_IO (tls_tcp_reader), read_buffer, 100) != 48)
     test_end (TEST_RESULT_FAILED, "oversized read request returned wrong count");
 
   /* Make sure remaining bytes match */
@@ -417,11 +377,11 @@ short_tests (void)
 
   /* Disconnect */
 
-  flow_tcp_io_sync_disconnect (tcp_reader);
-  flow_tcp_io_sync_disconnect (tcp_writer);
+  flow_tcp_io_sync_disconnect (FLOW_TCP_IO (tls_tcp_reader));
+  flow_tcp_io_sync_disconnect (FLOW_TCP_IO (tls_tcp_writer));
 
-  g_object_unref (tcp_reader);
-  g_object_unref (tcp_writer);
+  g_object_unref (tls_tcp_reader);
+  g_object_unref (tls_tcp_writer);
 
   test_print ("Short tests end\n");
 }
@@ -464,8 +424,8 @@ test_run (void)
   flow_ip_addr_set_string (FLOW_IP_ADDR (bad_loopback_service), "127.0.0.1");
   flow_ip_service_set_port (bad_loopback_service, 12505);
 
-  tcp_listener = flow_tcp_io_listener_new ();
-  if (!flow_tcp_listener_set_local_service (FLOW_TCP_LISTENER (tcp_listener), loopback_service, NULL))
+  tls_tcp_listener = flow_tls_tcp_io_listener_new ();
+  if (!flow_tcp_listener_set_local_service (FLOW_TCP_LISTENER (tls_tcp_listener), loopback_service, NULL))
     test_end (TEST_RESULT_FAILED, "could not bind short-test listener");
 
   short_tests ();
@@ -474,8 +434,8 @@ test_run (void)
   g_hash_table_destroy (transfer_info_table);
   transfer_info_table = NULL;
 
-  g_object_unref (tcp_listener);
-  tcp_listener = NULL;
+  g_object_unref (tls_tcp_listener);
+  tls_tcp_listener = NULL;
 
   g_object_unref (loopback_service);
   loopback_service = NULL;
