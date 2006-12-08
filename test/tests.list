@@ -7,3 +7,4 @@ test-shunt-complex-file
 test-shunt-simple-tcp
 test-shunt-simple-udp
 test-tcp-io
+test-tls-tcp-io
