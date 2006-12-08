@@ -27,22 +27,35 @@
 
 #include <glib.h>
 #include <flow-shunt.h>
-#include <flow-element.h>
+#include <flow-simplex-element.h>
+#include <flow-duplex-element.h>
 #include <flow-packet.h>
 
 G_BEGIN_DECLS
 
 typedef void (*FlowNotifyFunc) (gpointer user_data);
 
-gchar       *flow_strerror                   (gint errnum);
-FlowPacket  *flow_create_simple_event_packet (const gchar *domain, gint code);
-gboolean     flow_handle_universal_events    (FlowElement *element, FlowPacket *packet);
-gpointer     flow_read_object_from_shunt     (FlowShunt *shunt);
+void         flow_connect_simplex__simplex        (FlowSimplexElement *output_simplex,
+                                                   FlowSimplexElement *input_simplex);
+void         flow_connect_duplex__duplex          (FlowDuplexElement *downstream_duplex,
+                                                   FlowDuplexElement *upstream_duplex);
+void         flow_connect_simplex_simplex__duplex (FlowSimplexElement *downstream_simplex_output,
+                                                   FlowSimplexElement *downstream_simplex_input,
+                                                   FlowDuplexElement  *upstream_duplex);
+void         flow_connect_duplex__simplex_simplex (FlowDuplexElement  *downstream_duplex,
+                                                   FlowSimplexElement *upstream_simplex_output,
+                                                   FlowSimplexElement *upstream_simplex_input);
+void         flow_disconnect_element              (FlowElement *element);
 
-gint         flow_g_ptr_array_find           (GPtrArray *array, gpointer data);
-gboolean     flow_g_ptr_array_remove_sparse  (GPtrArray *array, gpointer data);
-void         flow_g_ptr_array_add_sparse     (GPtrArray *array, gpointer data);
-guint        flow_g_ptr_array_compress       (GPtrArray *array);
+gchar       *flow_strerror                        (gint errnum);
+FlowPacket  *flow_create_simple_event_packet      (const gchar *domain, gint code);
+gboolean     flow_handle_universal_events         (FlowElement *element, FlowPacket *packet);
+gpointer     flow_read_object_from_shunt          (FlowShunt *shunt);
+
+gint         flow_g_ptr_array_find                (GPtrArray *array, gpointer data);
+gboolean     flow_g_ptr_array_remove_sparse       (GPtrArray *array, gpointer data);
+void         flow_g_ptr_array_add_sparse          (GPtrArray *array, gpointer data);
+guint        flow_g_ptr_array_compress            (GPtrArray *array);
 
 G_END_DECLS
 

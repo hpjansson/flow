@@ -34,6 +34,189 @@
 
 #define STRERROR_MAX_LEN 256
 
+void
+flow_connect_simplex__simplex (FlowSimplexElement *output_simplex,
+                               FlowSimplexElement *input_simplex)
+{
+  if (output_simplex)
+  {
+    if (input_simplex)
+    {
+      flow_pad_connect (FLOW_PAD (flow_simplex_element_get_output_pad (output_simplex)),
+                        FLOW_PAD (flow_simplex_element_get_input_pad  (input_simplex)));
+    }
+    else
+    {
+      flow_pad_disconnect (FLOW_PAD (flow_simplex_element_get_output_pad (output_simplex)));
+    }
+  }
+  else if (input_simplex)
+  {
+    flow_pad_disconnect (FLOW_PAD (flow_simplex_element_get_input_pad (input_simplex)));
+  }
+}
+
+void
+flow_connect_duplex__duplex (FlowDuplexElement *downstream_duplex,
+                             FlowDuplexElement *upstream_duplex)
+{
+  FlowPad *downstream_duplex_upstream_pads [2];
+  FlowPad *upstream_duplex_downstream_pads [2];
+
+  if (upstream_duplex)
+    flow_duplex_element_get_upstream_pads (upstream_duplex,
+                                           (FlowInputPad **) &upstream_duplex_downstream_pads [0],
+                                           (FlowOutputPad **) &upstream_duplex_downstream_pads [1]);
+
+  if (downstream_duplex)
+  {
+    flow_duplex_element_get_upstream_pads (downstream_duplex,
+                                           (FlowInputPad **) &downstream_duplex_upstream_pads [0],
+                                           (FlowOutputPad **) &downstream_duplex_upstream_pads [1]);
+
+    if (upstream_duplex)
+    {
+      flow_pad_connect (downstream_duplex_upstream_pads [0],
+                        upstream_duplex_downstream_pads [1]);
+      flow_pad_connect (downstream_duplex_upstream_pads [1],
+                        upstream_duplex_downstream_pads [0]);
+    }
+    else
+    {
+      flow_pad_disconnect (downstream_duplex_upstream_pads [0]);
+      flow_pad_disconnect (downstream_duplex_upstream_pads [1]);
+    }
+  }
+  else if (upstream_duplex)
+  {
+    flow_pad_disconnect (upstream_duplex_downstream_pads [0]);
+    flow_pad_disconnect (upstream_duplex_downstream_pads [1]);
+  }
+}
+
+void
+flow_connect_simplex_simplex__duplex (FlowSimplexElement *downstream_simplex_output,
+                                      FlowSimplexElement *downstream_simplex_input,
+                                      FlowDuplexElement  *upstream_duplex)
+{
+  FlowPad *duplex_downstream_pads [2];
+  FlowPad *simplex_pad;
+
+  if (upstream_duplex)
+  {
+    flow_duplex_element_get_downstream_pads (upstream_duplex,
+                                             (FlowInputPad **)  &duplex_downstream_pads [0],
+                                             (FlowOutputPad **) &duplex_downstream_pads [1]);
+
+    if (downstream_simplex_output)
+    {
+      simplex_pad = FLOW_PAD (flow_simplex_element_get_output_pad (downstream_simplex_output));
+      flow_pad_connect (simplex_pad, duplex_downstream_pads [0]);
+    }
+    else
+    {
+      flow_pad_disconnect (duplex_downstream_pads [0]);
+    }
+
+    if (downstream_simplex_input)
+    {
+      simplex_pad = FLOW_PAD (flow_simplex_element_get_input_pad (downstream_simplex_input));
+      flow_pad_connect (simplex_pad, duplex_downstream_pads [1]);
+    }
+    else
+    {
+      flow_pad_disconnect (duplex_downstream_pads [1]);
+    }
+  }
+  else
+  {
+    if (downstream_simplex_output)
+    {
+      simplex_pad = FLOW_PAD (flow_simplex_element_get_output_pad (downstream_simplex_output));
+      flow_pad_disconnect (simplex_pad);
+    }
+
+    if (downstream_simplex_input)
+    {
+      simplex_pad = FLOW_PAD (flow_simplex_element_get_input_pad (downstream_simplex_input));
+      flow_pad_disconnect (simplex_pad);
+    }
+  }
+}
+
+void
+flow_connect_duplex__simplex_simplex (FlowDuplexElement  *downstream_duplex,
+                                      FlowSimplexElement *upstream_simplex_output,
+                                      FlowSimplexElement *upstream_simplex_input)
+{
+  FlowPad *duplex_upstream_pads [2];
+  FlowPad *simplex_pad;
+
+  if (downstream_duplex)
+  {
+    flow_duplex_element_get_upstream_pads (downstream_duplex,
+                                           (FlowInputPad **)  &duplex_upstream_pads [0],
+                                           (FlowOutputPad **) &duplex_upstream_pads [1]);
+
+    if (upstream_simplex_output)
+    {
+      simplex_pad = FLOW_PAD (flow_simplex_element_get_output_pad (upstream_simplex_output));
+      flow_pad_connect (duplex_upstream_pads [0], simplex_pad);
+    }
+    else
+    {
+      flow_pad_disconnect (duplex_upstream_pads [0]);
+    }
+
+    if (upstream_simplex_input)
+    {
+      simplex_pad = FLOW_PAD (flow_simplex_element_get_input_pad (upstream_simplex_input));
+      flow_pad_connect (duplex_upstream_pads [1], simplex_pad);
+    }
+    else
+    {
+      flow_pad_disconnect (duplex_upstream_pads [1]);
+    }
+  }
+  else
+  {
+    if (upstream_simplex_output)
+    {
+      simplex_pad = FLOW_PAD (flow_simplex_element_get_output_pad (upstream_simplex_output));
+      flow_pad_disconnect (simplex_pad);
+    }
+
+    if (upstream_simplex_input)
+    {
+      simplex_pad = FLOW_PAD (flow_simplex_element_get_input_pad (upstream_simplex_input));
+      flow_pad_disconnect (simplex_pad);
+    }
+  }
+}
+
+void
+flow_disconnect_element (FlowElement *element)
+{
+  GPtrArray *pads;
+  guint      i;
+
+  pads = flow_element_get_input_pads (element);
+
+  for (i = 0; i < pads->len; i++)
+  {
+    FlowPad *pad = g_ptr_array_index (pads, i);
+    flow_pad_disconnect (pad);
+  }
+
+  pads = flow_element_get_output_pads (element);
+
+  for (i = 0; i < pads->len; i++)
+  {
+    FlowPad *pad = g_ptr_array_index (pads, i);
+    flow_pad_disconnect (pad);
+  }
+}
+
 FlowPacket *
 flow_create_simple_event_packet (const gchar *domain, gint code)
 {
