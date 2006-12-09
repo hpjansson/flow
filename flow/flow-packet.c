@@ -40,7 +40,6 @@
 
 /**
  * flow_packet_new:
- * 
  * @format: Format of this packet's contents, e.g. #FLOW_PACKET_FORMAT_BUFFER or
  *          #FLOW_PACKET_FORMAT_OBJECT.
  * @data:   For packets of type #FLOW_PACKET_FORMAT_BUFFER, a pointer to the data
@@ -107,7 +106,6 @@ flow_packet_new (FlowPacketFormat format, gpointer data, guint size)
 
 /**
  * flow_packet_new_take_object:
- * 
  * @object: A pointer to the object that will be referenced.
  * @size:   An approximate measure of the memory consumed by the object.
  * 
@@ -169,7 +167,6 @@ flow_packet_copy (FlowPacket *packet)
 
 /**
  * flow_packet_free:
- * 
  * @packet: The packet to free.
  * 
  * Frees a packet and its data. If the packet references an object, it will
@@ -205,7 +202,6 @@ flow_packet_free (FlowPacket *packet)
 
 /**
  * flow_packet_get_format:
- * 
  * @packet: A packet.
  * 
  * Gets the format of the packet's contents.
@@ -222,7 +218,6 @@ flow_packet_get_format (FlowPacket *packet)
 
 /**
  * flow_packet_get_size:
- * 
  * @packet: A packet.
  * 
  * Gets the size of a packet specified upon its creation.
@@ -239,7 +234,6 @@ flow_packet_get_size (FlowPacket *packet)
 
 /**
  * flow_packet_get_data:
- * 
  * @packet: A packet.
  * 
  * Gets the data assigned to a packet. For buffers, this is a pointer to
