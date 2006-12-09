@@ -8,8 +8,16 @@ ORIGDIR=`pwd`
 cd $srcdir
 PROJECT=Flow
 TEST_TYPE=-f
-FILE=configure.ac  # Replace with project-specific file.
+FILE=flow/flow.h
 DIE=0
+
+(gtkdocize --version) < /dev/null > /dev/null 2>&1 || {
+	echo
+	echo "You must have gtk-doc installed to compile $PROJECT."
+	echo "Install the appropriate package for your distribution,"
+	echo "or get the source tarball at ftp://ftp.gnome.org/pub/GNOME/sources/gtk-doc/"
+	DIE=1
+}
 
 (autoconf --version) < /dev/null > /dev/null 2>&1 || {
 	echo
@@ -44,19 +52,22 @@ fi
 am_opt="--include-deps --add-missing"
 
 echo "Running libtoolize..."
-libtoolize --force --copy
+libtoolize --force --copy || exit $?
+
+echo "Running gtkdocize..."
+gtkdocize || exit $?
 
 echo "Running aclocal..."
-aclocal $ACLOCAL_FLAGS
+aclocal $ACLOCAL_FLAGS || exit $?
 
 # optionally feature autoheader
 (autoheader --version)  < /dev/null > /dev/null 2>&1 && autoheader
 
 echo "Running automake..."
-automake -a $am_opt
+automake -a $am_opt || exit $?
 
 echo "Running autoconf..."
-autoconf
+autoconf || exit $?
 
 cd $ORIGDIR
 $srcdir/configure --enable-maintainer-mode "$@"

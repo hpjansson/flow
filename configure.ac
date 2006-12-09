@@ -48,6 +48,8 @@ AM_PATH_GLIB_2_0($GLIB_REQUIRED, :,
 *** GLib is always available from ftp://ftp.gtk.org/pub/gtk/.]),
   gobject gthread)
 
+GTK_DOC_CHECK([1.4])
+
 dnl --- OS capabilities ---
 
 # Define a MAINT-like variable REBUILD which is set if Perl
@@ -164,5 +166,8 @@ dnl --- Output ---
 AC_OUTPUT(Makefile                \
           flow/Makefile           \
           test/Makefile           \
+	  doc/Makefile		  \
+	  doc/reference/Makefile  \
+	  doc/reference/version.xml \
           flow/flow.pc            \
           flow.spec)
