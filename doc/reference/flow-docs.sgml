@@ -34,64 +34,94 @@
 <!ENTITY FlowTcpIOListener "xml/flow-tcp-io-listener.xml">
 <!ENTITY FlowTlsTcpIOListener "xml/flow-tls-tcp-io-listener.xml">
 
+<!ENTITY version SYSTEM "version.xml">
 <!ENTITY index-Object-Tree SYSTEM "xml/tree_index.sgml">
 ]>
 <book id="index" xmlns:xi="http://www.w3.org/2003/XInclude">
   <bookinfo>
     <title>Flow Reference Manual</title>
+    <releaseinfo>For Flow version &version;</releaseinfo>
   </bookinfo>
 
   <part id="objects">
+    <title>API Reference</title>
+
     <chapter>
       <title>Object Hierarchy</title>
-      &index-Object-Tree;
+      <xi:include href="xml/tree_index.sgml"/>
+    </chapter>
+
+    <chapter>
+      <title>Convenience I/O Classes</title>
+      <xi:include href="xml/flow-io.xml"/>
+      <xi:include href="xml/flow-tcp-io.xml"/>
+      <xi:include href="xml/flow-tcp-io-listener.xml"/>
+      <xi:include href="xml/flow-tls-tcp-io.xml"/>
+      <xi:include href="xml/flow-tls-tcp-io-listener.xml"/>
+    </chapter>
+
+    <chapter>
+      <title>Internet Protocol</title>
+      <xi:include href="xml/flow-ip-addr.xml"/>
+      <xi:include href="xml/flow-ip-resolver.xml"/>
+      <xi:include href="xml/flow-ip-service.xml"/>
+      <xi:include href="xml/flow-tcp-connector.xml"/>
+      <xi:include href="xml/flow-tcp-listener.xml"/>
+    </chapter>
+
+    <chapter>
+      <title>Protocols</title>
+      <xi:include href="xml/flow-tls-protocol.xml"/>
+    </chapter>
+
+    <chapter>
+      <title>Miscellaneous Elements</title>
+      <xi:include href="xml/flow-destructor.xml"/>
+      <xi:include href="xml/flow-user-adapter.xml"/>
+    </chapter>
+
+    <chapter>
+      <title>Element Templates</title>
+      <xi:include href="xml/flow-element.xml"/>
+      <xi:include href="xml/flow-emitter.xml"/>
+      <xi:include href="xml/flow-collector.xml"/>
+      <xi:include href="xml/flow-simplex-element.xml"/>
+      <xi:include href="xml/flow-duplex-element.xml"/>
+      <xi:include href="xml/flow-mux.xml"/>
+      <xi:include href="xml/flow-demux.xml"/>
+      <xi:include href="xml/flow-connector.xml"/>
+    </chapter>
+
+    <chapter>
+      <title>Element Interaction</title>
+      <xi:include href="xml/flow-packet-queue.xml"/>
+      <xi:include href="xml/flow-packet.xml"/>
+      <xi:include href="xml/flow-pad.xml"/>
+      <xi:include href="xml/flow-input-pad.xml"/>
+      <xi:include href="xml/flow-output-pad.xml"/>
+    </chapter>
+
+    <chapter>
+      <title>Events</title>
+      <xi:include href="xml/flow-event.xml"/>
+      <xi:include href="xml/flow-anonymous-event.xml"/>
+      <xi:include href="xml/flow-detailed-event.xml"/>
+      <xi:include href="xml/flow-property-event.xml"/>
+      <xi:include href="xml/flow-position.xml"/>
+      <xi:include href="xml/flow-segment-request.xml"/>
+      <xi:include href="xml/flow-event-codes.xml"/>
+    </chapter>
+
+    <chapter>
+      <title>Miscellaneous</title>
+      <xi:include href="xml/flow-bin.xml"/>
+      <xi:include href="xml/flow-context-mgmt.xml"/>
+      <xi:include href="xml/flow-messages.xml"/>
+      <xi:include href="xml/flow-util.xml"/>
+      <xi:include href="xml/flow-gobject-util.xml"/>
+      <xi:include href="xml/flow-enum-types.xml"/>
+      <xi:include href="xml/flow-shunt.xml"/>
+      <xi:include href="xml/flow-marshallers.xml"/>
     </chapter>
   </part>
-
-  <chapter>
-    <title>[Insert title here]</title>
-
-    <xi:include href="xml/flow-segment-request.xml"/>
-    <xi:include href="xml/flow-packet-queue.xml"/>
-    <xi:include href="xml/flow-tls-tcp-io.xml"/>
-    <xi:include href="xml/flow-user-adapter.xml"/>
-    <xi:include href="xml/flow-tls-tcp-io-listener.xml"/>
-    <xi:include href="xml/flow-tcp-listener.xml"/>
-    <xi:include href="xml/flow-detailed-event.xml"/>
-    <xi:include href="xml/flow-ip-resolver.xml"/>
-    <xi:include href="xml/flow-property-event.xml"/>
-    <xi:include href="xml/flow-tcp-io-listener.xml"/>
-    <xi:include href="xml/flow-io.xml"/>
-    <xi:include href="xml/flow-element.xml"/>
-    <xi:include href="xml/flow-collector.xml"/>
-    <xi:include href="xml/flow-demux.xml"/>
-    <xi:include href="xml/flow-tcp-io.xml"/>
-    <xi:include href="xml/flow-simplex-element.xml"/>
-    <xi:include href="xml/flow-position.xml"/>
-    <xi:include href="xml/flow-output-pad.xml"/>
-    <xi:include href="xml/flow-bin.xml"/>
-    <xi:include href="xml/flow-tls-protocol.xml"/>
-    <xi:include href="xml/flow-emitter.xml"/>
-    <xi:include href="xml/flow-mux.xml"/>
-    <xi:include href="xml/flow-pad.xml"/>
-    <xi:include href="xml/flow-tcp-connector.xml"/>
-    <xi:include href="xml/flow-connector.xml"/>
-    <xi:include href="xml/flow-duplex-element.xml"/>
-    <xi:include href="xml/flow-anonymous-event.xml"/>
-    <xi:include href="xml/flow-destructor.xml"/>
-    <xi:include href="xml/flow-ip-addr.xml"/>
-    <xi:include href="xml/flow-event.xml"/>
-    <xi:include href="xml/flow-input-pad.xml"/>
-    <xi:include href="xml/flow-ip-service.xml"/>
-    <xi:include href="xml/flow-context-mgmt.xml"/>
-    <xi:include href="xml/flow-event-codes.xml"/>
-    <xi:include href="xml/flow-messages.xml"/>
-    <xi:include href="xml/flow-util.xml"/>
-    <xi:include href="xml/flow-gobject-util.xml"/>
-    <xi:include href="xml/flow-enum-types.xml"/>
-    <xi:include href="xml/flow-shunt.xml"/>
-    <xi:include href="xml/flow-packet.xml"/>
-    <xi:include href="xml/flow-common-impl-unix.xml"/>
-    <xi:include href="xml/flow-marshallers.xml"/>
-  </chapter>
 </book>
