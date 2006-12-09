@@ -29,7 +29,7 @@
 
 G_BEGIN_DECLS
 
-#define FLOW_PACKET_MAX_SIZE (1 >> 29)
+#define FLOW_PACKET_MAX_SIZE (1 << 29)
 
 typedef enum
 {
