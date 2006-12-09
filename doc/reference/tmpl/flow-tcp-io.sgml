@@ -1,0 +1,142 @@
+<!-- ##### SECTION Title ##### -->
+FlowTcpIO
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### STRUCT FlowTcpIO ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SIGNAL FlowTcpIO::connectivity-changed ##### -->
+<para>
+
+</para>
+
+@flowtcpio: the object which received the signal.
+
+<!-- ##### FUNCTION flow_tcp_io_new ##### -->
+<para>
+
+</para>
+
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_tcp_io_connect ##### -->
+<para>
+
+</para>
+
+@tcp_io: 
+@ip_service: 
+
+
+<!-- ##### FUNCTION flow_tcp_io_connect_by_name ##### -->
+<para>
+
+</para>
+
+@tcp_io: 
+@name: 
+@port: 
+
+
+<!-- ##### FUNCTION flow_tcp_io_disconnect ##### -->
+<para>
+
+</para>
+
+@tcp_io: 
+@close_both_directions: 
+
+
+<!-- ##### FUNCTION flow_tcp_io_sync_connect ##### -->
+<para>
+
+</para>
+
+@tcp_io: 
+@ip_service: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_tcp_io_sync_connect_by_name ##### -->
+<para>
+
+</para>
+
+@tcp_io: 
+@name: 
+@port: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_tcp_io_sync_disconnect ##### -->
+<para>
+
+</para>
+
+@tcp_io: 
+
+
+<!-- ##### FUNCTION flow_tcp_io_get_remote_service ##### -->
+<para>
+
+</para>
+
+@tcp_io: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_tcp_io_get_connectivity ##### -->
+<para>
+
+</para>
+
+@tcp_io: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_tcp_io_get_last_connectivity ##### -->
+<para>
+
+</para>
+
+@tcp_io: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_tcp_io_get_tcp_connector ##### -->
+<para>
+
+</para>
+
+@io: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_tcp_io_set_tcp_connector ##### -->
+<para>
+
+</para>
+
+@io: 
+@tcp_connector: 
+
+

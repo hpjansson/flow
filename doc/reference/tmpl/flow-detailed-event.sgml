@@ -1,0 +1,70 @@
+<!-- ##### SECTION Title ##### -->
+FlowDetailedEvent
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### STRUCT FlowDetailedEvent ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG FlowDetailedEvent:description ##### -->
+<para>
+
+</para>
+
+<!-- ##### FUNCTION flow_detailed_event_new ##### -->
+<para>
+
+</para>
+
+@format: 
+@Varargs: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_detailed_event_new_literal ##### -->
+<para>
+
+</para>
+
+@description: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_detailed_event_add_code ##### -->
+<para>
+
+</para>
+
+@detailed_event: 
+@domain: 
+@code: 
+
+
+<!-- ##### FUNCTION flow_detailed_event_matches ##### -->
+<para>
+
+</para>
+
+@detailed_event: 
+@domain: 
+@code: 
+@Returns: 
+
+

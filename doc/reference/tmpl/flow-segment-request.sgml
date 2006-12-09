@@ -1,0 +1,57 @@
+<!-- ##### SECTION Title ##### -->
+FlowSegmentRequest
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### STRUCT FlowSegmentRequest ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG FlowSegmentRequest:length ##### -->
+<para>
+
+</para>
+
+<!-- ##### FUNCTION flow_segment_request_new ##### -->
+<para>
+
+</para>
+
+@length: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_segment_request_get_length ##### -->
+<para>
+
+</para>
+
+@segment_request: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_segment_request_set_length ##### -->
+<para>
+
+</para>
+
+@segment_request: 
+@length: 
+
+

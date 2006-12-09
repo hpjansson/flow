@@ -1,0 +1,43 @@
+<!-- ##### SECTION Title ##### -->
+FlowSimplexElement
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### STRUCT FlowSimplexElement ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### FUNCTION flow_simplex_element_get_input_pad ##### -->
+<para>
+
+</para>
+
+@simplex_element: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_simplex_element_get_output_pad ##### -->
+<para>
+
+</para>
+
+@simplex_element: 
+@Returns: 
+
+

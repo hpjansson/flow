@@ -1,0 +1,235 @@
+<!-- ##### SECTION Title ##### -->
+FlowIO
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### STRUCT FlowIO ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### FUNCTION flow_io_new ##### -->
+<para>
+
+</para>
+
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_io_read ##### -->
+<para>
+
+</para>
+
+@io: 
+@dest_buffer: 
+@max_len: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_io_read_exact ##### -->
+<para>
+
+</para>
+
+@io: 
+@dest_buffer: 
+@exact_len: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_io_read_object ##### -->
+<para>
+
+</para>
+
+@io: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_io_write ##### -->
+<para>
+
+</para>
+
+@io: 
+@src_buffer: 
+@exact_len: 
+
+
+<!-- ##### FUNCTION flow_io_write_object ##### -->
+<para>
+
+</para>
+
+@io: 
+@object: 
+
+
+<!-- ##### FUNCTION flow_io_flush ##### -->
+<para>
+
+</para>
+
+@io: 
+
+
+<!-- ##### FUNCTION flow_io_set_read_notify ##### -->
+<para>
+
+</para>
+
+@io: 
+@func: 
+@user_data: 
+
+
+<!-- ##### FUNCTION flow_io_set_write_notify ##### -->
+<para>
+
+</para>
+
+@io: 
+@func: 
+@user_data: 
+
+
+<!-- ##### FUNCTION flow_io_block_reads ##### -->
+<para>
+
+</para>
+
+@io: 
+
+
+<!-- ##### FUNCTION flow_io_unblock_reads ##### -->
+<para>
+
+</para>
+
+@io: 
+
+
+<!-- ##### FUNCTION flow_io_block_writes ##### -->
+<para>
+
+</para>
+
+@io: 
+
+
+<!-- ##### FUNCTION flow_io_unblock_writes ##### -->
+<para>
+
+</para>
+
+@io: 
+
+
+<!-- ##### FUNCTION flow_io_sync_read ##### -->
+<para>
+
+</para>
+
+@io: 
+@dest_buffer: 
+@max_len: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_io_sync_read_exact ##### -->
+<para>
+
+</para>
+
+@io: 
+@dest_buffer: 
+@exact_len: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_io_sync_read_object ##### -->
+<para>
+
+</para>
+
+@io: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_io_sync_write ##### -->
+<para>
+
+</para>
+
+@io: 
+@src_buffer: 
+@exact_len: 
+
+
+<!-- ##### FUNCTION flow_io_sync_write_object ##### -->
+<para>
+
+</para>
+
+@io: 
+@object: 
+
+
+<!-- ##### FUNCTION flow_io_sync_flush ##### -->
+<para>
+
+</para>
+
+@io: 
+
+
+<!-- ##### FUNCTION flow_io_get_user_adapter ##### -->
+<para>
+
+</para>
+
+@io: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_io_set_user_adapter ##### -->
+<para>
+
+</para>
+
+@io: 
+@user_adapter: 
+
+
+<!-- ##### FUNCTION flow_io_check_bin ##### -->
+<para>
+
+</para>
+
+@io: 
+
+
+<!-- ##### FUNCTION flow_io_check_events ##### -->
+<para>
+
+</para>
+
+@io: 
+
+

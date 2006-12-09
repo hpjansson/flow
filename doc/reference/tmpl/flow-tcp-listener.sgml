@@ -1,0 +1,78 @@
+<!-- ##### SECTION Title ##### -->
+FlowTcpListener
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### STRUCT FlowTcpListener ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SIGNAL FlowTcpListener::new-connection ##### -->
+<para>
+
+</para>
+
+@flowtcplistener: the object which received the signal.
+
+<!-- ##### FUNCTION flow_tcp_listener_new ##### -->
+<para>
+
+</para>
+
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_tcp_listener_get_local_service ##### -->
+<para>
+
+</para>
+
+@tcp_listener: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_tcp_listener_set_local_service ##### -->
+<para>
+
+</para>
+
+@tcp_listener: 
+@ip_service: 
+@error_event: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_tcp_listener_pop_connection ##### -->
+<para>
+
+</para>
+
+@tcp_listener: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_tcp_listener_sync_pop_connection ##### -->
+<para>
+
+</para>
+
+@tcp_listener: 
+@Returns: 
+
+

@@ -1,0 +1,413 @@
+<!-- ##### SECTION Title ##### -->
+flow-common-impl-unix
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### MACRO mode_t ##### -->
+<para>
+
+</para>
+
+
+
+<!-- ##### MACRO R_OK ##### -->
+<para>
+
+</para>
+
+
+
+<!-- ##### MACRO W_OK ##### -->
+<para>
+
+</para>
+
+
+
+<!-- ##### MACRO X_OK ##### -->
+<para>
+
+</para>
+
+
+
+<!-- ##### MACRO F_OK ##### -->
+<para>
+
+</para>
+
+
+
+<!-- ##### MACRO S_IRUSR ##### -->
+<para>
+
+</para>
+
+
+
+<!-- ##### MACRO S_IWUSR ##### -->
+<para>
+
+</para>
+
+
+
+<!-- ##### MACRO S_IXUSR ##### -->
+<para>
+
+</para>
+
+
+
+<!-- ##### MACRO S_IRWXU ##### -->
+<para>
+
+</para>
+
+
+
+<!-- ##### MACRO strcasecmp ##### -->
+<para>
+
+</para>
+
+
+
+<!-- ##### MACRO strncasecmp ##### -->
+<para>
+
+</para>
+
+
+
+<!-- ##### MACRO S_ISDIR ##### -->
+<para>
+
+</para>
+
+@mode: 
+
+
+<!-- ##### MACRO S_ISREG ##### -->
+<para>
+
+</para>
+
+@mode: 
+
+
+<!-- ##### MACRO open ##### -->
+<para>
+
+</para>
+
+
+
+<!-- ##### MACRO close ##### -->
+<para>
+
+</para>
+
+
+
+<!-- ##### MACRO read ##### -->
+<para>
+
+</para>
+
+
+
+<!-- ##### MACRO write ##### -->
+<para>
+
+</para>
+
+
+
+<!-- ##### MACRO fstat ##### -->
+<para>
+
+</para>
+
+
+
+<!-- ##### MACRO lseek ##### -->
+<para>
+
+</para>
+
+
+
+<!-- ##### MACRO rmdir ##### -->
+<para>
+
+</para>
+
+
+
+<!-- ##### MACRO stat ##### -->
+<para>
+
+</para>
+
+
+
+<!-- ##### MACRO FLOW_WAKEUP_PIPE_INVALID ##### -->
+<para>
+
+</para>
+
+
+
+<!-- ##### ENUM FlowAddrFamily ##### -->
+<para>
+
+</para>
+
+@FLOW_ADDR_FAMILY_INVALID: 
+@FLOW_ADDR_FAMILY_IPV4: 
+@FLOW_ADDR_FAMILY_IPV6: 
+@FLOW_ADDR_FAMILY_UNIX: 
+
+<!-- ##### FUNCTION flow_init_sockets ##### -->
+<para>
+
+</para>
+
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_addr_family_to_af ##### -->
+<para>
+
+</para>
+
+@family: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_addr_family_from_af ##### -->
+<para>
+
+</para>
+
+@af: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_sockaddr_init ##### -->
+<para>
+
+</para>
+
+@dest_sa: 
+@type: 
+@addr_str: 
+@port: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_sockaddr_to_string ##### -->
+<para>
+
+</para>
+
+@sa: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_sockaddr_get_family ##### -->
+<para>
+
+</para>
+
+@sa: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_sockaddr_get_len ##### -->
+<para>
+
+</para>
+
+@sa: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_sockaddr_get_addr ##### -->
+<para>
+
+</para>
+
+@sa: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_sockaddr_get_addr_len ##### -->
+<para>
+
+</para>
+
+@sa: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_sockaddr_get_port ##### -->
+<para>
+
+</para>
+
+@sa: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_socket_set_nonblock ##### -->
+<para>
+
+</para>
+
+@fd: 
+@nonblock: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_pipe_set_nonblock ##### -->
+<para>
+
+</para>
+
+@fd: 
+@nonblock: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_wakeup_pipe_init ##### -->
+<para>
+
+</para>
+
+@wakeup_pipe: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_wakeup_pipe_destroy ##### -->
+<para>
+
+</para>
+
+@wakeup_pipe: 
+
+
+<!-- ##### FUNCTION flow_wakeup_pipe_get_watch_fd ##### -->
+<para>
+
+</para>
+
+@wakeup_pipe: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_wakeup_pipe_wakeup ##### -->
+<para>
+
+</para>
+
+@wakeup_pipe: 
+
+
+<!-- ##### FUNCTION flow_wakeup_pipe_handle_wakeup ##### -->
+<para>
+
+</para>
+
+@wakeup_pipe: 
+
+
+<!-- ##### FUNCTION flow_wakeup_pipe_is_valid ##### -->
+<para>
+
+</para>
+
+@wakeup_pipe: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_ip_addr_get_sockaddr ##### -->
+<para>
+
+</para>
+
+@ip_addr: 
+@dest_sa: 
+@port: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_ip_addr_set_sockaddr ##### -->
+<para>
+
+</para>
+
+@ip_addr: 
+@sa: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_ip_service_get_sockaddr ##### -->
+<para>
+
+</para>
+
+@ip_service: 
+@dest_sa: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_ip_service_set_sockaddr ##### -->
+<para>
+
+</para>
+
+@ip_service: 
+@sa: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_close_socket_fd ##### -->
+<para>
+
+</para>
+
+@fd: 
+
+
+<!-- ##### FUNCTION flow_close_file_fd ##### -->
+<para>
+
+</para>
+
+@fd: 
+
+
+<!-- ##### FUNCTION flow_close_pipe_fd ##### -->
+<para>
+
+</para>
+
+@fd: 
+
+

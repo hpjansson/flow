@@ -1,0 +1,43 @@
+<!-- ##### SECTION Title ##### -->
+FlowElement
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### STRUCT FlowElement ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### FUNCTION flow_element_get_input_pads ##### -->
+<para>
+
+</para>
+
+@element: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_element_get_output_pads ##### -->
+<para>
+
+</para>
+
+@element: 
+@Returns: 
+
+

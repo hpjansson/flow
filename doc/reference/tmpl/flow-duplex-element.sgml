@@ -1,0 +1,45 @@
+<!-- ##### SECTION Title ##### -->
+FlowDuplexElement
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### STRUCT FlowDuplexElement ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### FUNCTION flow_duplex_element_get_upstream_pads ##### -->
+<para>
+
+</para>
+
+@duplex_element: 
+@input_pad: 
+@output_pad: 
+
+
+<!-- ##### FUNCTION flow_duplex_element_get_downstream_pads ##### -->
+<para>
+
+</para>
+
+@duplex_element: 
+@input_pad: 
+@output_pad: 
+
+

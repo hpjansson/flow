@@ -1,0 +1,72 @@
+<!-- ##### SECTION Title ##### -->
+FlowPosition
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### ENUM FlowOffsetAnchor ##### -->
+<para>
+
+</para>
+
+@FLOW_OFFSET_ANCHOR_CURRENT: 
+@FLOW_OFFSET_ANCHOR_BEGIN: 
+@FLOW_OFFSET_ANCHOR_END: 
+
+<!-- ##### STRUCT FlowPosition ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG FlowPosition:anchor ##### -->
+<para>
+
+</para>
+
+<!-- ##### ARG FlowPosition:offset ##### -->
+<para>
+
+</para>
+
+<!-- ##### FUNCTION flow_position_new ##### -->
+<para>
+
+</para>
+
+@anchor: 
+@offset: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_position_get_offset ##### -->
+<para>
+
+</para>
+
+@position: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_position_get_anchor ##### -->
+<para>
+
+</para>
+
+@position: 
+@Returns: 
+
+

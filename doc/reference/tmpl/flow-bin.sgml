@@ -1,0 +1,125 @@
+<!-- ##### SECTION Title ##### -->
+FlowBin
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### STRUCT FlowBin ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SIGNAL FlowBin::element-added ##### -->
+<para>
+
+</para>
+
+@flowbin: the object which received the signal.
+@arg1: 
+
+<!-- ##### SIGNAL FlowBin::element-removed ##### -->
+<para>
+
+</para>
+
+@flowbin: the object which received the signal.
+@arg1: 
+
+<!-- ##### FUNCTION flow_bin_new ##### -->
+<para>
+
+</para>
+
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_bin_add_element ##### -->
+<para>
+
+</para>
+
+@bin: 
+@element: 
+@element_name: 
+
+
+<!-- ##### FUNCTION flow_bin_remove_element ##### -->
+<para>
+
+</para>
+
+@bin: 
+@element: 
+
+
+<!-- ##### FUNCTION flow_bin_have_element ##### -->
+<para>
+
+</para>
+
+@bin: 
+@element: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_bin_get_element ##### -->
+<para>
+
+</para>
+
+@bin: 
+@element_name: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_bin_get_element_name ##### -->
+<para>
+
+</para>
+
+@bin: 
+@element: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_bin_list_elements ##### -->
+<para>
+
+</para>
+
+@bin: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_bin_list_unconnected_input_pads ##### -->
+<para>
+
+</para>
+
+@bin: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_bin_list_unconnected_output_pads ##### -->
+<para>
+
+</para>
+
+@bin: 
+@Returns: 
+
+

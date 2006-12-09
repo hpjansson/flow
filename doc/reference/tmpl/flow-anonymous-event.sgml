@@ -1,0 +1,70 @@
+<!-- ##### SECTION Title ##### -->
+FlowAnonymousEvent
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### STRUCT FlowAnonymousEvent ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG FlowAnonymousEvent:data ##### -->
+<para>
+
+</para>
+
+<!-- ##### ARG FlowAnonymousEvent:destroy-notify ##### -->
+<para>
+
+</para>
+
+<!-- ##### FUNCTION flow_anonymous_event_new ##### -->
+<para>
+
+</para>
+
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_anonymous_event_get_data ##### -->
+<para>
+
+</para>
+
+@anonymous_event: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_anonymous_event_set_data ##### -->
+<para>
+
+</para>
+
+@anonymous_event: 
+@data: 
+
+
+<!-- ##### FUNCTION flow_anonymous_event_set_destroy_notify ##### -->
+<para>
+
+</para>
+
+@anonymous_event: 
+@notify: 
+
+

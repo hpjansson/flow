@@ -1,0 +1,180 @@
+<!-- ##### SECTION Title ##### -->
+FlowIPAddr
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### ENUM FlowIPAddrFamily ##### -->
+<para>
+
+</para>
+
+@FLOW_IP_ADDR_INVALID: 
+@FLOW_IP_ADDR_IPV4: 
+@FLOW_IP_ADDR_IPV6: 
+
+<!-- ##### STRUCT FlowIPAddr ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### FUNCTION flow_ip_addr_new ##### -->
+<para>
+
+</para>
+
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_ip_addr_get_family ##### -->
+<para>
+
+</para>
+
+@ip_addr: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_ip_addr_is_valid ##### -->
+<para>
+
+</para>
+
+@ip_addr: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_ip_addr_get_string ##### -->
+<para>
+
+</para>
+
+@ip_addr: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_ip_addr_set_string ##### -->
+<para>
+
+</para>
+
+@ip_addr: 
+@string: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_ip_addr_get_raw ##### -->
+<para>
+
+</para>
+
+@ip_addr: 
+@dest: 
+@len: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_ip_addr_set_raw ##### -->
+<para>
+
+</para>
+
+@ip_addr: 
+@src: 
+@len: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_ip_addr_is_loopback ##### -->
+<para>
+
+</para>
+
+@ip_addr: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_ip_addr_is_multicast ##### -->
+<para>
+
+</para>
+
+@ip_addr: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_ip_addr_is_broadcast ##### -->
+<para>
+
+</para>
+
+@ip_addr: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_ip_addr_is_reserved ##### -->
+<para>
+
+</para>
+
+@ip_addr: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_ip_addr_is_private ##### -->
+<para>
+
+</para>
+
+@ip_addr: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_ip_addr_is_internet ##### -->
+<para>
+
+</para>
+
+@ip_addr: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_ip_addr_get_internet_interface ##### -->
+<para>
+
+</para>
+
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_ip_addr_get_interfaces ##### -->
+<para>
+
+</para>
+
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_ip_addr_get_interface_to ##### -->
+<para>
+
+</para>
+
+@ip_addr: 
+@Returns: 
+
+

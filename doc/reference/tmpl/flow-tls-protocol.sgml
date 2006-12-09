@@ -1,0 +1,47 @@
+<!-- ##### SECTION Title ##### -->
+FlowTlsProtocol
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### ENUM FlowAgentRole ##### -->
+<para>
+
+</para>
+
+@FLOW_AGENT_ROLE_SERVER: 
+@FLOW_AGENT_ROLE_CLIENT: 
+
+<!-- ##### STRUCT FlowTlsProtocol ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG FlowTlsProtocol:agent-role ##### -->
+<para>
+
+</para>
+
+<!-- ##### FUNCTION flow_tls_protocol_new ##### -->
+<para>
+
+</para>
+
+@agent_role: 
+@Returns: 
+
+

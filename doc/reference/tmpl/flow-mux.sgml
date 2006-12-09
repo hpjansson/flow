@@ -1,0 +1,52 @@
+<!-- ##### SECTION Title ##### -->
+FlowMux
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### STRUCT FlowMux ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### FUNCTION flow_mux_get_output_pad ##### -->
+<para>
+
+</para>
+
+@mux: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_mux_add_input_pad ##### -->
+<para>
+
+</para>
+
+@mux: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_mux_remove_input_pad ##### -->
+<para>
+
+</para>
+
+@mux: 
+@input_pad: 
+
+

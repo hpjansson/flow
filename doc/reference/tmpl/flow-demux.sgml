@@ -1,0 +1,52 @@
+<!-- ##### SECTION Title ##### -->
+FlowDemux
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### STRUCT FlowDemux ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### FUNCTION flow_demux_get_input_pad ##### -->
+<para>
+
+</para>
+
+@demux: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_demux_add_output_pad ##### -->
+<para>
+
+</para>
+
+@demux: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_demux_remove_output_pad ##### -->
+<para>
+
+</para>
+
+@demux: 
+@output_pad: 
+
+

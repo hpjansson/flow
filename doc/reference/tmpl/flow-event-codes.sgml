@@ -1,0 +1,100 @@
+<!-- ##### SECTION Title ##### -->
+flow-event-codes
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### MACRO FLOW_STREAM_DOMAIN ##### -->
+<para>
+
+</para>
+
+
+
+<!-- ##### MACRO FLOW_FILE_DOMAIN ##### -->
+<para>
+
+</para>
+
+
+
+<!-- ##### MACRO FLOW_EXEC_DOMAIN ##### -->
+<para>
+
+</para>
+
+
+
+<!-- ##### MACRO FLOW_SOCKET_DOMAIN ##### -->
+<para>
+
+</para>
+
+
+
+<!-- ##### ENUM FlowStreamEventCode ##### -->
+<para>
+
+</para>
+
+@FLOW_STREAM_BEGIN: 
+@FLOW_STREAM_END: 
+@FLOW_STREAM_END_CONVERSE: 
+@FLOW_STREAM_DENIED: 
+@FLOW_STREAM_SEGMENT_BEGIN: 
+@FLOW_STREAM_SEGMENT_END: 
+@FLOW_STREAM_SEGMENT_DENIED: 
+@FLOW_STREAM_ERROR: 
+@FLOW_STREAM_APP_ERROR: 
+@FLOW_STREAM_PHYSICAL_ERROR: 
+@FLOW_STREAM_RESOURCE_ERROR: 
+@FLOW_STREAM_FLUSH: 
+
+<!-- ##### ENUM FlowFileEventCode ##### -->
+<para>
+
+</para>
+
+@FLOW_FILE_PERMISSION_DENIED: 
+@FLOW_FILE_IS_NOT_A_FILE: 
+@FLOW_FILE_TOO_MANY_LINKS: 
+@FLOW_FILE_OUT_OF_HANDLES: 
+@FLOW_FILE_PATH_TOO_LONG: 
+@FLOW_FILE_NO_SPACE: 
+@FLOW_FILE_IS_READ_ONLY: 
+@FLOW_FILE_IS_LOCKED: 
+@FLOW_FILE_DOES_NOT_EXIST: 
+
+<!-- ##### ENUM FlowExecEventCode ##### -->
+<para>
+
+</para>
+
+@FLOW_EXEC_PARSE_ERROR: 
+@FLOW_EXEC_RUN_ERROR: 
+
+<!-- ##### ENUM FlowSocketEventCode ##### -->
+<para>
+
+</para>
+
+@FLOW_SOCKET_ADDRESS_PROTECTED: 
+@FLOW_SOCKET_ADDRESS_IN_USE: 
+@FLOW_SOCKET_ADDRESS_DOES_NOT_EXIST: 
+@FLOW_SOCKET_CONNECTION_REFUSED: 
+@FLOW_SOCKET_NETWORK_UNREACHABLE: 
+@FLOW_SOCKET_ACCEPT_ERROR: 
+

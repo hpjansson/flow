@@ -1,0 +1,79 @@
+<!-- ##### SECTION Title ##### -->
+FlowIPResolver
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### STRUCT FlowIPResolver ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SIGNAL FlowIPResolver::resolved ##### -->
+<para>
+
+</para>
+
+@flowipresolver: the object which received the signal.
+@arg1: 
+@arg2: 
+
+<!-- ##### FUNCTION flow_ip_resolver_new ##### -->
+<para>
+
+</para>
+
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_ip_resolver_get_default ##### -->
+<para>
+
+</para>
+
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_ip_resolver_resolve_name ##### -->
+<para>
+
+</para>
+
+@resolver: 
+@name: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_ip_resolver_resolve_ip_addr ##### -->
+<para>
+
+</para>
+
+@resolver: 
+@addr: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_ip_resolver_cancel_resolution ##### -->
+<para>
+
+</para>
+
+@resolver: 
+@lookup_id: 
+
+

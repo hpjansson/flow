@@ -1,0 +1,80 @@
+<!-- ##### SECTION Title ##### -->
+FlowIPService
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### ENUM FlowQuality ##### -->
+<para>
+
+</para>
+
+@FLOW_QUALITY_UNSPECIFIED: 
+@FLOW_QUALITY_LOW_COST: 
+@FLOW_QUALITY_HIGH_RELIABILITY: 
+@FLOW_QUALITY_HIGH_THROUGHPUT: 
+@FLOW_QUALITY_LOW_LATENCY: 
+
+<!-- ##### STRUCT FlowIPService ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### FUNCTION flow_ip_service_new ##### -->
+<para>
+
+</para>
+
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_ip_service_get_port ##### -->
+<para>
+
+</para>
+
+@ip_service: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_ip_service_set_port ##### -->
+<para>
+
+</para>
+
+@ip_service: 
+@port: 
+
+
+<!-- ##### FUNCTION flow_ip_service_get_quality ##### -->
+<para>
+
+</para>
+
+@ip_service: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_ip_service_set_quality ##### -->
+<para>
+
+</para>
+
+@ip_service: 
+@quality: 
+
+

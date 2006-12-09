@@ -1,0 +1,246 @@
+<!-- ##### SECTION Title ##### -->
+flow-shunt
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### ENUM FlowAccessMode ##### -->
+<para>
+
+</para>
+
+@FLOW_NO_ACCESS: 
+@FLOW_READ_ACCESS: 
+@FLOW_WRITE_ACCESS: 
+@FLOW_EXECUTE_ACCESS: 
+
+<!-- ##### STRUCT FlowShunt ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### STRUCT FlowSyncShunt ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### FUNCTION flow_open_file ##### -->
+<para>
+
+</para>
+
+@path: 
+@access_mode: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_create_file ##### -->
+<para>
+
+</para>
+
+@path: 
+@access_mode: 
+@destructive: 
+@creation_permissions_user: 
+@creation_permissions_group: 
+@creation_permissions_other: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_spawn_worker ##### -->
+<para>
+
+</para>
+
+@func: 
+@user_data: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_spawn_process ##### -->
+<para>
+
+</para>
+
+@func: 
+@user_data: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_spawn_command_line ##### -->
+<para>
+
+</para>
+
+@command_line: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_open_udp_port ##### -->
+<para>
+
+</para>
+
+@local_service: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_open_tcp_listener ##### -->
+<para>
+
+</para>
+
+@local_service: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_connect_to_tcp ##### -->
+<para>
+
+</para>
+
+@remote_service: 
+@local_port: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_shunt_destroy ##### -->
+<para>
+
+</para>
+
+@shunt: 
+
+
+<!-- ##### FUNCTION flow_shunt_dispatch_now ##### -->
+<para>
+
+</para>
+
+@shunt: 
+@n_reads_done: 
+@n_writes_done: 
+
+
+<!-- ##### FUNCTION flow_shunt_get_read_func ##### -->
+<para>
+
+</para>
+
+@shunt: 
+@read_func: 
+@user_data: 
+
+
+<!-- ##### FUNCTION flow_shunt_set_read_func ##### -->
+<para>
+
+</para>
+
+@shunt: 
+@read_func: 
+@user_data: 
+
+
+<!-- ##### FUNCTION flow_shunt_get_write_func ##### -->
+<para>
+
+</para>
+
+@shunt: 
+@write_func: 
+@user_data: 
+
+
+<!-- ##### FUNCTION flow_shunt_set_write_func ##### -->
+<para>
+
+</para>
+
+@shunt: 
+@write_func: 
+@user_data: 
+
+
+<!-- ##### FUNCTION flow_shunt_block_reads ##### -->
+<para>
+
+</para>
+
+@shunt: 
+
+
+<!-- ##### FUNCTION flow_shunt_unblock_reads ##### -->
+<para>
+
+</para>
+
+@shunt: 
+
+
+<!-- ##### FUNCTION flow_shunt_block_writes ##### -->
+<para>
+
+</para>
+
+@shunt: 
+
+
+<!-- ##### FUNCTION flow_shunt_unblock_writes ##### -->
+<para>
+
+</para>
+
+@shunt: 
+
+
+<!-- ##### FUNCTION flow_shutdown_shunts ##### -->
+<para>
+
+</para>
+
+
+
+<!-- ##### FUNCTION flow_sync_shunt_read ##### -->
+<para>
+
+</para>
+
+@sync_shunt: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_sync_shunt_try_read ##### -->
+<para>
+
+</para>
+
+@sync_shunt: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_sync_shunt_write ##### -->
+<para>
+
+</para>
+
+@sync_shunt: 
+@packet: 
+
+

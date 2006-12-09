@@ -1,0 +1,149 @@
+<!-- ##### SECTION Title ##### -->
+flow-util
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### USER_FUNCTION FlowNotifyFunc ##### -->
+<para>
+
+</para>
+
+@user_data: 
+
+
+<!-- ##### FUNCTION flow_connect_simplex__simplex ##### -->
+<para>
+
+</para>
+
+@output_simplex: 
+@input_simplex: 
+
+
+<!-- ##### FUNCTION flow_connect_duplex__duplex ##### -->
+<para>
+
+</para>
+
+@downstream_duplex: 
+@upstream_duplex: 
+
+
+<!-- ##### FUNCTION flow_connect_simplex_simplex__duplex ##### -->
+<para>
+
+</para>
+
+@downstream_simplex_output: 
+@downstream_simplex_input: 
+@upstream_duplex: 
+
+
+<!-- ##### FUNCTION flow_connect_duplex__simplex_simplex ##### -->
+<para>
+
+</para>
+
+@downstream_duplex: 
+@upstream_simplex_output: 
+@upstream_simplex_input: 
+
+
+<!-- ##### FUNCTION flow_disconnect_element ##### -->
+<para>
+
+</para>
+
+@element: 
+
+
+<!-- ##### FUNCTION flow_strerror ##### -->
+<para>
+
+</para>
+
+@errnum: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_create_simple_event_packet ##### -->
+<para>
+
+</para>
+
+@domain: 
+@code: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_handle_universal_events ##### -->
+<para>
+
+</para>
+
+@element: 
+@packet: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_read_object_from_shunt ##### -->
+<para>
+
+</para>
+
+@shunt: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_g_ptr_array_find ##### -->
+<para>
+
+</para>
+
+@array: 
+@data: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_g_ptr_array_remove_sparse ##### -->
+<para>
+
+</para>
+
+@array: 
+@data: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_g_ptr_array_add_sparse ##### -->
+<para>
+
+</para>
+
+@array: 
+@data: 
+
+
+<!-- ##### FUNCTION flow_g_ptr_array_compress ##### -->
+<para>
+
+</para>
+
+@array: 
+@Returns: 
+
+

@@ -1,0 +1,69 @@
+<!-- ##### SECTION Title ##### -->
+FlowConnector
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### ENUM FlowConnectivity ##### -->
+<para>
+
+</para>
+
+@FLOW_CONNECTIVITY_CONNECTED: 
+@FLOW_CONNECTIVITY_CONNECTING: 
+@FLOW_CONNECTIVITY_DISCONNECTED: 
+@FLOW_CONNECTIVITY_DISCONNECTING: 
+
+<!-- ##### STRUCT FlowConnector ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SIGNAL FlowConnector::connectivity-changed ##### -->
+<para>
+
+</para>
+
+@flowconnector: the object which received the signal.
+
+<!-- ##### FUNCTION flow_connector_get_state ##### -->
+<para>
+
+</para>
+
+@connector: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_connector_get_last_state ##### -->
+<para>
+
+</para>
+
+@connector: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_connector_set_state_internal ##### -->
+<para>
+
+</para>
+
+@connector: 
+@state: 
+
+

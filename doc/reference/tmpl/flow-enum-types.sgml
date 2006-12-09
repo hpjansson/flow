@@ -1,0 +1,49 @@
+<!-- ##### SECTION Title ##### -->
+flow-enum-types
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### FUNCTION flow_offset_anchor_get_type ##### -->
+<para>
+
+</para>
+
+@Returns: 
+
+
+<!-- ##### MACRO FLOW_TYPE_OFFSET_ANCHOR ##### -->
+<para>
+
+</para>
+
+
+
+<!-- ##### FUNCTION flow_agent_role_get_type ##### -->
+<para>
+
+</para>
+
+@Returns: 
+
+
+<!-- ##### MACRO FLOW_TYPE_AGENT_ROLE ##### -->
+<para>
+
+</para>
+
+
+

@@ -1,0 +1,143 @@
+<!-- ##### SECTION Title ##### -->
+FlowUserAdapter
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### STRUCT FlowUserAdapter ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### FUNCTION flow_user_adapter_new ##### -->
+<para>
+
+</para>
+
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_user_adapter_push ##### -->
+<para>
+
+</para>
+
+@user_adapter: 
+
+
+<!-- ##### FUNCTION flow_user_adapter_get_input_queue ##### -->
+<para>
+
+</para>
+
+@user_adapter: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_user_adapter_get_output_queue ##### -->
+<para>
+
+</para>
+
+@user_adapter: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_user_adapter_set_input_notify ##### -->
+<para>
+
+</para>
+
+@user_adapter: 
+@func: 
+@user_data: 
+
+
+<!-- ##### FUNCTION flow_user_adapter_set_output_notify ##### -->
+<para>
+
+</para>
+
+@user_adapter: 
+@func: 
+@user_data: 
+
+
+<!-- ##### FUNCTION flow_user_adapter_block_input ##### -->
+<para>
+
+</para>
+
+@user_adapter: 
+
+
+<!-- ##### FUNCTION flow_user_adapter_unblock_input ##### -->
+<para>
+
+</para>
+
+@user_adapter: 
+
+
+<!-- ##### FUNCTION flow_user_adapter_block_output ##### -->
+<para>
+
+</para>
+
+@user_adapter: 
+
+
+<!-- ##### FUNCTION flow_user_adapter_unblock_output ##### -->
+<para>
+
+</para>
+
+@user_adapter: 
+
+
+<!-- ##### FUNCTION flow_user_adapter_wait_for_input ##### -->
+<para>
+
+</para>
+
+@user_adapter: 
+
+
+<!-- ##### FUNCTION flow_user_adapter_wait_for_output ##### -->
+<para>
+
+</para>
+
+@user_adapter: 
+
+
+<!-- ##### FUNCTION flow_user_adapter_interrupt_input ##### -->
+<para>
+
+</para>
+
+@user_adapter: 
+
+
+<!-- ##### FUNCTION flow_user_adapter_interrupt_output ##### -->
+<para>
+
+</para>
+
+@user_adapter: 
+
+

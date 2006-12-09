@@ -1,0 +1,42 @@
+<!-- ##### SECTION Title ##### -->
+FlowTcpConnector
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### STRUCT FlowTcpConnector ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### FUNCTION flow_tcp_connector_new ##### -->
+<para>
+
+</para>
+
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_tcp_connector_get_remote_service ##### -->
+<para>
+
+</para>
+
+@tcp_connector: 
+@Returns: 
+
+

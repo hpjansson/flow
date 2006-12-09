@@ -1,0 +1,250 @@
+<!-- ##### SECTION Title ##### -->
+flow-gobject-util
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### MACRO FLOW_GOBJECT_PROPERTY_OVERRIDE ##### -->
+<para>
+
+</para>
+
+@name: 
+@value_getter: 
+@value_setter: 
+
+
+<!-- ##### MACRO FLOW_GOBJECT_PROPERTY ##### -->
+<para>
+
+</para>
+
+@fundamental_type: 
+@name: 
+@nick: 
+@blurb: 
+@param_flags: 
+@value_getter: 
+@value_setter: 
+@type_getter: 
+
+
+<!-- ##### MACRO FLOW_GOBJECT_PROPERTY_BOOLEAN ##### -->
+<para>
+
+</para>
+
+@fundamental_type: 
+@name: 
+@nick: 
+@blurb: 
+@param_flags: 
+@value_getter: 
+@value_setter: 
+@defval: 
+
+
+<!-- ##### MACRO FLOW_GOBJECT_PROPERTY_INT ##### -->
+<para>
+
+</para>
+
+@fundamental_type: 
+@name: 
+@nick: 
+@blurb: 
+@param_flags: 
+@value_getter: 
+@value_setter: 
+@min: 
+@max: 
+@defval: 
+
+
+<!-- ##### MACRO FLOW_GOBJECT_PROPERTY_ENUM ##### -->
+<para>
+
+</para>
+
+@name: 
+@nick: 
+@blurb: 
+@param_flags: 
+@value_getter: 
+@value_setter: 
+@defval: 
+@type_getter: 
+
+
+<!-- ##### MACRO FLOW_GOBJECT_PROPERTY_FLAGS ##### -->
+<para>
+
+</para>
+
+@name: 
+@nick: 
+@blurb: 
+@param_flags: 
+@value_getter: 
+@value_setter: 
+@defval: 
+@type_getter: 
+
+
+<!-- ##### MACRO FLOW_GOBJECT_PROPERTY_FLOAT ##### -->
+<para>
+
+</para>
+
+@fundamental_type: 
+@name: 
+@nick: 
+@blurb: 
+@param_flags: 
+@value_getter: 
+@value_setter: 
+@min: 
+@max: 
+@defval: 
+
+
+<!-- ##### MACRO FLOW_GOBJECT_PROPERTY_STRING ##### -->
+<para>
+
+</para>
+
+@fundamental_type: 
+@name: 
+@nick: 
+@blurb: 
+@param_flags: 
+@value_getter: 
+@value_setter: 
+@defval: 
+
+
+<!-- ##### MACRO FLOW_GOBJECT_PROPERTY_POINTER ##### -->
+<para>
+
+</para>
+
+@fundamental_type: 
+@name: 
+@nick: 
+@blurb: 
+@param_flags: 
+@value_getter: 
+@value_setter: 
+
+
+<!-- ##### MACRO FLOW_GOBJECT_PROPERTIES_BEGIN ##### -->
+<para>
+
+</para>
+
+@self_prefix: 
+
+
+<!-- ##### MACRO FLOW_GOBJECT_PROPERTIES_END ##### -->
+<para>
+
+</para>
+
+
+
+<!-- ##### MACRO FLOW_GOBJECT_MAKE_IMPL ##### -->
+<para>
+
+</para>
+
+@self_prefix: 
+@self_type: 
+@parent_type: 
+@reg_flags: 
+
+
+<!-- ##### MACRO FLOW_GOBJECT_MAKE_IMPL_NO_PRIVATE ##### -->
+<para>
+
+</para>
+
+@self_prefix: 
+@self_type: 
+@parent_type: 
+@reg_flags: 
+
+
+<!-- ##### MACRO FLOW_GINTERFACE_MAKE_IMPL ##### -->
+<para>
+
+</para>
+
+@self_prefix: 
+@self_type: 
+
+
+<!-- ##### FUNCTION flow_gobject_class_install_properties ##### -->
+<para>
+
+</para>
+
+@object_class: 
+@props: 
+@n_props: 
+
+
+<!-- ##### FUNCTION flow_gobject_get_property ##### -->
+<para>
+
+</para>
+
+@object: 
+@prop_id: 
+@value: 
+@pspec: 
+@props: 
+@n_props: 
+
+
+<!-- ##### FUNCTION flow_gobject_set_property ##### -->
+<para>
+
+</para>
+
+@object: 
+@prop_id: 
+@value: 
+@pspec: 
+@props: 
+@n_props: 
+
+
+<!-- ##### MACRO flow_gobject_unref_clear ##### -->
+<para>
+
+</para>
+
+@ref: 
+
+
+<!-- ##### FUNCTION flow_gobject_unref_clear_real ##### -->
+<para>
+
+</para>
+
+@ptr_to_ref: 
+
+

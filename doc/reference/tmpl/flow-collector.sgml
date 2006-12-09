@@ -1,0 +1,34 @@
+<!-- ##### SECTION Title ##### -->
+FlowCollector
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### STRUCT FlowCollector ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### FUNCTION flow_collector_get_input_pad ##### -->
+<para>
+
+</para>
+
+@collector: 
+@Returns: 
+
+
