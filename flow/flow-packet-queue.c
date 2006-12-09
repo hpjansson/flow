@@ -265,7 +265,6 @@ flow_packet_queue_get_length_data_bytes (FlowPacketQueue *packet_queue)
 
 /**
  * flow_packet_queue_push_packet:
- * 
  * @packet_queue: A packet queue.
  * @packet:       A packet.
  * 
@@ -298,7 +297,6 @@ flow_packet_queue_push_packet (FlowPacketQueue *packet_queue, FlowPacket *packet
 
 /**
  * flow_packet_queue_push_bytes:
- * 
  * @packet_queue: A packet queue.
  * @src:          A pointer to the data to push.
  * @n:            Number of bytes to push from @src.
@@ -328,7 +326,6 @@ flow_packet_queue_push_bytes (FlowPacketQueue *packet_queue, gconstpointer src, 
 
 /**
  * flow_packet_queue_pop_packet:
- * 
  * @packet_queue: A packet queue.
  * 
  * Pops the next packet from @packet_queue. If flow_packet_queue_pop_bytes ()
@@ -394,7 +391,6 @@ flow_packet_queue_pop_bytes (FlowPacketQueue *packet_queue, gpointer dest, gint 
 
 /**
  * flow_packet_queue_pop_bytes_exact:
- * 
  * @packet_queue: A packet queue.
  * @dest:         A pointer at which to store the data, or %NULL to discard.
  * @n:            Number of bytes to pop from @packet_queue.
@@ -581,7 +577,6 @@ flow_packet_queue_steal (FlowPacketQueue *packet_queue, gint n_packets, gint n_b
 
 /**
  * flow_packet_queue_peek_first_object:
- * 
  * @packet_queue: A packet queue.
  * 
  * This convenience function finds the first packet in @packet_queue
@@ -640,7 +635,6 @@ flow_packet_queue_peek_first_object (FlowPacketQueue *packet_queue)
 
 /**
  * flow_packet_queue_pop_first_object:
- * 
  * @packet_queue: A packet queue.
  * 
  * This convenience function finds the first packet in @packet_queue
@@ -701,7 +695,6 @@ flow_packet_queue_pop_first_object (FlowPacketQueue *packet_queue)
 
 /**
  * flow_packet_queue_skip_past_first_object:
- * 
  * @packet_queue: A packet queue.
  * 
  * This convenience function frees and removes pending packets in
@@ -738,7 +731,6 @@ flow_packet_queue_skip_past_first_object (FlowPacketQueue *packet_queue)
 
 /**
  * flow_packet_queue_clear:
- * 
  * @packet_queue: A packet queue.
  * 
  * Frees and removes all pending packets from @packet_queue.
