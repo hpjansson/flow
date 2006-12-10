@@ -47,11 +47,6 @@
     <title>API Reference</title>
 
     <chapter>
-      <title>Object Hierarchy</title>
-      <xi:include href="xml/tree_index.sgml"/>
-    </chapter>
-
-    <chapter>
       <title>Convenience I/O Classes</title>
       <xi:include href="xml/flow-io.xml"/>
       <xi:include href="xml/flow-tcp-io.xml"/>
@@ -70,12 +65,8 @@
     </chapter>
 
     <chapter>
-      <title>Protocols</title>
-      <xi:include href="xml/flow-tls-protocol.xml"/>
-    </chapter>
-
-    <chapter>
       <title>Miscellaneous Elements</title>
+      <xi:include href="xml/flow-tls-protocol.xml"/>
       <xi:include href="xml/flow-destructor.xml"/>
       <xi:include href="xml/flow-user-adapter.xml"/>
     </chapter>
@@ -113,15 +104,24 @@
     </chapter>
 
     <chapter>
+      <title>Utilities</title>
+      <xi:include href="xml/flow-gobject-util.xml"/>
+      <xi:include href="xml/flow-context-mgmt.xml"/>
+      <xi:include href="xml/flow-util.xml"/>
+      <xi:include href="xml/flow-shunt.xml"/>
+    </chapter>
+
+    <chapter>
       <title>Miscellaneous</title>
       <xi:include href="xml/flow-bin.xml"/>
-      <xi:include href="xml/flow-context-mgmt.xml"/>
       <xi:include href="xml/flow-messages.xml"/>
-      <xi:include href="xml/flow-util.xml"/>
-      <xi:include href="xml/flow-gobject-util.xml"/>
       <xi:include href="xml/flow-enum-types.xml"/>
-      <xi:include href="xml/flow-shunt.xml"/>
       <xi:include href="xml/flow-marshallers.xml"/>
+    </chapter>
+
+    <chapter>
+      <title>Object Hierarchy</title>
+      <xi:include href="xml/tree_index.sgml"/>
     </chapter>
   </part>
 </book>
