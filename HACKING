@@ -115,6 +115,11 @@ resides in the "flow" directory.
    it. Useful for terminating an output pad whose output you're not interested
    in (if you don't terminate, output can pile up on the pad).
 
+ - flow-tls-protocol.[ch]
+
+   A fully implemented duplex element that talks TLS/SSL downstream and
+   plaintext upstream.
+
  - flow-connector.[ch]
 
    Abstract class for connection-oriented elements. Manages a single connection
@@ -123,6 +128,10 @@ resides in the "flow" directory.
  - flow-tcp-connector.[ch]
 
    Fully implemented connector for TCP/IP streams.
+
+ - flow-tcp-listener.[ch]
+
+   Listens for TCP connections, spawning FlowTcpConnectors (above).
 
  - flow-event.[ch]
 
@@ -133,11 +142,16 @@ resides in the "flow" directory.
 
  - flow-detailed-event.[ch]
 
-   Fully implemented events that carry a list of event domains and codes, as
+   Fully implemented event that carries a list of event domains and codes, as
    well as an (optional) human-readable description of the event. Each event
    may carry multiple event codes describing the same event with different
    levels of specificity, so it may match e.g. either "stream end" or "TCP
    connection closed on remote end". This simplifies element code.
+
+ - flow-property-event.[ch]
+
+   Fully implemented event that carries a property to be set on a certain
+   FlowElement instance or class.
 
  - flow-anonymous-event.[ch]
 
@@ -156,14 +170,32 @@ resides in the "flow" directory.
    Requests that a data segment be read, starting at the current position, from
    a connected file.
 
- - flow-pipeline.[ch]
+ - flow-bin.[ch]
 
-   Contains/manages a number of FlowElements connected a certain way. Similar
-   to GStreamer's GstBin.
+   Contains/manages a number of FlowElements. Similar to GStreamer's GstBin.
 
 4) Prefab pipelines:
 
-[TODO]
+ - flow-io.[ch]
+
+   A bin with external I/O functions, for constructing simple I/O pipelines.
+   Does not do anything out of the box.
+
+ - flow-tcp-io.[ch]
+
+   A FlowIO derivate that does TCP connections.
+
+ - flow-tcp-io-listener.[ch]
+
+   Listens for TCP connections, spawning FlowTcpIOs (above).
+
+ - flow-tls-tcp-io.[ch]
+
+   Derives from FlowTcpIO and adds a FlowTlsProtocol element.
+
+ - flow-tls-tcp-io-listener.[ch]
+
+   Listens for TCP connections, spawning FlowTlsTcpIOs (above).
 
 Unit Tests
 ----------
