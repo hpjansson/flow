@@ -1,8 +1,8 @@
 <!-- ##### SECTION Title ##### -->
-flow-gobject-util
+GObject Utilities
 
 <!-- ##### SECTION Short_Description ##### -->
-
+Simplify class and property creation
 
 <!-- ##### SECTION Long_Description ##### -->
 <para>

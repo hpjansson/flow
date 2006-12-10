@@ -2,7 +2,7 @@
 FlowDuplexElement
 
 <!-- ##### SECTION Short_Description ##### -->
-
+Element with two input and two output pads
 
 <!-- ##### SECTION Long_Description ##### -->
 <para>

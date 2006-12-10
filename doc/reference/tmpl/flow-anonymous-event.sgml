@@ -2,7 +2,7 @@
 FlowAnonymousEvent
 
 <!-- ##### SECTION Short_Description ##### -->
-
+Event carrying an unqualified pointer
 
 <!-- ##### SECTION Long_Description ##### -->
 <para>

@@ -2,7 +2,7 @@
 FlowPacket
 
 <!-- ##### SECTION Short_Description ##### -->
-
+A stream packet that can contain data or an object reference
 
 <!-- ##### SECTION Long_Description ##### -->
 <para>

@@ -2,7 +2,7 @@
 FlowTlsTcpIOListener
 
 <!-- ##### SECTION Short_Description ##### -->
-
+Listen for TCP connections with TLS/SSL support
 
 <!-- ##### SECTION Long_Description ##### -->
 <para>

@@ -2,7 +2,7 @@
 FlowDestructor
 
 <!-- ##### SECTION Short_Description ##### -->
-
+Destroys incoming packets
 
 <!-- ##### SECTION Long_Description ##### -->
 <para>

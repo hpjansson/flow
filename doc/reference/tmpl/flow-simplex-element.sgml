@@ -2,7 +2,7 @@
 FlowSimplexElement
 
 <!-- ##### SECTION Short_Description ##### -->
-
+Element with one input and one output pad
 
 <!-- ##### SECTION Long_Description ##### -->
 <para>

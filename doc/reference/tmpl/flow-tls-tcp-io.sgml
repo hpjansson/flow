@@ -2,7 +2,7 @@
 FlowTlsTcpIO
 
 <!-- ##### SECTION Short_Description ##### -->
-
+Connectable TCP socket with TLS/SSL support
 
 <!-- ##### SECTION Long_Description ##### -->
 <para>

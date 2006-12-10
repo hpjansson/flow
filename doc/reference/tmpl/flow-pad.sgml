@@ -2,7 +2,7 @@
 FlowPad
 
 <!-- ##### SECTION Short_Description ##### -->
-
+Base class for packet accumulators used by elements
 
 <!-- ##### SECTION Long_Description ##### -->
 <para>

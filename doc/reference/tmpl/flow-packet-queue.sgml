@@ -2,7 +2,7 @@
 FlowPacketQueue
 
 <!-- ##### SECTION Short_Description ##### -->
-
+Featureful queue for FlowPackets
 
 <!-- ##### SECTION Long_Description ##### -->
 <para>

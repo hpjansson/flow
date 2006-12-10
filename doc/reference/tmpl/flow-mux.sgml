@@ -2,7 +2,7 @@
 FlowMux
 
 <!-- ##### SECTION Short_Description ##### -->
-
+Element with one input pad and N output pads
 
 <!-- ##### SECTION Long_Description ##### -->
 <para>

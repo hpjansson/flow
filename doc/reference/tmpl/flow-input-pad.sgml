@@ -2,7 +2,7 @@
 FlowInputPad
 
 <!-- ##### SECTION Short_Description ##### -->
-
+Accumulates input to element
 
 <!-- ##### SECTION Long_Description ##### -->
 <para>

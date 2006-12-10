@@ -2,7 +2,7 @@
 FlowPropertyEvent
 
 <!-- ##### SECTION Short_Description ##### -->
-
+Event setting property on elements it visits
 
 <!-- ##### SECTION Long_Description ##### -->
 <para>

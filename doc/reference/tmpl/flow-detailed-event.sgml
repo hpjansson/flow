@@ -2,7 +2,7 @@
 FlowDetailedEvent
 
 <!-- ##### SECTION Short_Description ##### -->
-
+Event carrying machine- and human-readable message
 
 <!-- ##### SECTION Long_Description ##### -->
 <para>

@@ -2,7 +2,7 @@
 FlowSegmentRequest
 
 <!-- ##### SECTION Short_Description ##### -->
-
+Request data from a seekable stream
 
 <!-- ##### SECTION Long_Description ##### -->
 <para>

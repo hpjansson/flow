@@ -2,7 +2,7 @@
 FlowTcpIO
 
 <!-- ##### SECTION Short_Description ##### -->
-
+Connectable TCP socket
 
 <!-- ##### SECTION Long_Description ##### -->
 <para>

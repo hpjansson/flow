@@ -2,7 +2,7 @@
 FlowOutputPad
 
 <!-- ##### SECTION Short_Description ##### -->
-
+Accumulates output from element
 
 <!-- ##### SECTION Long_Description ##### -->
 <para>

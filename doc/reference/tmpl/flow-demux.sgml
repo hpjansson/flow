@@ -2,7 +2,7 @@
 FlowDemux
 
 <!-- ##### SECTION Short_Description ##### -->
-
+Element with N input pads and one output pad
 
 <!-- ##### SECTION Long_Description ##### -->
 <para>

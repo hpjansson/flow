@@ -2,7 +2,7 @@
 FlowEvent
 
 <!-- ##### SECTION Short_Description ##### -->
-
+Base class for events
 
 <!-- ##### SECTION Long_Description ##### -->
 <para>

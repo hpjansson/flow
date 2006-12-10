@@ -1,8 +1,8 @@
 <!-- ##### SECTION Title ##### -->
-flow-shunt
+I/O Shunts
 
 <!-- ##### SECTION Short_Description ##### -->
-
+Asynchronous low-level I/O wrappers
 
 <!-- ##### SECTION Long_Description ##### -->
 <para>

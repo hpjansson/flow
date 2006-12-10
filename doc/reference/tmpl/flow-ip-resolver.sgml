@@ -2,7 +2,7 @@
 FlowIPResolver
 
 <!-- ##### SECTION Short_Description ##### -->
-
+Asynchronous IP address DNS resolver
 
 <!-- ##### SECTION Long_Description ##### -->
 <para>

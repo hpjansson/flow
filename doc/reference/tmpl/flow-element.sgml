@@ -2,7 +2,7 @@
 FlowElement
 
 <!-- ##### SECTION Short_Description ##### -->
-
+Base class for stream elements
 
 <!-- ##### SECTION Long_Description ##### -->
 <para>

@@ -2,7 +2,7 @@
 FlowTcpConnector
 
 <!-- ##### SECTION Short_Description ##### -->
-
+Element with remote TCP origin/endpoint
 
 <!-- ##### SECTION Long_Description ##### -->
 <para>

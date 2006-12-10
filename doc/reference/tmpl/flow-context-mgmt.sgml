@@ -1,8 +1,8 @@
 <!-- ##### SECTION Title ##### -->
-flow-context-mgmt
+Context Management
 
 <!-- ##### SECTION Short_Description ##### -->
-
+Manage per-thread main contexts
 
 <!-- ##### SECTION Long_Description ##### -->
 <para>
