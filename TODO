@@ -1,0 +1,37 @@
+Flow TODO
+=========
+
+List of things that remain to be done for 1.0 and future milestones.
+
+Version 1.0
+-----------
+
+- Make FlowIPResolver use a specific callback per lookup again. Signals
+  don't work when they can be dispatched in multiple threads and you don't
+  know which request is "yours".
+
+- Make FlowIPService able to store a name and resolve itself. It must also
+  be able to store multiple addresses, so can no longer derive from
+  FlowIPAddr. [IN PROGRESS]
+
+- Fix code globally to not do FLOW_IP_ADDR (ip_service), but instead use
+  flow_ip_service_find_address ().
+
+- Implement a name-looker-upper element. Problem is naming: We already
+  have FlowIPResolver and it's not an element.
+
+- Implement UDP connector and convenience bin. This depends on the
+  name-looker-upper above to be able to lookup and set the remote IP
+  service between packets.
+
+- Add certificate and crypto options handling to FlowTlsProtocol. Need to
+  figure out what people commonly use. Cert Import/export formats are
+  important, but don't go overboard. If there's an on-disk standard format
+  that can be handled directly by GnuTLS, that's perfect.
+
+- Make FlowTlsProtocol generate server key in a worker thread, avoiding
+  blocking on CPU (usually 2 seconds on startup).
+
+Future
+------
+
