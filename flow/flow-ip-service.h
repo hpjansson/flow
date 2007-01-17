@@ -51,7 +51,7 @@ typedef struct _FlowIPServiceClass FlowIPServiceClass;
 
 struct _FlowIPService
 {
-  FlowIPAddr  ip_addr;
+  GObject     parent;
 
   /* --- Private --- */
 
@@ -60,7 +60,7 @@ struct _FlowIPService
 
 struct _FlowIPServiceClass
 {
-  FlowIPAddrClass parent_class;
+  GObjectClass parent_class;
 
   /* Padding for future expansion */
   void (*_pad_1) (void);
@@ -69,12 +69,24 @@ struct _FlowIPServiceClass
   void (*_pad_4) (void);
 };
 
-FlowIPService       *flow_ip_service_new           (void);
+FlowIPService       *flow_ip_service_new              (void);
 
-gint                 flow_ip_service_get_port      (FlowIPService *ip_service);
-void                 flow_ip_service_set_port      (FlowIPService *ip_service, gint port);
+gchar               *flow_ip_service_get_name         (FlowIPService *ip_service);
+void                 flow_ip_service_set_name         (FlowIPService *ip_service, const gchar *name);
 
-FlowQuality          flow_ip_service_get_quality   (FlowIPService *ip_service);
-void                 flow_ip_service_set_quality   (FlowIPService *ip_service, FlowQuality quality);
+gint                 flow_ip_service_get_port         (FlowIPService *ip_service);
+void                 flow_ip_service_set_port         (FlowIPService *ip_service, gint port);
+
+FlowQuality          flow_ip_service_get_quality      (FlowIPService *ip_service);
+void                 flow_ip_service_set_quality      (FlowIPService *ip_service, FlowQuality quality);
+
+FlowIPAddr          *flow_ip_service_get_nth_address  (FlowIPService *ip_service, gint n);
+FlowIPAddr          *flow_ip_service_find_address     (FlowIPService *ip_service, FlowIPAddrFamily family);
+GList               *flow_ip_service_list_addresses   (FlowIPService *ip_service);
+void                 flow_ip_service_add_address      (FlowIPService *ip_service, FlowIPAddr *ip_addr);
+void                 flow_ip_service_remove_address   (FlowIPService *ip_service, FlowIPAddr *ip_addr);
+
+void                 flow_ip_service_resolve          (FlowIPService *ip_service);
+gboolean             flow_ip_service_sync_resolve     (FlowIPService *ip_service);
 
 #endif /* _FLOW_IP_SERVICE_H */
