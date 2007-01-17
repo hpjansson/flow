@@ -64,8 +64,10 @@ FlowIPResolver *flow_ip_resolver_new                (void);
 
 FlowIPResolver *flow_ip_resolver_get_default        (void);
 
-guint           flow_ip_resolver_resolve_name       (FlowIPResolver *resolver, const gchar *name);
-guint           flow_ip_resolver_resolve_ip_addr    (FlowIPResolver *resolver, FlowIPAddr *addr);
+guint           flow_ip_resolver_resolve_name       (FlowIPResolver *resolver, const gchar *name,
+                                                     FlowIPLookupFunc *func, gpointer data);
+guint           flow_ip_resolver_resolve_ip_addr    (FlowIPResolver *resolver, FlowIPAddr *addr,
+                                                     FlowIPLookupFunc *func, gpointer data);
 void            flow_ip_resolver_cancel_resolution  (FlowIPResolver *resolver, guint lookup_id);
 
 #endif /* _FLOW_IP_RESOLVER_H */

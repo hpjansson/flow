@@ -67,6 +67,8 @@ typedef struct
   GList            *results;
 
   GThread          *dispatch_thread;       /* Thread to dispatch result in */
+  FlowIPLookupFunc *user_func;             /* Callback */
+  gpointer          user_data;             /* Callback data */
 }
 Lookup;
 
@@ -153,9 +155,9 @@ dispatch_lookup (Lookup *lookup)
     g_mutex_unlock (priv->mutex);
 
     if (is_reverse)
-      g_signal_emit_by_name (resolver, "resolved", arg_list, result_list);
+      lookup->user_func (arg_list, result_list, lookup->user_data);
     else
-      g_signal_emit_by_name (resolver, "resolved", result_list, arg_list);
+      lookup->user_func (result_list, arg_list, lookup->user_data);
 
     g_mutex_lock (priv->mutex);
 
@@ -215,7 +217,8 @@ do_lookup (Lookup *lookup, FlowIPResolver *resolver)
 }
 
 static guint
-create_lookup (FlowIPResolver *resolver, gboolean is_reverse, gpointer arg)
+create_lookup (FlowIPResolver *resolver, gboolean is_reverse, gpointer arg,
+               FlowIPLookupFunc *user_func, gpointer user_data)
 {
   FlowIPResolverPrivate *priv = resolver->priv;
   Lookup                *lookup;
@@ -228,6 +231,8 @@ create_lookup (FlowIPResolver *resolver, gboolean is_reverse, gpointer arg)
   lookup->is_wanted       = TRUE;
   lookup->arg             = arg;
   lookup->dispatch_thread = g_thread_self ();
+  lookup->user_func       = user_func;
+  lookup->user_data       = user_data;
 
   /* Make sure this thread has a main context that we can dispatch in */
   flow_get_main_context_for_current_thread ();
@@ -276,23 +281,6 @@ flow_ip_resolver_type_init (GType type)
 static void
 flow_ip_resolver_class_init (FlowIPResolverClass *klass)
 {
-  static const GType param_types [2] = { G_TYPE_POINTER, G_TYPE_POINTER };
-
-  /* Make sure types are registered before child threads try to use them;
-   * type registration is not protected by a mutex. */
-
-  g_type_class_ref (FLOW_TYPE_IP_ADDR);
-
-  /* Signals */
-
-  g_signal_newv ("resolved",
-                 G_TYPE_FROM_CLASS (klass),
-                 G_SIGNAL_RUN_LAST | G_SIGNAL_NO_HOOKS,
-                 NULL,                                   /* Class closure */
-                 NULL, NULL,                             /* Accumulator, accu data */
-                 flow_marshal_VOID__POINTER_POINTER,     /* Marshaller */
-                 G_TYPE_NONE,                            /* Return type */
-                 2, (GType *) param_types);              /* Number of params, param types */
 }
 
 static void
@@ -354,23 +342,25 @@ flow_ip_resolver_get_default (void)
 }
 
 guint
-flow_ip_resolver_resolve_name (FlowIPResolver *resolver, const gchar *name)
+flow_ip_resolver_resolve_name (FlowIPResolver *resolver, const gchar *name,
+                               FlowIPLookupFunc *func, gpointer data)
 {
   g_return_val_if_fail (FLOW_IS_IP_RESOLVER (resolver), 0);
   g_return_val_if_fail (name != NULL, 0);
 
-  return create_lookup (resolver, FALSE, g_strdup (name));
+  return create_lookup (resolver, FALSE, g_strdup (name), func, data);
 }
 
 guint
-flow_ip_resolver_resolve_ip_addr (FlowIPResolver *resolver, FlowIPAddr *addr)
+flow_ip_resolver_resolve_ip_addr (FlowIPResolver *resolver, FlowIPAddr *addr,
+                                  FlowIPLookupFunc *func, gpointer data)
 {
   g_return_val_if_fail (FLOW_IS_IP_RESOLVER (resolver), 0);
   g_return_val_if_fail (addr != NULL, 0);
 
   g_object_ref (addr);
 
-  return create_lookup (resolver, TRUE, addr);
+  return create_lookup (resolver, TRUE, addr, func, data);
 }
 
 void
