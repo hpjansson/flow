@@ -47,7 +47,6 @@ void         flow_connect_duplex__simplex_simplex (FlowDuplexElement  *downstrea
                                                    FlowSimplexElement *upstream_simplex_input);
 void         flow_disconnect_element              (FlowElement *element);
 
-gchar       *flow_strerror                        (gint errnum);
 FlowPacket  *flow_create_simple_event_packet      (const gchar *domain, gint code);
 gboolean     flow_handle_universal_events         (FlowElement *element, FlowPacket *packet);
 gpointer     flow_read_object_from_shunt          (FlowShunt *shunt);
@@ -56,6 +55,8 @@ gint         flow_g_ptr_array_find                (GPtrArray *array, gpointer da
 gboolean     flow_g_ptr_array_remove_sparse       (GPtrArray *array, gpointer data);
 void         flow_g_ptr_array_add_sparse          (GPtrArray *array, gpointer data);
 guint        flow_g_ptr_array_compress            (GPtrArray *array);
+
+gchar       *flow_strerror                        (gint errnum);
 
 G_END_DECLS
 

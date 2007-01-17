@@ -64,9 +64,11 @@ flow_connect_duplex__duplex (FlowDuplexElement *downstream_duplex,
   FlowPad *upstream_duplex_downstream_pads [2];
 
   if (upstream_duplex)
+  {
     flow_duplex_element_get_upstream_pads (upstream_duplex,
                                            (FlowInputPad **) &upstream_duplex_downstream_pads [0],
                                            (FlowOutputPad **) &upstream_duplex_downstream_pads [1]);
+  }
 
   if (downstream_duplex)
   {
