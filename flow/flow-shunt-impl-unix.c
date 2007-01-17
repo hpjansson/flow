@@ -1422,7 +1422,7 @@ socket_shunt_write (FlowShunt *shunt)
         {
           FlowIPService *ip_service = (FlowIPService *) object;
 
-          flow_ip_service_get_sockaddr (ip_service, &udp_shunt->remote_dest_sa);
+          flow_ip_service_get_sockaddr (ip_service, &udp_shunt->remote_dest_sa, 0);
           reconnect = TRUE;
         }
         else if (FLOW_IS_IP_ADDR (object))
@@ -2516,6 +2516,7 @@ flow_shunt_impl_open_tcp_listener (FlowIPService *local_service)
 {
   FlowShunt          *shunt;
   TcpListenerShunt   *tcp_listener_shunt;
+  FlowIPAddr         *ip_addr = NULL;
   FlowIPAddrFamily    family;
   FlowSockaddr        sa;
   gint                fd;
@@ -2528,18 +2529,28 @@ flow_shunt_impl_open_tcp_listener (FlowIPService *local_service)
   if (local_service)
   {
     g_object_ref (local_service);
+    ip_addr = flow_ip_service_find_address (local_service, FLOW_IP_ADDR_ANY_FAMILY);
   }
   else
   {
     local_service = flow_ip_service_new ();
-    flow_ip_addr_set_string (FLOW_IP_ADDR (local_service), "0.0.0.0");
+  }
+
+  if (!ip_addr)
+  {
+    ip_addr = flow_ip_addr_new ();
+    flow_ip_addr_set_string (ip_addr, "0.0.0.0");
+
+    flow_ip_service_add_address (local_service, ip_addr);
     flow_ip_service_set_port (local_service, 0);
   }
 
   tcp_listener_shunt->quality = flow_ip_service_get_quality (local_service);
 
-  family = flow_ip_addr_get_family (FLOW_IP_ADDR (local_service));
+  family = flow_ip_addr_get_family (ip_addr);
   tcp_listener_shunt->socket_shunt.fd = fd = socket (family == FLOW_IP_ADDR_IPV6 ? AF_INET6 : AF_INET, SOCK_STREAM, 0);
+
+  flow_gobject_unref_clear (ip_addr);
 
   if (fd < 0)
   {
@@ -2565,7 +2576,7 @@ flow_shunt_impl_open_tcp_listener (FlowIPService *local_service)
 
     g_assert_not_reached ();
   }
-  else if (!flow_ip_service_get_sockaddr (local_service, &sa))
+  else if (!flow_ip_service_get_sockaddr (local_service, &sa, 0))
   {
     FlowDetailedEvent *detailed_event;
 
@@ -2652,7 +2663,8 @@ flow_shunt_impl_connect_to_tcp (FlowIPService *remote_service, gint local_port)
 {
   FlowShunt        *shunt;
   TcpShunt         *tcp_shunt;
-  FlowIPAddrFamily  family;
+  FlowIPAddr       *ip_addr;
+  FlowIPAddrFamily  family= FLOW_IP_ADDR_IPV4;
   FlowSockaddr      sa;
   gint              fd;
 
@@ -2661,7 +2673,12 @@ flow_shunt_impl_connect_to_tcp (FlowIPService *remote_service, gint local_port)
   flow_shunt_init_common (shunt, NULL);
   shunt->shunt_type = SHUNT_TYPE_TCP;
 
-  family = flow_ip_addr_get_family (FLOW_IP_ADDR (remote_service));
+  ip_addr = flow_ip_service_find_address (remote_service, FLOW_IP_ADDR_ANY_FAMILY);
+  if (ip_addr)
+    family = flow_ip_addr_get_family (ip_addr);
+
+  flow_gobject_unref_clear (ip_addr);
+
   tcp_shunt->socket_shunt.fd = fd = socket (family == FLOW_IP_ADDR_IPV6 ? AF_INET6 : AF_INET, SOCK_STREAM, 0);
 
   if (fd < 0)
@@ -2685,7 +2702,7 @@ flow_shunt_impl_connect_to_tcp (FlowIPService *remote_service, gint local_port)
 
     g_assert_not_reached ();
   }
-  else if (!flow_ip_service_get_sockaddr (remote_service, &sa))
+  else if (!flow_ip_service_get_sockaddr (remote_service, &sa, 0))
   {
     FlowDetailedEvent *detailed_event;
 
@@ -2758,7 +2775,8 @@ flow_shunt_impl_open_udp_port (FlowIPService *local_service)
 {
   FlowShunt        *shunt;
   UdpShunt         *udp_shunt;
-  FlowIPAddrFamily  family;
+  FlowIPAddr       *ip_addr;
+  FlowIPAddrFamily  family = FLOW_IP_ADDR_IPV4;
   FlowSockaddr      sa;
   gint              fd;
 
@@ -2767,7 +2785,12 @@ flow_shunt_impl_open_udp_port (FlowIPService *local_service)
   flow_shunt_init_common (shunt, NULL);
   shunt->shunt_type = SHUNT_TYPE_UDP;
 
-  family = flow_ip_addr_get_family (FLOW_IP_ADDR (local_service));
+  ip_addr = flow_ip_service_find_address (local_service, FLOW_IP_ADDR_ANY_FAMILY);
+  if (ip_addr)
+    family = flow_ip_addr_get_family (ip_addr);
+
+  flow_gobject_unref_clear (ip_addr);
+
   udp_shunt->socket_shunt.fd = fd = socket (family == FLOW_IP_ADDR_IPV6 ? AF_INET6 : AF_INET, SOCK_DGRAM, 0);
 
   if (fd < 0)
@@ -2791,7 +2814,7 @@ flow_shunt_impl_open_udp_port (FlowIPService *local_service)
 
     g_assert_not_reached ();
   }
-  else if (!flow_ip_service_get_sockaddr (local_service, &sa))
+  else if (!flow_ip_service_get_sockaddr (local_service, &sa, 0))
   {
     FlowDetailedEvent *detailed_event;
 
