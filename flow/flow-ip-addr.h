@@ -44,6 +44,7 @@ GType   flow_ip_addr_get_type        (void) G_GNUC_CONST;
 typedef enum
 {
   FLOW_IP_ADDR_INVALID,
+  FLOW_IP_ADDR_ANY_FAMILY = FLOW_IP_ADDR_INVALID,
   FLOW_IP_ADDR_IPV4,
   FLOW_IP_ADDR_IPV6
 }
