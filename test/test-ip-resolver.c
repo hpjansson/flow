@@ -54,7 +54,7 @@ const gchar * const resolve_addrs [] =
 };
 
 static void
-resolved (FlowIPResolver *ip_resolver, GList *addr_list, GList *name_list)
+resolved (GList *addr_list, GList *name_list, FlowIPResolver *ip_resolver)
 {
   GList *l;
 
@@ -113,11 +113,10 @@ test_run (void)
 
   ip_resolver = flow_ip_resolver_new ();
 
-  g_signal_connect (ip_resolver, "resolved", (GCallback) resolved, NULL);
-
   for (i = 0; resolve_names [i]; i++)
   {
-    flow_ip_resolver_resolve_name (ip_resolver, resolve_names [i]);
+    flow_ip_resolver_resolve_name (ip_resolver, resolve_names [i],
+                                   (FlowIPLookupFunc *) resolved, ip_resolver);
   }
 
   to_resolve = i;
@@ -130,7 +129,8 @@ test_run (void)
     if (!flow_ip_addr_set_string (ip_addr, resolve_addrs [i]))
       test_end (TEST_RESULT_FAILED, "IP address parser failed");
 
-    flow_ip_resolver_resolve_ip_addr (ip_resolver, ip_addr);
+    flow_ip_resolver_resolve_ip_addr (ip_resolver, ip_addr,
+                                      (FlowIPLookupFunc *) resolved, ip_resolver);
 
     g_object_unref (ip_addr);
   }

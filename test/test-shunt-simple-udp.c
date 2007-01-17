@@ -185,11 +185,18 @@ read_from_shunt (FlowShunt *shunt, FlowPacket *packet, gpointer data)
     else if (FLOW_IS_IP_SERVICE (object))
     {
       FlowIPService *ip_service = FLOW_IP_SERVICE (object);
+      FlowIPAddr    *ip_addr;
       gchar         *addr_str;
 
-      addr_str = flow_ip_addr_get_string (FLOW_IP_ADDR (ip_service));
+      ip_addr = flow_ip_service_find_address (ip_service, FLOW_IP_ADDR_ANY_FAMILY);
+      if (!ip_addr)
+        test_end (TEST_RESULT_FAILED, "no suitable address passed for remote end");
+
+      addr_str = flow_ip_addr_get_string (ip_addr);
       test_print ("Read: Got source address %s:%d\n", addr_str, flow_ip_service_get_port (ip_service));
       g_free (addr_str);
+
+      g_object_unref (ip_addr);
     }
     else if (!FLOW_IS_EVENT (object))
     {
@@ -321,7 +328,8 @@ write_to_shunt (FlowShunt *shunt, gpointer data)
 static void
 test_run (void)
 {
-  gint i;
+  FlowIPAddr *ip_addr;
+  gint        i;
 
   g_random_set_seed (time (NULL));
 
@@ -355,12 +363,18 @@ test_run (void)
   writes_are_blocked = FALSE;
 
   sender_service = flow_ip_service_new ();
-  flow_ip_addr_set_string (FLOW_IP_ADDR (sender_service), "127.0.0.1");
+  ip_addr = flow_ip_addr_new ();
+  flow_ip_addr_set_string (ip_addr, "127.0.0.1");
   flow_ip_service_set_port (sender_service, 2533);
+  flow_ip_service_add_address (sender_service, ip_addr);
+  g_object_unref (ip_addr);
 
   recipient_service = flow_ip_service_new ();
-  flow_ip_addr_set_string (FLOW_IP_ADDR (recipient_service), "127.0.0.1");
+  ip_addr = flow_ip_addr_new ();
+  flow_ip_addr_set_string (ip_addr, "127.0.0.1");
   flow_ip_service_set_port (recipient_service, 2534);
+  flow_ip_service_add_address (recipient_service, ip_addr);
+  g_object_unref (ip_addr);
 
   sender_shunt = flow_open_udp_port (sender_service);
   flow_shunt_set_write_func (sender_shunt, write_to_shunt, sender_shunt);

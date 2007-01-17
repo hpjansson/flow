@@ -180,10 +180,17 @@ read_from_shunt (FlowShunt *shunt, FlowPacket *packet, gpointer data)
     }
     else if (FLOW_IS_IP_SERVICE (object))
     {
-      gchar *string;
+      FlowIPAddr *ip_addr;
+      gchar      *string;
 
-      string = flow_ip_addr_get_string (FLOW_IP_ADDR (object));
+      ip_addr = flow_ip_service_find_address (FLOW_IP_SERVICE (object), FLOW_IP_ADDR_ANY_FAMILY);
+      if (!ip_addr)
+        test_end (TEST_RESULT_FAILED, "no suitable address passed for remote end");
+
+      string = flow_ip_addr_get_string (ip_addr);
       test_print ("Read: Got remote IP service %s:%d.\n", string, flow_ip_service_get_port (FLOW_IP_SERVICE (object)));
+
+      g_object_unref (ip_addr);
     }
     else if (!FLOW_IS_EVENT (object))
     {
@@ -379,6 +386,7 @@ static void
 test_run (void)
 {
   FlowIPService *loopback_service;
+  FlowIPAddr    *ip_addr;
   gint           i;
 
   g_random_set_seed (time (NULL));
@@ -413,8 +421,13 @@ test_run (void)
   writes_are_blocked = FALSE;
 
   loopback_service = flow_ip_service_new ();
-  flow_ip_addr_set_string (FLOW_IP_ADDR (loopback_service), "127.0.0.1");
+  ip_addr = flow_ip_addr_new ();
+
+  flow_ip_addr_set_string (ip_addr, "127.0.0.1");
   flow_ip_service_set_port (loopback_service, 2533);
+  flow_ip_service_add_address (loopback_service, ip_addr);
+
+  g_object_unref (ip_addr);
 
   listener_shunt = flow_open_tcp_listener (loopback_service);
   flow_shunt_set_read_func (listener_shunt, read_from_listener, listener_shunt);

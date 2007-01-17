@@ -389,7 +389,8 @@ short_tests (void)
 static void
 test_run (void)
 {
-  gint i;
+  FlowIPAddr *ip_addr;
+  gint        i;
 
   g_random_set_seed (time (NULL));
 
@@ -417,12 +418,18 @@ test_run (void)
                                                NULL, (GDestroyNotify) transfer_info_free);
 
   loopback_service = flow_ip_service_new ();
-  flow_ip_addr_set_string (FLOW_IP_ADDR (loopback_service), "127.0.0.1");
+  ip_addr = flow_ip_addr_new ();
+  flow_ip_addr_set_string (ip_addr, "127.0.0.1");
   flow_ip_service_set_port (loopback_service, 2533);
+  flow_ip_service_add_address (loopback_service, ip_addr);
+  g_object_unref (ip_addr);
 
   bad_loopback_service = flow_ip_service_new ();
-  flow_ip_addr_set_string (FLOW_IP_ADDR (bad_loopback_service), "127.0.0.1");
+  ip_addr = flow_ip_addr_new ();
+  flow_ip_addr_set_string (ip_addr, "127.0.0.1");
   flow_ip_service_set_port (bad_loopback_service, 12505);
+  flow_ip_service_add_address (bad_loopback_service, ip_addr);
+  g_object_unref (ip_addr);
 
   tls_tcp_listener = flow_tls_tcp_io_listener_new ();
   if (!flow_tcp_listener_set_local_service (FLOW_TCP_LISTENER (tls_tcp_listener), loopback_service, NULL))
