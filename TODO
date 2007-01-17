@@ -24,6 +24,8 @@ Version 1.0
   name-looker-upper above to be able to lookup and set the remote IP
   service between packets.
 
+- Hide flow_strerror ().
+
 - Add certificate and crypto options handling to FlowTlsProtocol. Need to
   figure out what people commonly use. Cert Import/export formats are
   important, but don't go overboard. If there's an on-disk standard format
