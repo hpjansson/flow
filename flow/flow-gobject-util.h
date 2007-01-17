@@ -414,14 +414,14 @@ GType self_prefix##_get_type (void)                                             
 }
 
 void flow_gobject_class_install_properties (GObjectClass *object_class, const FlowGObjectPropElem *props,
-                                            gint n_props) G_GNUC_INTERNAL;
+                                            gint n_props);
 void flow_gobject_get_property             (GObject *object, gint prop_id, GValue *value,
-                                            GParamSpec *pspec, const FlowGObjectPropElem *props, gint n_props) G_GNUC_INTERNAL;
+                                            GParamSpec *pspec, const FlowGObjectPropElem *props, gint n_props);
 void flow_gobject_set_property             (GObject *object, gint prop_id, const GValue *value,
-                                            GParamSpec *pspec, const FlowGObjectPropElem *props, gint n_props) G_GNUC_INTERNAL;
+                                            GParamSpec *pspec, const FlowGObjectPropElem *props, gint n_props);
 
-#define flow_gobject_unref_clear(ref) flow_gobject_unref_clear_real ((gpointer) &ref)
-void flow_gobject_unref_clear_real   (gpointer *ptr_to_ref) G_GNUC_INTERNAL;
+#define flow_gobject_unref_clear(ref)      flow_gobject_unref_clear_real ((gpointer) &ref)
+void flow_gobject_unref_clear_real         (gpointer *ptr_to_ref);
 
 G_END_DECLS
 
