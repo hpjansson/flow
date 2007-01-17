@@ -127,7 +127,7 @@ gboolean          flow_wakeup_pipe_is_valid      (FlowWakeupPipe *wakeup_pipe) G
 gboolean          flow_ip_addr_get_sockaddr      (FlowIPAddr *ip_addr, FlowSockaddr *dest_sa, gint port) G_GNUC_INTERNAL;
 gboolean          flow_ip_addr_set_sockaddr      (FlowIPAddr *ip_addr, FlowSockaddr *sa) G_GNUC_INTERNAL;
 
-gboolean          flow_ip_service_get_sockaddr   (FlowIPService *ip_service, FlowSockaddr *dest_sa) G_GNUC_INTERNAL;
+gboolean          flow_ip_service_get_sockaddr   (FlowIPService *ip_service, FlowSockaddr *dest_sa, gint addr_index) G_GNUC_INTERNAL;
 gboolean          flow_ip_service_set_sockaddr   (FlowIPService *ip_service, FlowSockaddr *sa) G_GNUC_INTERNAL;
 
 void              flow_close_socket_fd           (gint fd) G_GNUC_INTERNAL;

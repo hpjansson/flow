@@ -592,19 +592,66 @@ flow_ip_addr_set_sockaddr (FlowIPAddr *ip_addr, FlowSockaddr *sa)
   return result;
 }
 
-gboolean
-flow_ip_service_get_sockaddr (FlowIPService *ip_service, FlowSockaddr *dest_sa)
+static void
+free_object_list (GList *list)
 {
-  return flow_ip_addr_get_sockaddr (FLOW_IP_ADDR (ip_service), dest_sa, flow_ip_service_get_port (ip_service));
+  GList *l;
+
+  for (l = list; l; l = g_list_next (l))
+    g_object_unref (l->data);
+
+  g_list_free (list);
+}
+
+gboolean
+flow_ip_service_get_sockaddr (FlowIPService *ip_service, FlowSockaddr *dest_sa, gint addr_index)
+{
+  GList      *ip_addr_list;
+  FlowIPAddr *ip_addr;
+  gboolean    result = FALSE;
+
+  ip_addr_list = flow_ip_service_list_addresses (ip_service);
+  ip_addr = g_list_nth_data (ip_addr_list, addr_index);
+
+  if (ip_addr)
+    result = flow_ip_addr_get_sockaddr (ip_addr, dest_sa, flow_ip_service_get_port (ip_service));
+
+  free_object_list (ip_addr_list);
+  return result;
 }
 
 gboolean
 flow_ip_service_set_sockaddr (FlowIPService *ip_service, FlowSockaddr *sa)
 {
-  if (!flow_ip_addr_set_sockaddr (FLOW_IP_ADDR (ip_service), sa))
-    return FALSE;
+  FlowIPAddr *ip_addr;
+  GList      *ip_addr_list;
+  GList      *l;
 
+  ip_addr = flow_ip_addr_new ();
+
+  if (!flow_ip_addr_set_sockaddr (ip_addr, sa))
+  {
+    g_object_unref (ip_addr);
+    return FALSE;
+  }
+
+  /* Remove previous addresses */
+
+  ip_addr_list = flow_ip_service_list_addresses (ip_service);
+
+  for (l = ip_addr_list; l; l = g_list_next (l))
+  {
+    flow_ip_service_remove_address (ip_service, l->data);
+  }
+
+  free_object_list (ip_addr_list);
+
+  /* Add assigned address and port */
+
+  flow_ip_service_add_address (ip_service, ip_addr);
   flow_ip_service_set_port (ip_service, flow_sockaddr_get_port (sa));
+
+  g_object_unref (ip_addr);
   return TRUE;
 }
 
