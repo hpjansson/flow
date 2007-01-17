@@ -23,15 +23,6 @@ Asynchronous IP address DNS resolver
 </para>
 
 
-<!-- ##### SIGNAL FlowIPResolver::resolved ##### -->
-<para>
-
-</para>
-
-@flowipresolver: the object which received the signal.
-@arg1: 
-@arg2: 
-
 <!-- ##### FUNCTION flow_ip_resolver_new ##### -->
 <para>
 
@@ -55,6 +46,8 @@ Asynchronous IP address DNS resolver
 
 @resolver: 
 @name: 
+@func: 
+@data: 
 @Returns: 
 
 
@@ -65,6 +58,8 @@ Asynchronous IP address DNS resolver
 
 @resolver: 
 @addr: 
+@func: 
+@data: 
 @Returns: 
 
 
