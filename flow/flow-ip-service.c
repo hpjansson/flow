@@ -125,11 +125,10 @@ flow_ip_service_finalize (FlowIPService *ip_service)
   g_mutex_free (priv->mutex);
 }
 
-static gboolean
+static void
 emit_resolved_signal (FlowIPService *ip_service)
 {
   g_signal_emit_by_name (ip_service, "resolved");
-  return FALSE;
 }
 
 static GList *
@@ -144,6 +143,23 @@ copy_object_list (GList *object_list)
     g_object_ref (l->data);
 
   return new_list;
+}
+
+static gboolean
+no_lookup_done (FlowIPService *ip_service)
+{
+  FlowIPServicePrivate *priv = ip_service->priv;
+
+  g_mutex_lock (priv->mutex);
+
+  priv->resolve_id = 0;
+  g_object_ref (ip_service);
+
+  g_mutex_unlock (priv->mutex);
+
+  emit_resolved_signal (ip_service);
+  g_object_unref (ip_service);
+  return FALSE;
 }
 
 static void
@@ -186,11 +202,13 @@ lookup_done (GList *addr_list, GList *name_list, FlowIPService *ip_service)
     /* Fields already filled in - don't touch anything */
   }
 
+  priv->resolve_id = 0;
+  g_object_ref (ip_service);
+
   g_mutex_unlock (priv->mutex);
 
-  /* FIXME: We may have to emit the signal while holding our
-   * lock. If we don't, we may get destroyed in another thread. */
   emit_resolved_signal (ip_service);
+  g_object_unref (ip_service);
 }
 
 /* --- FlowIPService public API --- */
@@ -277,8 +295,7 @@ flow_ip_service_resolve (FlowIPService *ip_service)
   {
     /* Nothing to look up - schedule a signal indicating we're done */
 
-    /* FIXME: Store this ID so it can be removed if we're finalized */
-    priv->resolve_id = flow_idle_add_to_current_thread ((GSourceFunc) emit_resolved_signal, ip_service);
+    priv->resolve_id = flow_idle_add_to_current_thread ((GSourceFunc) no_lookup_done, ip_service);
     priv->resolve_id_is_idle_id = TRUE;
   }
 
