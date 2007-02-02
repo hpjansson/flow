@@ -127,7 +127,7 @@ flow_anonymous_event_finalize (FlowAnonymousEvent *anonymous_event)
  * 
  * Creates a new #FlowAnonymousEvent.
  * 
- * Return value: a new #FlowAnonymousEvent
+ * Return value: A new #FlowAnonymousEvent
  **/
 FlowAnonymousEvent *
 flow_anonymous_event_new (void)
@@ -139,6 +139,14 @@ flow_anonymous_event_new (void)
   return anonymous_event;
 }
 
+/**
+ * flow_anonymous_event_get_data:
+ * @anonymous_event: A #FlowAnonymousEvent
+ * 
+ * Gets the generic pointer delivered by this event.
+ * 
+ * Return value: The generic pointer stored in this event.
+ **/
 gpointer
 flow_anonymous_event_get_data (FlowAnonymousEvent *anonymous_event)
 {
@@ -147,6 +155,13 @@ flow_anonymous_event_get_data (FlowAnonymousEvent *anonymous_event)
   return anonymous_event->data;
 }
 
+/**
+ * flow_anonymous_event_set_data:
+ * @anonymous_event: A #FlowAnonymousEvent
+ * @data: A generic pointer
+ * 
+ * Stores the @data pointer in @anonymous_event.
+ **/
 void
 flow_anonymous_event_set_data (FlowAnonymousEvent *anonymous_event, gpointer data)
 {
@@ -155,6 +170,15 @@ flow_anonymous_event_set_data (FlowAnonymousEvent *anonymous_event, gpointer dat
   g_object_set (anonymous_event, "data", data, NULL);
 }
 
+/**
+ * flow_anonymous_event_set_destroy_notify:
+ * @anonymous_event: A #FlowAnonymousEvent
+ * @notify: A user callback
+ * 
+ * Sets up a callback that will run when @anonymous_event is
+ * finalized. This can be used to free any data associated with
+ * the pointer set by flow_anonymous_event_set_data().
+ **/
 void
 flow_anonymous_event_set_destroy_notify (FlowAnonymousEvent *anonymous_event, GDestroyNotify notify)
 {
@@ -162,4 +186,3 @@ flow_anonymous_event_set_destroy_notify (FlowAnonymousEvent *anonymous_event, GD
 
   g_object_set (anonymous_event, "destroy-notify", notify, NULL);
 }
-

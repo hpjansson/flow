@@ -98,6 +98,14 @@ flow_collector_finalize (FlowCollector *collector)
 
 /* --- FlowCollector public API --- */
 
+/**
+ * flow_collector_get_input_pad:
+ * @collector: A #FlowCollector.
+ * 
+ * Gets @collector's input pad.
+ * 
+ * Return value: A #FlowInputPad.
+ **/
 FlowInputPad *
 flow_collector_get_input_pad (FlowCollector *collector)
 {

@@ -191,12 +191,31 @@ get_main_context_for_thread (GThread *thread)
   return *main_context_storage;
 }
 
+/**
+ * flow_get_main_context_for_current_thread:
+ * 
+ * Gets the current thread's main context. If the context
+ * does not exist, it will be created. All asynchronous callbacks for
+ * the current thread will be dispatched from this context.
+ * 
+ * Return value: A #GMainContext.
+ **/
 GMainContext *
 flow_get_main_context_for_current_thread (void)
 {
   return get_main_context_for_current_thread ();
 }
 
+/**
+ * flow_get_main_context_for_thread:
+ * @thread: 
+ * 
+ * Gets @thread's main context. If the context does not
+ * exist, it will be created. All asynchronous callbacks for
+ * @thread will be dispatched from this context.
+ * 
+ * Return value: A #GMainContext.
+ **/
 GMainContext *
 flow_get_main_context_for_thread (GThread *thread)
 {
@@ -208,6 +227,16 @@ flow_get_main_context_for_thread (GThread *thread)
     return get_main_context_for_current_thread ();
 }
 
+/**
+ * flow_set_main_context_for_thread:
+ * @thread: A #GThread.
+ * @main_context: A #GMainContext to use in @thread.
+ * 
+ * Assigns @main_context to @thread, so that all asynchronous
+ * callbacks for @thread will be dispatched from @main_context.
+ * The main context can only be set once per thread, so this
+ * must be called before the thread's main context is used.
+ **/
 void
 flow_set_main_context_for_thread (GThread *thread, GMainContext *main_context)
 {
@@ -216,6 +245,22 @@ flow_set_main_context_for_thread (GThread *thread, GMainContext *main_context)
   ensure_context_storage (thread, main_context);
 }
 
+/**
+ * flow_idle_add_full:
+ * @dispatch_thread: A #GThread.
+ * @priority: The priority of the idle source. Typically this will be in the range betweeen #G_PRIORITY_DEFAULT_IDLE and #G_PRIORITY_HIGH_IDLE.
+ * @func: Function to call.
+ * @data: Data to pass to @func.
+ * @notify: Function to call when the idle is removed, or %NULL.
+ * 
+ * Adds a function to be called whenever there are no higher priority events
+ * pending. If the function returns %FALSE it is automatically removed from the
+ * list of event sources and will not be called again.
+ *
+ * The callback is dispatched from @dispatch_thread's main context.
+ * 
+ * Return value: The ID (greater than 0) of the event source.
+ **/
 guint
 flow_idle_add_full (GThread *dispatch_thread, gint priority, GSourceFunc func, gpointer data,
                     GDestroyNotify notify)
@@ -236,6 +281,20 @@ flow_idle_add_full (GThread *dispatch_thread, gint priority, GSourceFunc func, g
   return id;
 }
 
+/**
+ * flow_idle_add_to_current_thread:
+ * @func: Function to call.
+ * @data: Data to pass to @func.
+ * 
+ * Adds a function to be called whenever there are no higher priority events
+ * pending to the current thread's main loop. The function is given the default
+ * idle priority, #G_PRIORITY_DEFAULT_IDLE. If the function returns %FALSE it
+ * is automatically removed from the list of event sources and will not be called again.
+ *
+ * The callback is dispatched from the current thread's main context.
+ * 
+ * Return value: The ID (greater than 0) of the event source.
+ **/
 guint
 flow_idle_add_to_current_thread (GSourceFunc func, gpointer data)
 {
@@ -254,6 +313,31 @@ flow_idle_add_to_current_thread (GSourceFunc func, gpointer data)
   return id;
 }
 
+/**
+ * flow_timeout_add_full:
+ * @dispatch_thread: A #GThread.
+ * @priority: The priority of the timeout source. Typically this will be in the range between #G_PRIORITY_DEFAULT_IDLE and #G_PRIORITY_HIGH_IDLE.
+ * @interval: The time between calls to the function, in milliseconds (1/1000ths of a second).
+ * @func: Function to call.
+ * @data: Data to pass to @func.
+ * @notify: Function to call when the timeout is removed, or %NULL.
+ * 
+ * Sets a function to be called at regular intervals, with the given priority.
+ * The function is called repeatedly until it returns %FALSE, at which point the
+ * timeout is automatically destroyed and the function will not be called
+ * again. The notify function is called when the timeout is destroyed. The
+ * first call to the function will be at the end of the first interval.
+ *
+ * Note that timeout functions may be delayed, due to the processing of other
+ * event sources. Thus they should not be relied on for precise timing. After
+ * each call to the timeout function, the time of the next timeout is recalculated
+ * based on the current time and the given interval (it does not try to 'catch up'
+ * time lost in delays).
+ * 
+ * The callback is dispatched from @dispatch_thread's main context.
+ *
+ * Return value: The ID (greater than 0) of the event source.
+ **/
 guint
 flow_timeout_add_full (GThread *dispatch_thread, gint priority, guint interval,
                        GSourceFunc func, gpointer data, GDestroyNotify notify)
@@ -274,6 +358,28 @@ flow_timeout_add_full (GThread *dispatch_thread, gint priority, guint interval,
   return id;
 }
 
+/**
+ * flow_timeout_add_to_current_thread:
+ * @interval: The time between calls to the function, in milliseconds (1/1000ths of a second).
+ * @func: Function to call.
+ * @data: Data to pass to @func.
+ * 
+ * Sets a function to be called at regular intervals, with the default
+ * priority, #G_PRIORITY_DEFAULT. The function is called repeatedly until
+ * it returns %FALSE, at which point the timeout is automatically destroyed
+ * and the function will not be called again. The first call to the
+ * function will be at the end of the first interval.
+ * 
+ * Note that timeout functions may be delayed, due to the processing of
+ * other event sources. Thus they should not be relied on for precise timing.
+ * After each call to the timeout function, the time of the next timeout
+ * is recalculated based on the current time and the given interval (it does
+ * not try to 'catch up' time lost in delays). 
+ * 
+ * The callback is dispatched from the current thread's main context.
+ * 
+ * Return value: The ID (greater than 0) of the event source.
+ **/
 guint
 flow_timeout_add_to_current_thread (guint interval, GSourceFunc func, gpointer data)
 {
@@ -292,6 +398,14 @@ flow_timeout_add_to_current_thread (guint interval, GSourceFunc func, gpointer d
   return id;
 }
 
+/**
+ * flow_source_remove:
+ * @dispatch_thread: A #GThread.
+ * @source_id: The ID of the source to remove.
+ * 
+ * Removes the source identified by @source_id from @dispatch_thread's
+ * main context.
+ **/
 void
 flow_source_remove (GThread *dispatch_thread, guint source_id)
 {
@@ -315,6 +429,13 @@ flow_source_remove (GThread *dispatch_thread, guint source_id)
   g_source_destroy (source);
 }
 
+/**
+ * flow_source_remove_from_current_thread:
+ * @source_id: The ID of the source to remove.
+ * 
+ * Removes the source identified by @source_id from the current thread's
+ * main context.
+ **/
 void
 flow_source_remove_from_current_thread (guint source_id)
 {

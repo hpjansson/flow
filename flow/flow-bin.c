@@ -172,12 +172,27 @@ add_unconnected_output_pads_to_list (gpointer key, gpointer value, gpointer user
 
 /* --- FlowBin public API --- */
 
+/**
+ * flow_bin_new:
+ * 
+ * Creates a new #FlowBin.
+ * 
+ * Return value: A new #FlowBin.
+ **/
 FlowBin *
 flow_bin_new (void)
 {
   return g_object_new (FLOW_TYPE_BIN, NULL);
 }
 
+/**
+ * flow_bin_add_element:
+ * @bin: A #FlowBin.
+ * @element: A #FlowElement to add to @bin.
+ * @element_name: A unique string to identify @element in the context of @bin.
+ * 
+ * Adds @element to @bin.
+ **/
 void
 flow_bin_add_element (FlowBin *bin, FlowElement *element, const gchar *element_name)
 {
@@ -214,6 +229,13 @@ flow_bin_add_element (FlowBin *bin, FlowElement *element, const gchar *element_n
   g_signal_emit_by_name (bin, "element-added", element);
 }
 
+/**
+ * flow_bin_remove_element:
+ * @bin: A #FlowBin.
+ * @element: A #FlowElement to remove from @bin.
+ * 
+ * Removes @element from @bin.
+ **/
 void
 flow_bin_remove_element (FlowBin *bin, FlowElement *element)
 {
@@ -240,6 +262,15 @@ flow_bin_remove_element (FlowBin *bin, FlowElement *element)
   g_object_unref (element);
 }
 
+/**
+ * flow_bin_have_element:
+ * @bin: A #FlowBin.
+ * @element: A #FlowElement.
+ * 
+ * Checks if @element belongs to @bin.
+ * 
+ * Return value: %TRUE if @element belongs to @bin, %FALSE otherwise.
+ **/
 gboolean
 flow_bin_have_element (FlowBin *bin, FlowElement *element)
 {
@@ -249,6 +280,15 @@ flow_bin_have_element (FlowBin *bin, FlowElement *element)
   return find_element_by_ptr (bin, element, NULL);
 }
 
+/**
+ * flow_bin_get_element:
+ * @bin: A #FlowBin.
+ * @element_name: A unique string identifier.
+ * 
+ * Finds a #FlowElement belonging to @bin by its unique identifier.
+ * 
+ * Return value: A #FlowElement, or %NULL if there was no match.
+ **/
 FlowElement *
 flow_bin_get_element (FlowBin *bin, const gchar *element_name)
 {
@@ -258,6 +298,16 @@ flow_bin_get_element (FlowBin *bin, const gchar *element_name)
   return find_element_by_name (bin, element_name);
 }
 
+/**
+ * flow_bin_get_element_name:
+ * @bin: A #FlowBin.
+ * @element: A #FlowElement belonging to @bin.
+ * 
+ * If @element belongs to @bin, gets its unique identifier. If you
+ * plan to use the string later, you should make a copy of it.
+ * 
+ * Return value: @element's identifier, or %NULL if it did not belong to @bin.
+ **/
 const gchar *
 flow_bin_get_element_name (FlowBin *bin, FlowElement *element)
 {
@@ -272,6 +322,16 @@ flow_bin_get_element_name (FlowBin *bin, FlowElement *element)
   return element_name;
 }
 
+/**
+ * flow_bin_list_elements:
+ * @bin: A #FlowBin.
+ * 
+ * Generates a list of pointers to the elements that belong to @bin. You
+ * must free the list when you're done with it, but you don't need to
+ * unref the elements.
+ * 
+ * Return value: A #GList of pointers to #FlowElement.
+ **/
 GList *
 flow_bin_list_elements (FlowBin *bin)
 {
@@ -286,6 +346,16 @@ flow_bin_list_elements (FlowBin *bin)
   return element_list;
 }
 
+/**
+ * flow_bin_list_unconnected_input_pads:
+ * @bin: A #FlowBin.
+ * 
+ * Generates a list of pointers to any unconnected input pads belonging
+ * to members of @bin. You must free the list when you're done with it, but you
+ * don't need to unref the elements.
+ * 
+ * Return value: A #GList of pointers to #FlowInputPad.
+ **/
 GList *
 flow_bin_list_unconnected_input_pads (FlowBin *bin)
 {
@@ -300,6 +370,16 @@ flow_bin_list_unconnected_input_pads (FlowBin *bin)
   return input_pad_list;
 }
 
+/**
+ * flow_bin_list_unconnected_output_pads:
+ * @bin: A #FlowBin.
+ * 
+ * Generates a list of pointers to any unconnected output pads belonging
+ * to members of @bin. You must free the list when you're done with it, but you
+ * don't need to unref the elements.
+ * 
+ * Return value: A #GList of pointers to #FlowOutputPad.
+ **/
 GList *
 flow_bin_list_unconnected_output_pads (FlowBin *bin)
 {

@@ -100,6 +100,14 @@ flow_connector_finalize (FlowConnector *connector)
 
 /* --- FlowConnector public API --- */
 
+/**
+ * flow_connector_get_state:
+ * @connector: A #FlowConnector.
+ * 
+ * Gets the current connectivity state of @connector.
+ * 
+ * Return value: The current #FlowConnectivity of @connector.
+ **/
 FlowConnectivity
 flow_connector_get_state (FlowConnector *connector)
 {
@@ -112,6 +120,16 @@ flow_connector_get_state (FlowConnector *connector)
   return priv->state;
 }
 
+/**
+ * flow_connector_get_last_state:
+ * @connector: A #FlowConnector.
+ * 
+ * Gets the last connectivity state of @connector. By using this
+ * and the state from flow_connector_get_state(), you can determine
+ * the last state transition.
+ * 
+ * Return value: The previous #FlowConnectivity of @connector.
+ **/
 FlowConnectivity
 flow_connector_get_last_state (FlowConnector *connector)
 {
@@ -124,6 +142,15 @@ flow_connector_get_last_state (FlowConnector *connector)
   return priv->last_state;
 }
 
+/**
+ * flow_connector_set_state_internal:
+ * @connector: A #FlowConnector.
+ * @state: The new #FlowConnectivity of @connector.
+ * 
+ * This function is for #FlowConnector implementations only. It handles
+ * the details of a state transition, like storing the previous state and
+ * emitting a signal.
+ **/
 void
 flow_connector_set_state_internal (FlowConnector *connector, FlowConnectivity state)
 {
