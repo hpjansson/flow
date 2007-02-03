@@ -50,6 +50,7 @@ libflow_la_SOURCES = \
 	flow-input-pad.c \
 	flow-io.c \
 	flow-ip-addr.c \
+	flow-ip-processor.c \
 	flow-ip-resolver.c \
 	flow-ip-service.c \
 	flow-messages.c \
@@ -92,6 +93,7 @@ pkginclude_HEADERS = \
 	flow-input-pad.h \
 	flow-io.h \
 	flow-ip-addr.h \
+	flow-ip-processor.h \
 	flow-ip-resolver.h \
 	flow-ip-service.h \
 	flow-messages.h \
