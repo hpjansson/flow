@@ -55,7 +55,7 @@ flow_detailed_event_set_description_internal (FlowDetailedEvent *detailed_event,
 }
 
 FLOW_GOBJECT_PROPERTIES_BEGIN (flow_detailed_event)
-FLOW_GOBJECT_PROPERTY_STRING  (G_TYPE_STRING, "description", "Description", "Description",
+FLOW_GOBJECT_PROPERTY_STRING  ("description", "Description", "Description",
                                G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY,
                                flow_detailed_event_get_description_internal, flow_detailed_event_set_description_internal,
                                NULL)

@@ -58,11 +58,11 @@ flow_anonymous_event_set_destroy_notify_internal (FlowAnonymousEvent *anonymous_
 }
 
 FLOW_GOBJECT_PROPERTIES_BEGIN (flow_anonymous_event)
-FLOW_GOBJECT_PROPERTY_POINTER (G_TYPE_POINTER, "data", "Data", "Data",
+FLOW_GOBJECT_PROPERTY_POINTER ("data", "Data", "Data",
                                G_PARAM_READWRITE,
                                flow_anonymous_event_get_data_internal,
                                flow_anonymous_event_set_data_internal)
-FLOW_GOBJECT_PROPERTY_POINTER (G_TYPE_POINTER, "destroy-notify", "Destroy notify", "Destroy notification callback",
+FLOW_GOBJECT_PROPERTY_POINTER ("destroy-notify", "Destroy notify", "Destroy notification callback",
                                G_PARAM_READWRITE,
                                flow_anonymous_event_get_destroy_notify_internal,
                                flow_anonymous_event_set_destroy_notify_internal)

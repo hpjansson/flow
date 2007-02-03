@@ -65,9 +65,9 @@ FlowGObjectPropElem;
   (void (*)(void)) value_getter, (void (*)(void)) value_setter, type_getter,            \
   0, 0, 0, 0.0, 0.0, 0.0, NULL },
 
-#define FLOW_GOBJECT_PROPERTY_BOOLEAN(fundamental_type, name, nick, blurb, param_flags, \
+#define FLOW_GOBJECT_PROPERTY_BOOLEAN(name, nick, blurb, param_flags,                   \
                                       value_getter, value_setter, defval)               \
-{ fundamental_type, name, nick, blurb, param_flags,                                     \
+{ G_TYPE_BOOLEAN, name, nick, blurb, param_flags,                                       \
   (void (*)(void)) value_getter, (void (*)(void)) value_setter, NULL,                   \
   0, 0, defval, 0.0, 0.0, 0.0, NULL },
 
@@ -89,21 +89,27 @@ FlowGObjectPropElem;
   (void (*)(void)) value_getter, (void (*)(void)) value_setter, type_getter,            \
   0, 0, defval, 0.0, 0.0, 0.0, NULL },
 
-#define FLOW_GOBJECT_PROPERTY_FLOAT(fundamental_type, name, nick, blurb, param_flags,   \
+#define FLOW_GOBJECT_PROPERTY_FLOAT(name, nick, blurb, param_flags,                     \
                                     value_getter, value_setter, min, max, defval)       \
-{ fundamental_type, name, nick, blurb, param_flags,                                     \
+{ G_TYPE_FLOAT, name, nick, blurb, param_flags,                                         \
   (void (*)(void)) value_getter, (void (*)(void)) value_setter, NULL,                   \
   0, 0, 0, min, max, defval, NULL },
 
-#define FLOW_GOBJECT_PROPERTY_STRING(fundamental_type, name, nick, blurb, param_flags,  \
+#define FLOW_GOBJECT_PROPERTY_DOUBLE(name, nick, blurb, param_flags,                    \
+                                    value_getter, value_setter, min, max, defval)       \
+{ G_TYPE_DOUBLE, name, nick, blurb, param_flags,                                        \
+  (void (*)(void)) value_getter, (void (*)(void)) value_setter, NULL,                   \
+  0, 0, 0, min, max, defval, NULL },
+
+#define FLOW_GOBJECT_PROPERTY_STRING(name, nick, blurb, param_flags,                    \
                                      value_getter, value_setter, defval)                \
-{ fundamental_type, name, nick, blurb, param_flags,                                     \
+{ G_TYPE_STRING, name, nick, blurb, param_flags,                                        \
   (void (*)(void)) value_getter, (void (*)(void)) value_setter, NULL,                   \
   0, 0, 0, 0.0, 0.0, 0.0, defval },
 
-#define FLOW_GOBJECT_PROPERTY_POINTER(fundamental_type, name, nick, blurb, param_flags, \
+#define FLOW_GOBJECT_PROPERTY_POINTER(name, nick, blurb, param_flags,                   \
                                       value_getter, value_setter)                       \
-{ fundamental_type, name, nick, blurb, param_flags,                                     \
+{ G_TYPE_POINTER, name, nick, blurb, param_flags,                                       \
   (void (*)(void)) value_getter, (void (*)(void)) value_setter,                         \
   NULL, 0, 0, 0, 0.0, 0.0, 0.0, NULL },
 
