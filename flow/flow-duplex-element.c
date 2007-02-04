@@ -138,30 +138,42 @@ flow_duplex_element_finalize (FlowDuplexElement *duplex_element)
 
 /* --- FlowDuplexElement public API --- */
 
-void
-flow_duplex_element_get_upstream_pads (FlowDuplexElement *duplex_element,
-                                       FlowInputPad **input_pad, FlowOutputPad **output_pad)
+FlowInputPad *
+flow_duplex_element_get_upstream_input_pad (FlowDuplexElement *duplex_element)
 {
   FlowElement *element = (FlowElement *) duplex_element;
 
-  g_return_if_fail (FLOW_IS_DUPLEX_ELEMENT (duplex_element));
+  g_return_val_if_fail (FLOW_IS_DUPLEX_ELEMENT (duplex_element), NULL);
 
-  if (input_pad)
-    *input_pad = g_ptr_array_index (element->input_pads, UPSTREAM_INDEX);
-  if (output_pad)
-    *output_pad = g_ptr_array_index (element->output_pads, UPSTREAM_INDEX);
+  return g_ptr_array_index (element->input_pads, UPSTREAM_INDEX);
 }
 
-void
-flow_duplex_element_get_downstream_pads (FlowDuplexElement *duplex_element,
-                                         FlowInputPad **input_pad, FlowOutputPad **output_pad)
+FlowOutputPad *
+flow_duplex_element_get_upstream_output_pad (FlowDuplexElement *duplex_element)
 {
   FlowElement *element = (FlowElement *) duplex_element;
 
-  g_return_if_fail (FLOW_IS_DUPLEX_ELEMENT (duplex_element));
+  g_return_val_if_fail (FLOW_IS_DUPLEX_ELEMENT (duplex_element), NULL);
 
-  if (input_pad)
-    *input_pad = g_ptr_array_index (element->input_pads, DOWNSTREAM_INDEX);
-  if (output_pad)
-    *output_pad = g_ptr_array_index (element->output_pads, DOWNSTREAM_INDEX);
+  return g_ptr_array_index (element->output_pads, UPSTREAM_INDEX);
+}
+
+FlowInputPad *
+flow_duplex_element_get_downstream_input_pad (FlowDuplexElement *duplex_element)
+{
+  FlowElement *element = (FlowElement *) duplex_element;
+
+  g_return_val_if_fail (FLOW_IS_DUPLEX_ELEMENT (duplex_element), NULL);
+
+  return g_ptr_array_index (element->input_pads, DOWNSTREAM_INDEX);
+}
+
+FlowOutputPad *
+flow_duplex_element_get_downstream_output_pad (FlowDuplexElement *duplex_element)
+{
+  FlowElement *element = (FlowElement *) duplex_element;
+
+  g_return_val_if_fail (FLOW_IS_DUPLEX_ELEMENT (duplex_element), NULL);
+
+  return g_ptr_array_index (element->output_pads, DOWNSTREAM_INDEX);
 }

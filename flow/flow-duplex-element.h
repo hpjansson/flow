@@ -63,9 +63,10 @@ struct _FlowDuplexElementClass
 
 G_END_DECLS
 
-void flow_duplex_element_get_upstream_pads   (FlowDuplexElement *duplex_element,
-                                              FlowInputPad **input_pad, FlowOutputPad **output_pad);
-void flow_duplex_element_get_downstream_pads (FlowDuplexElement *duplex_element,
-                                              FlowInputPad **input_pad, FlowOutputPad **output_pad);
+FlowInputPad  *flow_duplex_element_get_upstream_input_pad    (FlowDuplexElement *duplex_element);
+FlowOutputPad *flow_duplex_element_get_upstream_output_pad   (FlowDuplexElement *duplex_element);
+
+FlowInputPad  *flow_duplex_element_get_downstream_input_pad  (FlowDuplexElement *duplex_element);
+FlowOutputPad *flow_duplex_element_get_downstream_output_pad (FlowDuplexElement *duplex_element);
 
 #endif  /* _FLOW_DUPLEX_ELEMENT_H */
