@@ -26,6 +26,7 @@
 #include "flow-gobject-util.h"
 #include "flow-context-mgmt.h"
 #include "flow-pad.h"
+#include <string.h>
 
 /* --- FlowPad private data --- */
 
@@ -35,6 +36,18 @@ typedef struct
 FlowPadPrivate;
 
 /* --- FlowPad properties --- */
+
+static void
+other_pads_property_changed (FlowPad *pad, GParamSpec *param_spec, FlowPad *other_pad)
+{
+  if (!param_spec || !param_spec->name || strcmp (param_spec->name, "connected-pad"))
+    return;
+
+  if (flow_pad_get_connected_pad (other_pad) != pad)
+    flow_pad_disconnect (pad);
+
+  g_assert (flow_pad_get_connected_pad (pad) == NULL);
+}
 
 static FlowElement *
 flow_pad_get_owner_element_internal (FlowPad *pad)
@@ -59,12 +72,18 @@ static void
 flow_pad_set_connected_pad_internal (FlowPad *pad, FlowPad *other_pad)
 {
   if (pad->connected_pad)
+  {
     g_object_remove_weak_pointer ((GObject *) pad->connected_pad, (gpointer) &pad->connected_pad);
+    g_signal_handlers_disconnect_by_func (other_pad, (GCallback) other_pads_property_changed, pad);
+  }
 
   pad->connected_pad = other_pad;
 
   if (other_pad)
+  {
     g_object_add_weak_pointer ((GObject *) other_pad, (gpointer) &pad->connected_pad);
+    g_signal_connect_swapped (other_pad, "notify", (GCallback) other_pads_property_changed, pad);
+  }
 }
 
 FLOW_GOBJECT_PROPERTIES_BEGIN (flow_pad)
