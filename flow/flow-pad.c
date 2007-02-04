@@ -44,9 +44,10 @@ other_pads_property_changed (FlowPad *pad, GParamSpec *param_spec, FlowPad *othe
     return;
 
   if (flow_pad_get_connected_pad (other_pad) != pad)
+  {
     flow_pad_disconnect (pad);
-
-  g_assert (flow_pad_get_connected_pad (pad) == NULL);
+    g_assert (flow_pad_get_connected_pad (pad) == NULL);
+  }
 }
 
 static FlowElement *
@@ -74,7 +75,7 @@ flow_pad_set_connected_pad_internal (FlowPad *pad, FlowPad *other_pad)
   if (pad->connected_pad)
   {
     g_object_remove_weak_pointer ((GObject *) pad->connected_pad, (gpointer) &pad->connected_pad);
-    g_signal_handlers_disconnect_by_func (other_pad, (GCallback) other_pads_property_changed, pad);
+    g_signal_handlers_disconnect_by_func (pad->connected_pad, (GCallback) other_pads_property_changed, pad);
   }
 
   pad->connected_pad = other_pad;
