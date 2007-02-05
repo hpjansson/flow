@@ -44,6 +44,7 @@ libflow_la_SOURCES = \
 	flow-destructor.c \
 	flow-detailed-event.c \
 	flow-element.c \
+	flow-element-util.c \
 	flow-emitter.c \
 	flow-event.c \
 	flow-gobject-util.c \
@@ -87,6 +88,7 @@ pkginclude_HEADERS = \
 	flow-destructor.h \
 	flow-detailed-event.h \
 	flow-element.h \
+	flow-element-util.h \
 	flow-emitter.h \
 	flow-event.h \
 	flow-event-codes.h \
