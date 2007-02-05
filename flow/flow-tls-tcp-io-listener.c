@@ -23,8 +23,8 @@
  */
 
 #include "config.h"
-
 #include "flow-util.h"
+#include "flow-element-util.h"
 #include "flow-gobject-util.h"
 #include "flow-tls-tcp-io-listener.h"
 

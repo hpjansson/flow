@@ -25,6 +25,7 @@
 #include <string.h>
 #include "config.h"
 #include "flow-util.h"
+#include "flow-element-util.h"
 #include "flow-gobject-util.h"
 #include "flow-event-codes.h"
 #include "flow-tls-tcp-io.h"

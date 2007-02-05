@@ -32,6 +32,7 @@
 #include <flow/flow-destructor.h>
 #include <flow/flow-detailed-event.h>
 #include <flow/flow-element.h>
+#include <flow/flow-element-util.h>
 #include <flow/flow-emitter.h>
 #include <flow/flow-input-pad.h>
 #include <flow/flow-io.h>
