@@ -25,11 +25,13 @@
 #include <string.h>
 #include "config.h"
 #include "flow-util.h"
+#include "flow-element-util.h"
 #include "flow-gobject-util.h"
 #include "flow-event-codes.h"
 #include "flow-tcp-io.h"
 
 #define TCP_CONNECTOR_NAME "tcp-connector"
+#define IP_PROCESSOR_NAME  "ip-processor"
 
 #define return_if_invalid_bin(tcp_io) \
   G_STMT_START { \
@@ -68,6 +70,7 @@ typedef struct
 
   FlowTcpConnector *tcp_connector;
   FlowUserAdapter  *user_adapter;
+  FlowIPProcessor  *ip_processor;
 
   guint             wrote_stream_begin : 1;
   guint             name_resolution_id;
@@ -299,9 +302,14 @@ flow_tcp_io_init (FlowTcpIO *tcp_io)
   priv->tcp_connector = flow_tcp_connector_new ();
   flow_bin_add_element (bin, FLOW_ELEMENT (priv->tcp_connector), TCP_CONNECTOR_NAME);
 
+  priv->ip_processor = flow_ip_processor_new ();
+  flow_bin_add_element (bin, FLOW_ELEMENT (priv->ip_processor), IP_PROCESSOR_NAME);
+
   flow_connect_simplex__simplex (FLOW_SIMPLEX_ELEMENT (priv->tcp_connector),
                                  FLOW_SIMPLEX_ELEMENT (priv->user_adapter));
   flow_connect_simplex__simplex (FLOW_SIMPLEX_ELEMENT (priv->user_adapter),
+                                 FLOW_SIMPLEX_ELEMENT (priv->ip_processor));
+  flow_connect_simplex__simplex (FLOW_SIMPLEX_ELEMENT (priv->ip_processor),
                                  FLOW_SIMPLEX_ELEMENT (priv->tcp_connector));
 
   g_signal_connect_swapped (priv->tcp_connector, "connectivity-changed",
@@ -326,6 +334,7 @@ flow_tcp_io_dispose (FlowTcpIO *tcp_io)
 
   flow_gobject_unref_clear (priv->user_adapter);
   flow_gobject_unref_clear (priv->tcp_connector);
+  flow_gobject_unref_clear (priv->ip_processor);
 }
 
 static void
@@ -545,4 +554,12 @@ flow_tcp_io_set_tcp_connector (FlowTcpIO *tcp_io, FlowTcpConnector *tcp_connecto
     flow_bin_remove_element (bin, old_tcp_connector);
 
   flow_bin_add_element (bin, FLOW_ELEMENT (tcp_connector), TCP_CONNECTOR_NAME);
+}
+
+FlowIPProcessor *
+flow_tcp_io_get_ip_processor (FlowTcpIO *tcp_io)
+{
+  g_return_val_if_fail (FLOW_IS_TCP_IO (tcp_io), NULL);
+
+  return FLOW_IP_PROCESSOR (flow_bin_get_element (FLOW_BIN (tcp_io), IP_PROCESSOR_NAME));
 }

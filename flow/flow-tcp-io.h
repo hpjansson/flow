@@ -28,6 +28,7 @@
 #include <flow/flow-detailed-event.h>
 #include <flow/flow-io.h>
 #include <flow/flow-tcp-connector.h>
+#include <flow/flow-ip-processor.h>
 
 G_BEGIN_DECLS
 
@@ -79,6 +80,8 @@ FlowConnectivity  flow_tcp_io_get_last_connectivity (FlowTcpIO *tcp_io);
 
 FlowTcpConnector *flow_tcp_io_get_tcp_connector     (FlowTcpIO *io);
 void              flow_tcp_io_set_tcp_connector     (FlowTcpIO *io, FlowTcpConnector *tcp_connector);
+
+FlowIPProcessor  *flow_tcp_io_get_ip_processor      (FlowTcpIO *io);
 
 G_END_DECLS
 
