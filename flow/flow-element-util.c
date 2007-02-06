@@ -515,6 +515,9 @@ flow_replace_element (FlowElement *original, FlowElement *replacement)
   GPtrArray *replacement_output_pads;
   guint      i;
 
+  if (original == replacement)
+    return;
+
   original_input_pads     = flow_element_get_input_pads (original);
   original_output_pads    = flow_element_get_output_pads (original);
   replacement_input_pads  = flow_element_get_input_pads (replacement);
