@@ -144,6 +144,7 @@ flow_pad_dispose (FlowPad *pad)
     if (pad->connected_pad)
     {
       g_object_remove_weak_pointer ((GObject *) pad->connected_pad, (gpointer) &pad->connected_pad);
+      g_signal_handlers_disconnect_by_func (pad->connected_pad, (GCallback) other_pads_property_changed, pad);
       pad->connected_pad = NULL;
     }
 
@@ -161,6 +162,7 @@ flow_pad_dispose (FlowPad *pad)
   if (pad->connected_pad)
   {
     g_object_remove_weak_pointer ((GObject *) pad->connected_pad, (gpointer) &pad->connected_pad);
+    g_signal_handlers_disconnect_by_func (pad->connected_pad, (GCallback) other_pads_property_changed, pad);
     pad->connected_pad = NULL;
   }
 
