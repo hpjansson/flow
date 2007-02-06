@@ -24,7 +24,6 @@
 
 #include <string.h>
 #include "config.h"
-#include "flow-util.h"
 #include "flow-element-util.h"
 #include "flow-gobject-util.h"
 #include "flow-event-codes.h"
@@ -176,9 +175,11 @@ flow_tcp_io_check_bin (FlowTcpIO *tcp_io)
 
   flow_gobject_unref_clear (priv->user_adapter);
   flow_gobject_unref_clear (priv->tcp_connector);
+  flow_gobject_unref_clear (priv->ip_processor);
 
   priv->user_adapter  = flow_io_get_user_adapter (FLOW_IO (tcp_io));
   priv->tcp_connector = (FlowTcpConnector *) flow_bin_get_element (bin, TCP_CONNECTOR_NAME);
+  priv->ip_processor  = (FlowIPProcessor *) flow_bin_get_element (bin, IP_PROCESSOR_NAME);
 
   if (priv->user_adapter)
   {
@@ -199,6 +200,14 @@ flow_tcp_io_check_bin (FlowTcpIO *tcp_io)
     }
     else
       priv->tcp_connector = NULL;
+  }
+
+  if (priv->ip_processor)
+  {
+    if (FLOW_IS_IP_PROCESSOR (priv->ip_processor))
+      g_object_ref (priv->ip_processor);
+    else
+      priv->ip_processor = NULL;
   }
 }
 
@@ -550,8 +559,17 @@ flow_tcp_io_set_tcp_connector (FlowTcpIO *tcp_io, FlowTcpConnector *tcp_connecto
   bin = FLOW_BIN (tcp_io);
 
   old_tcp_connector = flow_bin_get_element (bin, TCP_CONNECTOR_NAME);
+
+  if ((FlowElement *) tcp_connector == old_tcp_connector)
+    return;
+
+  /* Changes to the bin will trigger an update of our internal pointers */
+
   if (old_tcp_connector)
+  {
+    flow_replace_element (old_tcp_connector, (FlowElement *) tcp_connector);
     flow_bin_remove_element (bin, old_tcp_connector);
+  }
 
   flow_bin_add_element (bin, FLOW_ELEMENT (tcp_connector), TCP_CONNECTOR_NAME);
 }
@@ -562,4 +580,31 @@ flow_tcp_io_get_ip_processor (FlowTcpIO *tcp_io)
   g_return_val_if_fail (FLOW_IS_TCP_IO (tcp_io), NULL);
 
   return FLOW_IP_PROCESSOR (flow_bin_get_element (FLOW_BIN (tcp_io), IP_PROCESSOR_NAME));
+}
+
+void
+flow_tcp_io_set_ip_processor (FlowTcpIO *tcp_io, FlowIPProcessor *ip_processor)
+{
+  FlowElement *old_ip_processor;
+  FlowBin     *bin;
+
+  g_return_if_fail (FLOW_IS_TCP_IO (tcp_io));
+  g_return_if_fail (FLOW_IS_IP_PROCESSOR (ip_processor));
+
+  bin = FLOW_BIN (tcp_io);
+
+  old_ip_processor = flow_bin_get_element (bin, IP_PROCESSOR_NAME);
+
+  if ((FlowElement *) ip_processor == old_ip_processor)
+    return;
+
+  /* Changes to the bin will trigger an update of our internal pointers */
+
+  if (old_ip_processor)
+  {
+    flow_replace_element (old_ip_processor, (FlowElement *) ip_processor);
+    flow_bin_remove_element (bin, old_ip_processor);
+  }
+
+  flow_bin_add_element (bin, FLOW_ELEMENT (ip_processor), IP_PROCESSOR_NAME);
 }

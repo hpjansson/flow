@@ -82,6 +82,7 @@ FlowTcpConnector *flow_tcp_io_get_tcp_connector     (FlowTcpIO *io);
 void              flow_tcp_io_set_tcp_connector     (FlowTcpIO *io, FlowTcpConnector *tcp_connector);
 
 FlowIPProcessor  *flow_tcp_io_get_ip_processor      (FlowTcpIO *io);
+void              flow_tcp_io_set_ip_processor      (FlowTcpIO *io, FlowIPProcessor *ip_processor);
 
 G_END_DECLS
 
