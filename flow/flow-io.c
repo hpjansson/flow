@@ -24,7 +24,7 @@
 
 #include <string.h>
 #include "config.h"
-#include "flow-util.h"
+#include "flow-element-util.h"
 #include "flow-gobject-util.h"
 #include "flow-event-codes.h"
 #include "flow-io.h"
@@ -931,8 +931,17 @@ flow_io_set_user_adapter (FlowIO *io, FlowUserAdapter *user_adapter)
   bin = FLOW_BIN (io);
 
   old_user_adapter = flow_bin_get_element (bin, USER_ADAPTER_NAME);
+
+  if ((FlowElement *) user_adapter == old_user_adapter)
+    return;
+
+  /* Changes to the bin will trigger an update of our internal pointers */
+
   if (old_user_adapter)
+  {
+    flow_replace_element (old_user_adapter, (FlowElement *) user_adapter);
     flow_bin_remove_element (bin, old_user_adapter);
+  }
 
   flow_bin_add_element (bin, FLOW_ELEMENT (user_adapter), USER_ADAPTER_NAME);
 }
