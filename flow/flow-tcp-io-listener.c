@@ -90,26 +90,8 @@ setup_tcp_io (FlowElement *tcp_connector)
 
   /* Replace the FlowTcpConnector in tcp_io's bin */
 
-  old_tcp_connector = (FlowElement *) flow_tcp_io_get_tcp_connector (tcp_io);
-  if (old_tcp_connector)
-  {
-    flow_disconnect_element (old_tcp_connector);
-    flow_bin_remove_element (bin, old_tcp_connector);
-  }
-
   flow_tcp_io_set_tcp_connector (tcp_io, FLOW_TCP_CONNECTOR (tcp_connector));
   g_object_unref (tcp_connector);
-
-  /* Connect it to the FlowUserAdapter */
-
-  user_adapter = (FlowElement *) flow_io_get_user_adapter (FLOW_IO (tcp_io));
-  if (user_adapter)
-  {
-    flow_connect_simplex__simplex (FLOW_SIMPLEX_ELEMENT (tcp_connector),
-                                   FLOW_SIMPLEX_ELEMENT (user_adapter));
-    flow_connect_simplex__simplex (FLOW_SIMPLEX_ELEMENT (user_adapter),
-                                   FLOW_SIMPLEX_ELEMENT (tcp_connector));
-  }
 
   return tcp_io;
 }
