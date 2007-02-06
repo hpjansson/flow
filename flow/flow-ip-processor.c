@@ -124,6 +124,9 @@ flow_ip_processor_process_input (FlowIPProcessor *ip_processor, FlowPad *input_p
     return;
 
   packet_queue = flow_pad_get_packet_queue (input_pad);
+  if (!packet_queue)
+    return;
+
   output_pad = g_ptr_array_index (element->output_pads, 0);
 
   for ( ; (packet = flow_packet_queue_pop_packet (packet_queue)); )
