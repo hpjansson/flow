@@ -24,7 +24,6 @@
 
 #include <string.h>
 #include "config.h"
-#include "flow-util.h"
 #include "flow-element-util.h"
 #include "flow-gobject-util.h"
 #include "flow-event-codes.h"
@@ -148,8 +147,7 @@ flow_tls_tcp_io_init (FlowTlsTcpIO *tls_tcp_io)
   tcp_connector = FLOW_SIMPLEX_ELEMENT (flow_tcp_io_get_tcp_connector (FLOW_TCP_IO (tls_tcp_io)));
   user_adapter  = FLOW_SIMPLEX_ELEMENT (flow_io_get_user_adapter      (FLOW_IO     (tls_tcp_io)));
 
-  flow_connect_simplex_simplex__duplex (tcp_connector, tcp_connector, FLOW_DUPLEX_ELEMENT (priv->tls_protocol));
-  flow_connect_duplex__simplex_simplex (FLOW_DUPLEX_ELEMENT (priv->tls_protocol), user_adapter, user_adapter);
+  flow_insert_simplex_simplex__Iduplex (tcp_connector, tcp_connector, FLOW_DUPLEX_ELEMENT (priv->tls_protocol));
 }
 
 static void
@@ -198,8 +196,17 @@ flow_tls_tcp_io_set_tls_protocol (FlowTlsTcpIO *tls_tcp_io, FlowTlsProtocol *tls
   bin = FLOW_BIN (tls_tcp_io);
 
   old_tls_protocol = flow_bin_get_element (bin, TLS_PROTOCOL_NAME);
+
+  if ((FlowElement *) tls_protocol == old_tls_protocol)
+    return;
+
+  /* Changes to the bin will trigger an update of our internal pointers */
+
   if (old_tls_protocol)
+  {
+    flow_replace_element (old_tls_protocol, (FlowElement *) tls_protocol);
     flow_bin_remove_element (bin, old_tls_protocol);
+  }
 
   flow_bin_add_element (bin, FLOW_ELEMENT (tls_protocol), TLS_PROTOCOL_NAME);
 }
