@@ -90,43 +90,14 @@ setup_tls_tcp_io (FlowElement *tcp_connector)
 
   /* Replace the FlowTcpConnector in tls_tcp_io's bin */
 
-  old_tcp_connector = (FlowElement *) flow_tcp_io_get_tcp_connector (FLOW_TCP_IO (tls_tcp_io));
-  if (old_tcp_connector)
-  {
-    flow_disconnect_element (old_tcp_connector);
-    flow_bin_remove_element (bin, old_tcp_connector);
-  }
-
   flow_tcp_io_set_tcp_connector (FLOW_TCP_IO (tls_tcp_io), FLOW_TCP_CONNECTOR (tcp_connector));
   g_object_unref (tcp_connector);
 
   /* Replace the FlowTlsProtocol in tls_tcp_io's bin */
 
-  tls_protocol = (FlowElement *) flow_tls_tcp_io_get_tls_protocol (tls_tcp_io);
-  if (tls_protocol)
-  {
-    flow_disconnect_element (tls_protocol);
-    flow_bin_remove_element (bin, tls_protocol);
-  }
-
   tls_protocol = (FlowElement *) flow_tls_protocol_new (FLOW_AGENT_ROLE_SERVER);
   flow_tls_tcp_io_set_tls_protocol (tls_tcp_io, FLOW_TLS_PROTOCOL (tls_protocol));
   g_object_unref (tls_protocol);
-
-  /* Connect FlowTcpConnector <-> FlowTlsProtocol <-> FlowUserAdapter */
-
-  flow_connect_simplex_simplex__duplex (FLOW_SIMPLEX_ELEMENT (tcp_connector),
-                                        FLOW_SIMPLEX_ELEMENT (tcp_connector),
-                                        FLOW_DUPLEX_ELEMENT (tls_protocol));
-
-  user_adapter = (FlowElement *) flow_io_get_user_adapter (FLOW_IO (tls_tcp_io));
-
-  if (user_adapter)
-  {
-    flow_connect_duplex__simplex_simplex (FLOW_DUPLEX_ELEMENT (tls_protocol),
-                                          FLOW_SIMPLEX_ELEMENT (user_adapter),
-                                          FLOW_SIMPLEX_ELEMENT (user_adapter));
-  }
 
   return tls_tcp_io;
 }
