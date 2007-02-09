@@ -64,9 +64,12 @@ static const gchar *result_text [] =
   "FAILED - timeout"
 };
 
-static gboolean   test_is_verbose     = FALSE;
-static gboolean   test_trap           = TRUE;
-static gboolean   test_abort_on_error = TRUE;
+static TestResult global_result_code  = TEST_RESULT_OK;
+
+static gboolean   test_is_verbose       = FALSE;
+static gboolean   test_trap             = TRUE;
+static gboolean   test_abort_on_error   = FALSE;
+static gboolean   test_suspend_on_error = FALSE;
 static GMainLoop *main_loop;
 
 static gchar *
@@ -135,11 +138,19 @@ test_end (TestResult result_code, const gchar *result_description)
   g_free (ts);
   g_main_loop_unref (main_loop);
 
+  global_result_code = result_code;
+
   if (result_code == TEST_RESULT_OK)
     exit (0);
 
   if (test_abort_on_error)
     G_BREAKPOINT ();
+
+  if (test_suspend_on_error)
+  {
+    g_print ("Going to sleep - you can attach a debugger now.\n");
+    sleep (30 * 24 * 60 * 60);  /* 1 month should do it */
+  }
 
   exit (1);
 }
@@ -199,7 +210,8 @@ print_help (const gchar *prog_name)
               "-h --help      Print this help and exit.\n"
               "-v --verbose   Show test debug information.\n"
               "-n --no-trap   Don't trap timeout or segv.\n"
-              "-a --abort     Abort on error, don't exit\n\n",
+              "-a --abort     Abort on error, don't exit.\n"
+              "-s --suspend   Emit a message and go to sleep on error.\n\n",
               prog_name, TEST_UNIT_NAME);
 }
 
@@ -229,12 +241,23 @@ main (gint argc, gchar *argv [])
     {
       test_abort_on_error = TRUE;
     }
+    else if (!strcmp (arg, "-s") || !strcmp (arg, "--suspend"))
+    {
+      test_suspend_on_error = TRUE;
+    }
     else
     {
       g_printerr ("%s: Unknown argument '%s'.\n", argv [0], arg);
       print_help (argv [0]);
       exit (1);
     }
+  }
+
+  if (test_abort_on_error && test_suspend_on_error)
+  {
+    g_printerr ("%s: Options --abort and --suspend conflict.\n", argv [0]);
+    print_help (argv [0]);
+    exit (1);
   }
 
   test_begin (TEST_UNIT_NAME);
