@@ -228,6 +228,14 @@ flow_tcp_listener_set_local_service (FlowTcpListener *tcp_listener, FlowIPServic
   {
     gpointer  object;
 
+    if (!flow_ip_service_find_address (ip_service, FLOW_IP_ADDR_ANY_FAMILY))
+    {
+      /* If the caller didn't resolve the IP service, we try to look it up
+       * for him. This blocks. */
+
+      flow_ip_service_sync_resolve (ip_service);
+    }
+
     priv->shunt = flow_open_tcp_listener (ip_service);
 
     while ((object = flow_read_object_from_shunt (priv->shunt)))
