@@ -91,13 +91,16 @@ FLOW_GOBJECT_MAKE_IMPL        (flow_ip_processor, FlowIPProcessor, FLOW_TYPE_SIM
 
 /* --- FlowIPProcessor implementation --- */
 
+static void flow_ip_processor_process_input (FlowIPProcessor *ip_processor, FlowPad *input_pad);
+
 static void
 current_ip_resolved (FlowIPProcessor *ip_processor, FlowIPService *ip_service)
 {
-  FlowIPProcessorPrivate *priv    = ip_processor->priv;
-  FlowElement            *element = (FlowElement *) ip_processor;
+  FlowIPProcessorPrivate *priv       = ip_processor->priv;
+  FlowElement            *element    = (FlowElement *) ip_processor;
+  FlowPad                *input_pad  = g_ptr_array_index (element->input_pads, 0);
+  FlowPad                *output_pad = g_ptr_array_index (element->output_pads, 0);
   FlowPacket             *packet;
-  FlowPad                *output_pad;
 
   packet = priv->current_packet;
   priv->current_packet = NULL;
@@ -105,10 +108,14 @@ current_ip_resolved (FlowIPProcessor *ip_processor, FlowIPService *ip_service)
   g_assert (packet != NULL);
   g_assert (flow_packet_get_data (packet) == ip_service);
 
-  g_signal_handlers_disconnect_by_func (ip_service, current_ip_resolved, ip_service);
+  g_signal_handlers_disconnect_by_func (ip_service, current_ip_resolved, ip_processor);
 
-  output_pad = g_ptr_array_index (element->output_pads, 0);
   flow_pad_push (output_pad, packet);
+
+  if (!flow_pad_is_blocked (output_pad))
+    flow_pad_unblock (input_pad);
+
+  flow_ip_processor_process_input (ip_processor, input_pad);
 }
 
 static void
@@ -211,7 +218,7 @@ flow_ip_processor_finalize (FlowIPProcessor *ip_processor)
     FlowIPService *ip_service = flow_packet_get_data (priv->current_packet);
 
     g_assert (FLOW_IS_IP_SERVICE (ip_service));
-    g_signal_handlers_disconnect_by_func (ip_service, current_ip_resolved, ip_service);
+    g_signal_handlers_disconnect_by_func (ip_service, current_ip_resolved, ip_processor);
     flow_packet_free (priv->current_packet);
     priv->current_packet = NULL;
   }
