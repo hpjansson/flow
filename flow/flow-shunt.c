@@ -237,7 +237,7 @@ dispatch_for_shunt (FlowShunt *shunt, gint *n_reads_done, gint *n_writes_done)
 
   for (written_packets = 0; shunt->write_func && !shunt->block_writes && !shunt->was_destroyed &&
                             written_packets < MAX_DISPATCH_PACKETS && written_bytes <= MAX_BUFFER &&
-                            !shunt->received_end; written_packets++)
+                            !shunt->received_end /* <- see below */; written_packets++)
   {
     packet = shunt->write_func (shunt, shunt->write_func_data);
     if G_UNLIKELY (!packet)
@@ -257,6 +257,8 @@ dispatch_for_shunt (FlowShunt *shunt, gint *n_reads_done, gint *n_writes_done)
       if (FLOW_IS_DETAILED_EVENT (detailed_event) &&
           flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END))
       {
+        /* FIXME: This seems to work in practice, but since it's part of a bitfield
+         * it's dangerously un-threadsafe. */
         shunt->received_end = TRUE;
       }
     }
