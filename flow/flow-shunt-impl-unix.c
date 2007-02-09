@@ -2528,8 +2528,24 @@ flow_shunt_impl_open_tcp_listener (FlowIPService *local_service)
 
   if (local_service)
   {
-    g_object_ref (local_service);
     ip_addr = flow_ip_service_find_address (local_service, FLOW_IP_ADDR_ANY_FAMILY);
+
+    /* Don't mess with the passed-in service */
+
+    if (ip_addr)
+    {
+      g_object_ref (local_service);
+    }
+    else
+    {
+      FlowIPService *new_local_service;
+
+      new_local_service = flow_ip_service_new ();
+      flow_ip_service_set_port (new_local_service, flow_ip_service_get_port (local_service));
+      flow_ip_service_set_quality (new_local_service, flow_ip_service_get_quality (local_service));
+
+      local_service = new_local_service;
+    }
   }
   else
   {
@@ -2672,6 +2688,8 @@ flow_shunt_impl_connect_to_tcp (FlowIPService *remote_service, gint local_port)
   shunt = (FlowShunt *) tcp_shunt;
   flow_shunt_init_common (shunt, NULL);
   shunt->shunt_type = SHUNT_TYPE_TCP;
+
+  memset (&sa, 0, sizeof (sa));
 
   ip_addr = flow_ip_service_find_address (remote_service, FLOW_IP_ADDR_ANY_FAMILY);
   if (ip_addr)
