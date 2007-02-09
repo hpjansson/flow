@@ -4,8 +4,7 @@
 # a test fails, the log is enumerated and saved, and a
 # diagnostic is printed to stdout.
 #
-# This variant runs tests under gdb, and tries to get
-# a backtrace on failure.
+# This variant runs tests under valgrind.
 
 export MALLOC_CHECK_=2
 export MALLOC_PERTURB_=a
@@ -29,7 +28,7 @@ while true; do
   for i in $(cat tests.list); do
     valgrind -q --trace-children=yes --track-fds=yes --time-stamp=yes --num-callers=32 .libs/lt-$i -n >out 2>&1
 
-    if grep -L '^Thread' out >/dev/null 2>&1; then
+    if grep -L 'Thread' out >/dev/null 2>&1; then
       echo -e '\nFailure: ' $i
       mv out stress-valgrind-failure-$n.log
       let n=$n+1
