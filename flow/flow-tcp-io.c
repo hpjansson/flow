@@ -111,11 +111,6 @@ write_stream_end (FlowTcpIO *tcp_io, gboolean close_both_directions)
   FlowTcpIOPrivate  *priv = tcp_io->priv;
   FlowDetailedEvent *detailed_event;
 
-  if (!priv->wrote_stream_begin)
-    write_stream_begin (tcp_io);
-
-  priv->wrote_stream_begin = FALSE;
-
   detailed_event = flow_detailed_event_new (NULL);
   flow_detailed_event_add_code (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END);
 
@@ -123,6 +118,8 @@ write_stream_end (FlowTcpIO *tcp_io, gboolean close_both_directions)
     flow_detailed_event_add_code (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END_CONVERSE);
 
   flow_io_write_object (FLOW_IO (tcp_io), detailed_event);
+
+  priv->wrote_stream_begin = FALSE;
 
   g_object_unref (detailed_event);
 }
@@ -385,6 +382,7 @@ void
 flow_tcp_io_connect_by_name (FlowTcpIO *tcp_io, const gchar *name, gint port)
 {
   FlowTcpIOPrivate *priv;
+  FlowIPService    *ip_service;
 
   g_return_if_fail (FLOW_IS_TCP_IO (tcp_io));
   g_return_if_fail (name != NULL);
@@ -395,8 +393,13 @@ flow_tcp_io_connect_by_name (FlowTcpIO *tcp_io, const gchar *name, gint port)
 
   g_return_if_fail (priv->connectivity == FLOW_CONNECTIVITY_DISCONNECTED);
 
+  ip_service = flow_ip_service_new ();
+  flow_ip_service_set_name (ip_service, name);
+  flow_ip_service_set_port (ip_service, port);
 
-  /* TODO */
+  flow_tcp_io_connect (tcp_io, ip_service);
+
+  g_object_unref (ip_service);
 }
 
 void
@@ -452,6 +455,8 @@ gboolean
 flow_tcp_io_sync_connect_by_name (FlowTcpIO *tcp_io, const gchar *name, gint port)
 {
   FlowTcpIOPrivate *priv;
+  FlowIPService    *ip_service;
+  gboolean          result;
 
   g_return_val_if_fail (FLOW_IS_TCP_IO (tcp_io), FALSE);
   g_return_val_if_fail (name != NULL, FALSE);
@@ -462,8 +467,14 @@ flow_tcp_io_sync_connect_by_name (FlowTcpIO *tcp_io, const gchar *name, gint por
 
   g_return_val_if_fail (priv->connectivity == FLOW_CONNECTIVITY_DISCONNECTED, FALSE);
 
+  ip_service = flow_ip_service_new ();
+  flow_ip_service_set_name (ip_service, name);
+  flow_ip_service_set_port (ip_service, port);
 
-  /* TODO */
+  result = flow_tcp_io_sync_connect (tcp_io, ip_service);
+
+  g_object_unref (ip_service);
+  return result;
 }
 
 void
