@@ -7,3 +7,37 @@
 @arg1: 
 @arg2: 
 
+<!-- ##### FUNCTION flow_duplex_element_get_downstream_pads ##### -->
+<para>
+
+</para>
+
+@duplex_element: 
+@input_pad: 
+@output_pad: 
+
+<!-- ##### FUNCTION flow_duplex_element_get_upstream_pads ##### -->
+<para>
+
+</para>
+
+@duplex_element: 
+@input_pad: 
+@output_pad: 
+
+<!-- ##### FUNCTION flow_get_main_context_for_thread ##### -->
+<para>
+
+</para>
+
+@thread: 
+@Returns: 
+
+<!-- ##### FUNCTION flow_set_main_context_for_thread ##### -->
+<para>
+
+</para>
+
+@thread: 
+@main_context: 
+

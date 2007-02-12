@@ -17,24 +17,6 @@ Manage per-thread main contexts
 <!-- ##### SECTION Stability_Level ##### -->
 
 
-<!-- ##### FUNCTION flow_get_main_context_for_thread ##### -->
-<para>
-
-</para>
-
-@thread: 
-@Returns: 
-
-
-<!-- ##### FUNCTION flow_set_main_context_for_thread ##### -->
-<para>
-
-</para>
-
-@thread: 
-@main_context: 
-
-
 <!-- ##### FUNCTION flow_get_main_context_for_current_thread ##### -->
 <para>
 
@@ -48,7 +30,7 @@ Manage per-thread main contexts
 
 </para>
 
-@dispatch_thread: 
+@dispatch_context: 
 @priority: 
 @func: 
 @data: 
@@ -71,7 +53,7 @@ Manage per-thread main contexts
 
 </para>
 
-@dispatch_thread: 
+@dispatch_context: 
 @priority: 
 @interval: 
 @func: 
@@ -96,7 +78,7 @@ Manage per-thread main contexts
 
 </para>
 
-@dispatch_thread: 
+@dispatch_context: 
 @source_id: 
 
 
