@@ -23,9 +23,11 @@
  */
 
 #define TEST_UNIT_NAME "FlowTcpIO"
-#define TEST_TIMEOUT_S 60
+#define TEST_TIMEOUT_S 180
 
 /* Test variables; adjustable */
+
+#define LOCAL_PORT             2533
 
 #define SOCKETS_NUM            15
 #define SOCKETS_CONCURRENT_MAX 5
@@ -90,7 +92,16 @@ subthread_main (void)
   test_print ("Subthread connecting to main thread\n");
 
   tcp_io = flow_tcp_io_new ();
-  flow_tcp_io_sync_connect (tcp_io, loopback_service);
+
+  if (g_random_boolean ())
+  {
+    flow_tcp_io_sync_connect (tcp_io, loopback_service);
+  }
+  else
+  {
+    if (!flow_tcp_io_sync_connect_by_name (tcp_io, "localhost", LOCAL_PORT))
+      test_end (TEST_RESULT_FAILED, "loopback connect by name failed");
+  }
 
   test_print ("Subthread connected to main thread\n");
 
@@ -204,6 +215,12 @@ write_notify (FlowTcpIO *tcp_io)
 }
 
 static void
+print_running_socket (gpointer key, gpointer value, gpointer data)
+{
+  test_print ("%p, ", key);
+}
+
+static void
 lost_connection (FlowTcpIO *tcp_io)
 {
   TransferInfo *transfer_info;
@@ -227,8 +244,15 @@ lost_connection (FlowTcpIO *tcp_io)
   sockets_done++;
   sockets_running--;
 
+  test_print ("sockets_done == %d, sockets_running == %d: ", sockets_done, sockets_running);
+  g_hash_table_foreach (transfer_info_table, print_running_socket, NULL);
+  test_print ("\n");
+
   if (sockets_done >= SOCKETS_NUM && sockets_running == 0)
+  {
+    test_print ("quitting main loop!\n");
     g_main_loop_quit (main_loop);
+  }
 }
 
 static void
@@ -360,16 +384,16 @@ test_run (void)
                                                NULL, (GDestroyNotify) transfer_info_free);
 
   loopback_service = flow_ip_service_new ();
-  ip_addr = flow_ip_addr_new ();
-  flow_ip_addr_set_string (ip_addr, "127.0.0.1");
-  flow_ip_service_set_port (loopback_service, 2533);
-  flow_ip_service_add_address (loopback_service, ip_addr);
-  g_object_unref (ip_addr);
+  flow_ip_service_set_name (loopback_service, "localhost");
+  flow_ip_service_set_port (loopback_service, LOCAL_PORT);
+
+  /* */
 
   bad_loopback_service = flow_ip_service_new ();
+  flow_ip_service_set_port (bad_loopback_service, 12505);
+
   ip_addr = flow_ip_addr_new ();
   flow_ip_addr_set_string (ip_addr, "127.0.0.1");
-  flow_ip_service_set_port (bad_loopback_service, 12505);
   flow_ip_service_add_address (bad_loopback_service, ip_addr);
   g_object_unref (ip_addr);
 
@@ -388,6 +412,9 @@ test_run (void)
 
   g_object_unref (loopback_service);
   loopback_service = NULL;
+
+  g_object_unref (bad_loopback_service);
+  bad_loopback_service = NULL;
 
   g_free (buffer);
   buffer = NULL;
