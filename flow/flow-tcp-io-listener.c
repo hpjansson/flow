@@ -82,8 +82,6 @@ setup_tcp_io (FlowElement *tcp_connector)
 {
   FlowTcpIO   *tcp_io;
   FlowBin     *bin;
-  FlowElement *old_tcp_connector;
-  FlowElement *user_adapter;
 
   tcp_io = flow_tcp_io_new ();
   bin    = FLOW_BIN (tcp_io);

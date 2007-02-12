@@ -81,8 +81,6 @@ setup_tls_tcp_io (FlowElement *tcp_connector)
 {
   FlowTlsTcpIO *tls_tcp_io;
   FlowBin      *bin;
-  FlowElement  *old_tcp_connector;
-  FlowElement  *user_adapter;
   FlowElement  *tls_protocol;
 
   tls_tcp_io = flow_tls_tcp_io_new ();

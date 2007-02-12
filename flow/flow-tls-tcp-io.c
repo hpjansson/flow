@@ -107,13 +107,10 @@ flow_tls_tcp_io_check_bin (FlowTlsTcpIO *tls_tcp_io)
 static gboolean
 flow_tls_tcp_io_handle_input_object (FlowTlsTcpIO *tls_tcp_io, gpointer object)
 {
-  FlowTlsTcpIOPrivate *priv   = tls_tcp_io->priv;
   gboolean             result = FALSE;
 
   if (FLOW_IS_DETAILED_EVENT (object))
   {
-    FlowDetailedEvent *detailed_event = object;
-
     /* We've got nothing to do here. Yet. */
   }
 

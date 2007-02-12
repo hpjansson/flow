@@ -556,7 +556,6 @@ static void
 do_handshake (FlowTlsProtocol *tls_protocol)
 {
   FlowTlsProtocolPrivate *priv    = tls_protocol->priv;
-  FlowElement            *element = (FlowElement *) tls_protocol;
   ssize_t                 result;
 
   result = gnutls_handshake (priv->tls_session);
