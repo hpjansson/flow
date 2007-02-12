@@ -6,19 +6,7 @@ List of things that remain to be done for 1.0 and future milestones.
 Version 1.0
 -----------
 
-- Make FlowIPResolver use a specific callback per lookup again. Signals
-  don't work when they can be dispatched in multiple threads and you don't
-  know which request is "yours". [DONE]
-
-- Make FlowIPService able to store a name and resolve itself. It must also
-  be able to store multiple addresses, so can no longer derive from
-  FlowIPAddr. [DONE]
-
-- Fix code globally to not do FLOW_IP_ADDR (ip_service), but instead use
-  flow_ip_service_find_address (). [DONE]
-
-- Implement a name-looker-upper element. Problem is naming: We already
-  have FlowIPResolver and it's not an element.
+- Add error propagation to FlowIPResolver and FlowIPService.
 
 - Implement UDP connector and convenience bin. This depends on the
   name-looker-upper above to be able to lookup and set the remote IP
@@ -33,6 +21,8 @@ Version 1.0
 
 - Make FlowTlsProtocol generate server key in a worker thread, avoiding
   blocking on CPU (usually 2 seconds on startup).
+
+- Port the generic Unix code to FreeBSD, Darwin and Win32.
 
 Future
 ------
