@@ -66,7 +66,7 @@ typedef struct
   gpointer          arg;                   /* (gchar *), or (FlowIPAddr *) on reverse lookup */
   GList            *results;
 
-  GThread          *dispatch_thread;       /* Thread to dispatch result in */
+  GMainContext     *dispatch_context;      /* Main context to dispatch result in */
   FlowIPLookupFunc *user_func;             /* Callback */
   gpointer          user_data;             /* Callback data */
 }
@@ -131,6 +131,17 @@ destroy_lookup (Lookup *lookup)
   g_free (lookup);
 }
 
+static void
+lock_and_destroy_lookup (Lookup *lookup)
+{
+  FlowIPResolver        *resolver = lookup->resolver;
+  FlowIPResolverPrivate *priv     = resolver->priv;
+
+  g_mutex_lock (priv->mutex);
+  destroy_lookup (lookup);
+  g_mutex_unlock (priv->mutex);
+}
+
 static gboolean
 dispatch_lookup (Lookup *lookup)
 {
@@ -138,7 +149,6 @@ dispatch_lookup (Lookup *lookup)
   FlowIPResolverPrivate *priv     = resolver->priv;
 
   g_object_ref (resolver);
-
   g_mutex_lock (priv->mutex);
 
   if (lookup->is_wanted)
@@ -164,12 +174,20 @@ dispatch_lookup (Lookup *lookup)
     g_list_free (arg_list);
   }
 
-  destroy_lookup (lookup);
   g_mutex_unlock (priv->mutex);
-
   g_object_unref (resolver);
 
+  /* Destroy notification will invoke lock_and_destroy_lookup () */
   return FALSE;
+}
+
+static gint
+compare_ipv4_before_ipv6 (FlowIPAddr *addr_a, FlowIPAddr *addr_b)
+{
+  if (flow_ip_addr_get_family (addr_a) == FLOW_IP_ADDR_IPV4)
+    return -1;
+
+  return 1;
 }
 
 static void
@@ -181,15 +199,15 @@ do_lookup (Lookup *lookup, FlowIPResolver *resolver)
 
   if (lookup->is_wanted)
   {
-    GThread  *dispatch_thread;
-    gboolean  is_reverse;
-    gpointer  arg;
+    GMainContext *dispatch_context;
+    gboolean      is_reverse;
+    gpointer      arg;
 
     lookup->is_running = TRUE;
 
-    dispatch_thread = lookup->dispatch_thread;
-    is_reverse      = lookup->is_reverse;
-    arg             = lookup->arg;
+    dispatch_context = lookup->dispatch_context;
+    is_reverse       = lookup->is_reverse;
+    arg              = lookup->arg;
 
     g_mutex_unlock (priv->mutex);
 
@@ -202,15 +220,23 @@ do_lookup (Lookup *lookup, FlowIPResolver *resolver)
     {
       /* Name in, addresses out */
       lookup->results = flow_ip_resolver_impl_lookup_by_name (lookup->arg);
+
+      /* Put IPv4 addresses first */
+      lookup->results = g_list_sort (lookup->results, (GCompareFunc) compare_ipv4_before_ipv6);
     }
 
-    /* FIXME: Might need a destroy notify, in case the context goes away while we
-     * have outstanding events. */
-    flow_idle_add_full (dispatch_thread, G_PRIORITY_DEFAULT_IDLE,
-                        (GSourceFunc) dispatch_lookup, lookup, NULL);
+    flow_idle_add_full (dispatch_context, G_PRIORITY_DEFAULT_IDLE,
+                        (GSourceFunc) dispatch_lookup, lookup,
+                        (GDestroyNotify) lock_and_destroy_lookup);
+
+    /* If dispatch_context's thread exited, the event will never be dispatched,
+     * so we release our ref here. The destroy notification will be called and
+     * the lookup's resources freed. */
+    g_main_context_unref (dispatch_context);
   }
   else
   {
+    g_main_context_unref (lookup->dispatch_context);
     destroy_lookup (lookup);
     g_mutex_unlock (priv->mutex);
   }
@@ -221,21 +247,21 @@ create_lookup (FlowIPResolver *resolver, gboolean is_reverse, gpointer arg,
                FlowIPLookupFunc *user_func, gpointer user_data)
 {
   FlowIPResolverPrivate *priv = resolver->priv;
+  GMainContext          *main_context;
   Lookup                *lookup;
   guint                  id;
 
+  main_context = flow_get_main_context_for_current_thread ();
+
   lookup = g_new0 (Lookup, 1);
 
-  lookup->resolver        = resolver;
-  lookup->is_reverse      = is_reverse;
-  lookup->is_wanted       = TRUE;
-  lookup->arg             = arg;
-  lookup->dispatch_thread = g_thread_self ();
-  lookup->user_func       = user_func;
-  lookup->user_data       = user_data;
-
-  /* Make sure this thread has a main context that we can dispatch in */
-  flow_get_main_context_for_current_thread ();
+  lookup->resolver         = resolver;
+  lookup->is_reverse       = is_reverse;
+  lookup->is_wanted        = TRUE;
+  lookup->arg              = arg;
+  lookup->dispatch_context = g_main_context_ref (main_context);
+  lookup->user_func        = user_func;
+  lookup->user_data        = user_data;
 
   g_mutex_lock (priv->mutex);
 
