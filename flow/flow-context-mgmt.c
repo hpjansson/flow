@@ -25,53 +25,35 @@
 #include "config.h"
 #include "flow-context-mgmt.h"
 
-static GStaticMutex    global_context_mutex       = G_STATIC_MUTEX_INIT;
-static GHashTable     *global_context_table       = NULL;
-static GStaticPrivate  context_for_current_thread = G_STATIC_PRIVATE_INIT;
-static GStaticPrivate  atexit_for_current_thread  = G_STATIC_PRIVATE_INIT;
-
-static GMainContext **
-get_context_storage_global (GThread *thread)
-{
-  GMainContext **context_storage = NULL;
-
-  g_static_mutex_lock (&global_context_mutex);
-
-  if G_LIKELY (global_context_table)
-  {
-    context_storage = g_hash_table_lookup (global_context_table, thread);
-  }
-
-  g_static_mutex_unlock (&global_context_mutex);
-
-  return context_storage;
-}
+static GStaticPrivate context_for_current_thread = G_STATIC_PRIVATE_INIT;
 
 static void
-set_context_storage_global (GThread *thread, GMainContext **context_storage)
+main_context_destroy_notify (GMainContext *main_context)
 {
-  g_static_mutex_lock (&global_context_mutex);
-
-  if G_UNLIKELY (!global_context_table)
-    global_context_table = g_hash_table_new (g_direct_hash, g_direct_equal);
-
-  if (context_storage)
-    g_hash_table_insert (global_context_table, thread, context_storage);
-  else
-    g_hash_table_remove (global_context_table, thread);
-
-  g_static_mutex_unlock (&global_context_mutex);
+  if (main_context)
+    g_main_context_unref (main_context);
 }
 
-static GMainContext **
-create_context_storage (GThread *thread, GMainContext *main_context)
+static GMainContext *
+get_main_context_for_current_thread (void)
 {
-  GMainContext **main_context_storage;
+  GMainContext *main_context;
+
+  main_context = g_static_private_get (&context_for_current_thread);
 
   if (!main_context)
   {
-    if (thread->func == NULL)
+    GThread *thread_self;
+
+    /* This thread has not been assigned a main context yet; do it now */
+
+    thread_self = g_thread_self ();
+    g_assert (thread_self != NULL);
+
+    if (thread_self->func == NULL)
     {
+      /* Ref the default main context */
+
       /* Only the main thread and non-glib threads will have
        * a NULL func. Assume this is the main thread. */
 
@@ -80,115 +62,38 @@ create_context_storage (GThread *thread, GMainContext *main_context)
     }
     else
     {
+      /* Create a new main context for this thread */
+
       main_context = g_main_context_new ();
     }
+
+    g_static_private_set (&context_for_current_thread, main_context,
+                          (GDestroyNotify) main_context_destroy_notify);
   }
 
-  main_context_storage = g_new (GMainContext *, 1);
-  *main_context_storage = main_context;
-
-  return main_context_storage;
+  return main_context;
 }
 
 static void
-free_thread_data (GThread *thread)
+set_main_context_for_current_thread (GMainContext *main_context)
 {
-  GMainContext **main_context_storage;
+  GMainContext *old_main_context;
 
-  /* NOTE: g_thread_self () won't work in here */
-
-  main_context_storage = get_context_storage_global (thread);
-  set_context_storage_global (thread, NULL);
-
-  g_assert (main_context_storage != NULL);
-
-  g_main_context_unref (*main_context_storage);
-  *main_context_storage = NULL;
-  g_free (main_context_storage);
-}
-
-static GMainContext **
-ensure_context_storage (GThread *thread, GMainContext *desired_context)
-{
-  GMainContext **main_context_storage = NULL;
-
-  main_context_storage = get_context_storage_global (thread);
-
-  if (!main_context_storage)
+  old_main_context = g_static_private_get (&context_for_current_thread);
+  if (old_main_context)
   {
-    GThread *thread_self;
-
-    main_context_storage = create_context_storage (thread, desired_context);
-    set_context_storage_global (thread, main_context_storage);
-
-    thread_self = g_thread_self ();
-
-    if (thread == thread_self)
-    {
-      g_static_private_set (&atexit_for_current_thread, thread_self, (GDestroyNotify) free_thread_data);
-      g_static_private_set (&context_for_current_thread, main_context_storage, NULL);
-    }
-  }
-  else if (desired_context)
-  {
-    /* We found an existing main_context_storage, but the user requested a
-     * desired_context be set. This is an error. */
+    /* The thread has already been assigned a main context. This is an error. */
 
     g_warning ("The main context can only be set once per thread. Getting "
                "the main context will automatically create it if it hasn't "
                "already been set. Please set the main context before using "
                "anything that depends on it.");
+    return;
   }
 
-  return main_context_storage;
-}
-
-static GMainContext **
-ensure_context_storage_self (void)
-{
-  GMainContext **main_context_storage;
-
-  main_context_storage = g_static_private_get (&context_for_current_thread);
-
-  if (!main_context_storage)
-  {
-    GThread *thread_self;
-
-    /* No context in local storage; look in global table in case our
-     * context was created by another thread. */
-
-    thread_self = g_thread_self ();
-    main_context_storage = get_context_storage_global (thread_self);
-
-    if (!main_context_storage)
-    {
-      main_context_storage = create_context_storage (thread_self, NULL);
-      set_context_storage_global (thread_self, main_context_storage);
-    }
-
-    g_static_private_set (&atexit_for_current_thread, thread_self, (GDestroyNotify) free_thread_data);
-    g_static_private_set (&context_for_current_thread, main_context_storage, NULL);
-  }
-
-  return main_context_storage;
-}
-
-static inline GMainContext *
-get_main_context_for_current_thread (void)
-{
-  GMainContext **main_context_storage;
-
-  main_context_storage = ensure_context_storage_self ();
-  return *main_context_storage;
-}
-
-static inline GMainContext *
-get_main_context_for_thread (GThread *thread)
-{
-  GMainContext **main_context_storage;
-
-  main_context_storage = ensure_context_storage (thread, NULL);
-  return *main_context_storage;
+  g_main_context_ref (main_context);
+  g_static_private_set (&context_for_current_thread, main_context,
+                        (GDestroyNotify) main_context_destroy_notify);
 }
 
 /**
@@ -206,48 +111,17 @@ flow_get_main_context_for_current_thread (void)
   return get_main_context_for_current_thread ();
 }
 
-/**
- * flow_get_main_context_for_thread:
- * @thread: 
- * 
- * Gets @thread's main context. If the context does not
- * exist, it will be created. All asynchronous callbacks for
- * @thread will be dispatched from this context.
- * 
- * Return value: A #GMainContext.
- **/
-GMainContext *
-flow_get_main_context_for_thread (GThread *thread)
-{
-  g_return_val_if_fail (thread != NULL, NULL);
-
-  if G_LIKELY (thread)
-    return get_main_context_for_thread (thread);
-  else
-    return get_main_context_for_current_thread ();
-}
-
-/**
- * flow_set_main_context_for_thread:
- * @thread: A #GThread.
- * @main_context: A #GMainContext to use in @thread.
- * 
- * Assigns @main_context to @thread, so that all asynchronous
- * callbacks for @thread will be dispatched from @main_context.
- * The main context can only be set once per thread, so this
- * must be called before the thread's main context is used.
- **/
 void
-flow_set_main_context_for_thread (GThread *thread, GMainContext *main_context)
+flow_set_main_context_for_current_thread (GMainContext *main_context)
 {
-  g_return_if_fail (thread != NULL);
+  g_return_if_fail (main_context != NULL);
 
-  ensure_context_storage (thread, main_context);
+  set_main_context_for_current_thread (main_context);
 }
 
 /**
  * flow_idle_add_full:
- * @dispatch_thread: A #GThread.
+ * @dispatch_context: A #GMainContext.
  * @priority: The priority of the idle source. Typically this will be in the range betweeen #G_PRIORITY_DEFAULT_IDLE and #G_PRIORITY_HIGH_IDLE.
  * @func: Function to call.
  * @data: Data to pass to @func.
@@ -257,25 +131,25 @@ flow_set_main_context_for_thread (GThread *thread, GMainContext *main_context)
  * pending. If the function returns %FALSE it is automatically removed from the
  * list of event sources and will not be called again.
  *
- * The callback is dispatched from @dispatch_thread's main context.
+ * The callback is dispatched from @dispatch_context, in the thread running it.
  * 
  * Return value: The ID (greater than 0) of the event source.
  **/
 guint
-flow_idle_add_full (GThread *dispatch_thread, gint priority, GSourceFunc func, gpointer data,
+flow_idle_add_full (GMainContext *dispatch_context, gint priority, GSourceFunc func, gpointer data,
                     GDestroyNotify notify)
 {
-  GMainContext *main_context;
-  GSource      *idle_source;
-  guint         id;
+  GSource *idle_source;
+  guint    id;
 
-  main_context = get_main_context_for_thread (dispatch_thread);
+  if (!dispatch_context)
+    dispatch_context = get_main_context_for_current_thread ();
 
   idle_source = g_idle_source_new ();
   g_source_set_priority (idle_source, priority);
   g_source_set_callback (idle_source, func, data, notify);
 
-  id = g_source_attach (idle_source, main_context);
+  id = g_source_attach (idle_source, dispatch_context);
   g_source_unref (idle_source);
 
   return id;
@@ -315,7 +189,7 @@ flow_idle_add_to_current_thread (GSourceFunc func, gpointer data)
 
 /**
  * flow_timeout_add_full:
- * @dispatch_thread: A #GThread.
+ * @dispatch_context: A #GMainContext.
  * @priority: The priority of the timeout source. Typically this will be in the range between #G_PRIORITY_DEFAULT_IDLE and #G_PRIORITY_HIGH_IDLE.
  * @interval: The time between calls to the function, in milliseconds (1/1000ths of a second).
  * @func: Function to call.
@@ -334,25 +208,25 @@ flow_idle_add_to_current_thread (GSourceFunc func, gpointer data)
  * based on the current time and the given interval (it does not try to 'catch up'
  * time lost in delays).
  * 
- * The callback is dispatched from @dispatch_thread's main context.
+ * The callback is dispatched from @dispatch_context, in the thread running it.
  *
  * Return value: The ID (greater than 0) of the event source.
  **/
 guint
-flow_timeout_add_full (GThread *dispatch_thread, gint priority, guint interval,
+flow_timeout_add_full (GMainContext *dispatch_context, gint priority, guint interval,
                        GSourceFunc func, gpointer data, GDestroyNotify notify)
 {
-  GMainContext *main_context;
   GSource      *timeout_source;
   guint         id;
 
-  main_context = get_main_context_for_thread (dispatch_thread);
+  if (!dispatch_context)
+    dispatch_context = get_main_context_for_current_thread ();
 
   timeout_source = g_timeout_source_new (interval);
   g_source_set_priority (timeout_source, priority);
   g_source_set_callback (timeout_source, func, data, notify);
 
-  id = g_source_attach (timeout_source, main_context);
+  id = g_source_attach (timeout_source, dispatch_context);
   g_source_unref (timeout_source);
 
   return id;
@@ -400,29 +274,27 @@ flow_timeout_add_to_current_thread (guint interval, GSourceFunc func, gpointer d
 
 /**
  * flow_source_remove:
- * @dispatch_thread: A #GThread.
+ * @dispatch_context: A #GMainContext.
  * @source_id: The ID of the source to remove.
  * 
- * Removes the source identified by @source_id from @dispatch_thread's
- * main context.
+ * Removes the source identified by @source_id from @dispatch_context. If
+ * @dispatch_context belongs to another thread, you must hold a reference
+ * to it.
  **/
 void
-flow_source_remove (GThread *dispatch_thread, guint source_id)
+flow_source_remove (GMainContext *dispatch_context, guint source_id)
 {
-  GMainContext *main_context;
-  GSource      *source;
+  GSource *source;
 
-  if (dispatch_thread)
-    main_context = get_main_context_for_thread (dispatch_thread);
-  else
-    main_context = get_main_context_for_current_thread ();
+  if (!dispatch_context)
+    dispatch_context = get_main_context_for_current_thread ();
 
-  source = g_main_context_find_source_by_id (main_context, source_id);
+  source = g_main_context_find_source_by_id (dispatch_context, source_id);
 
   if G_UNLIKELY (!source)
   {
-    g_warning ("Tried to remove non-existent source %u from thread %p's context.",
-               source_id, dispatch_thread);
+    g_warning ("Tried to remove non-existent source %u from context %p.",
+               source_id, dispatch_context);
     return;
   }
 
