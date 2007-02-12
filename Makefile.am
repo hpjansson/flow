@@ -4,6 +4,11 @@ EXTRA_DIST =                \
         flow.spec           \
         flow.spec.in
 
+BUILT_EXTRA_DIST =          \
+        gtk-doc.make
+
+DISTCHECK_CONFIGURE_FLAGS = --enable-gtk-doc
+
 check-local:
 	@echo
 	@echo '*** '
