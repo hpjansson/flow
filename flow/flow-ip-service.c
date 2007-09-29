@@ -235,7 +235,7 @@ flow_ip_service_get_name (FlowIPService *ip_service)
     name = g_strdup (priv->name);
 
   g_mutex_unlock (priv->mutex);
-  return NULL;
+  return name;
 }
 
 void
