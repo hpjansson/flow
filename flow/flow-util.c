@@ -232,3 +232,16 @@ flow_g_ptr_array_compress (GPtrArray *array)
   g_ptr_array_set_size (array, new_len);
   return old_len - new_len;
 }
+
+void
+flow_unref_and_free_object_list (GList *object_list)
+{
+  GList *l;
+
+  for (l = object_list; l; l = g_list_next (l))
+  {
+    g_object_unref (l->data);
+  }
+
+  g_list_free (object_list);
+}

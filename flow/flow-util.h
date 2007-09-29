@@ -42,6 +42,8 @@ gboolean     flow_g_ptr_array_remove_sparse        (GPtrArray *array, gpointer d
 void         flow_g_ptr_array_add_sparse           (GPtrArray *array, gpointer data);
 guint        flow_g_ptr_array_compress             (GPtrArray *array);
 
+void         flow_unref_and_free_object_list       (GList *object_list);
+
 gchar       *flow_strerror                         (gint errnum);
 
 G_END_DECLS
