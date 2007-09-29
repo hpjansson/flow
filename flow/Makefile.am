@@ -47,6 +47,7 @@ libflow_la_SOURCES = \
 	flow-element-util.c \
 	flow-emitter.c \
 	flow-event.c \
+	flow-file-connect-op.c \
 	flow-gobject-util.c \
 	flow-input-pad.c \
 	flow-io.c \
@@ -65,6 +66,7 @@ libflow_la_SOURCES = \
 	flow-segment-request.c \
 	flow-shunt.c \
 	flow-simplex-element.c \
+	flow-tcp-connect-op.c \
 	flow-tcp-connector.c \
 	flow-tcp-io.c \
 	flow-tcp-io-listener.c \
@@ -92,6 +94,7 @@ pkginclude_HEADERS = \
 	flow-emitter.h \
 	flow-event.h \
 	flow-event-codes.h \
+	flow-file-connect-op.h \
 	flow-input-pad.h \
 	flow-io.h \
 	flow-ip-addr.h \
@@ -109,6 +112,7 @@ pkginclude_HEADERS = \
 	flow-segment-request.h \
 	flow-shunt.h \
 	flow-simplex-element.h \
+	flow-tcp-connect-op.h \
 	flow-tcp-connector.h \
 	flow-tcp-io.h \
 	flow-tcp-io-listener.h \
