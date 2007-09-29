@@ -59,7 +59,8 @@ flow_event_set_source_element_internal (FlowEvent *event, FlowElement *element)
 FLOW_GOBJECT_PROPERTIES_BEGIN (flow_event)
 FLOW_GOBJECT_PROPERTY         (G_TYPE_OBJECT, "source-element", "Source element",
                                "Element that generated this event", G_PARAM_READWRITE,
-                               flow_event_get_source_element_internal, flow_event_set_source_element_internal,
+                               flow_event_get_source_element_internal,
+                               flow_event_set_source_element_internal,
                                flow_element_get_type)
 FLOW_GOBJECT_PROPERTIES_END   ()
 
