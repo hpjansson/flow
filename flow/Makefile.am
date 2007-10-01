@@ -48,6 +48,7 @@ libflow_la_SOURCES = \
 	flow-emitter.c \
 	flow-event.c \
 	flow-file-connect-op.c \
+	flow-file-connector.c \
 	flow-gobject-util.c \
 	flow-input-pad.c \
 	flow-io.c \
@@ -95,6 +96,7 @@ pkginclude_HEADERS = \
 	flow-event.h \
 	flow-event-codes.h \
 	flow-file-connect-op.h \
+	flow-file-connector.h \
 	flow-input-pad.h \
 	flow-io.h \
 	flow-ip-addr.h \
