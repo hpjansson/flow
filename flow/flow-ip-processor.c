@@ -25,8 +25,8 @@
 #include "config.h"
 #include "flow-util.h"
 #include "flow-gobject-util.h"
+#include "flow-tcp-connect-op.h"
 #include "flow-ip-processor.h"
-#include "flow-ip-service.h"
 
 /* --- FlowIPProcessor private data --- */
 
@@ -106,7 +106,6 @@ current_ip_resolved (FlowIPProcessor *ip_processor, FlowIPService *ip_service)
   priv->current_packet = NULL;
 
   g_assert (packet != NULL);
-  g_assert (flow_packet_get_data (packet) == ip_service);
 
   g_signal_handlers_disconnect_by_func (ip_service, current_ip_resolved, ip_processor);
 
@@ -142,11 +141,17 @@ flow_ip_processor_process_input (FlowIPProcessor *ip_processor, FlowPad *input_p
 
     if (flow_packet_get_format (packet) == FLOW_PACKET_FORMAT_OBJECT)
     {
-      FlowIPService *ip_service = flow_packet_get_data (packet);
+      gpointer       packet_data = flow_packet_get_data (packet);
+      FlowIPService *ip_service  = NULL;
 
-      if (FLOW_IS_IP_SERVICE (ip_service) &&
-          ((priv->resolve_to_addrs && !flow_ip_service_get_nth_address (ip_service, 0)) ||
-           (priv->resolve_to_names && !flow_ip_service_get_name (ip_service))))
+      if (FLOW_IS_IP_SERVICE (packet_data))
+        ip_service = packet_data;
+      else if (FLOW_IS_TCP_CONNECT_OP (packet_data))
+        ip_service = flow_tcp_connect_op_get_remote_service (packet_data);
+
+      if (ip_service &&
+          ((priv->resolve_to_addrs && flow_ip_service_get_n_addresses (ip_service) == 0) ||
+           (priv->resolve_to_names && !flow_ip_service_have_name (ip_service))))
       {
         /* Need to do a lookup */
         priv->current_packet = packet;
