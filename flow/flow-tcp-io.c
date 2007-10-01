@@ -27,6 +27,7 @@
 #include "flow-element-util.h"
 #include "flow-gobject-util.h"
 #include "flow-event-codes.h"
+#include "flow-tcp-connect-op.h"
 #include "flow-tcp-io.h"
 
 #define TCP_CONNECTOR_NAME "tcp-connector"
@@ -360,6 +361,7 @@ void
 flow_tcp_io_connect (FlowTcpIO *tcp_io, FlowIPService *ip_service)
 {
   FlowTcpIOPrivate *priv;
+  FlowTcpConnectOp *op;
   FlowIO           *io;
 
   g_return_if_fail (FLOW_IS_TCP_IO (tcp_io));
@@ -372,9 +374,11 @@ flow_tcp_io_connect (FlowTcpIO *tcp_io, FlowIPService *ip_service)
 
   io = FLOW_IO (tcp_io);
 
-  flow_io_write_object (io, ip_service);
-  write_stream_begin (tcp_io);
+  op = flow_tcp_connect_op_new (ip_service, -1);
+  flow_io_write_object (io, op);
+  g_object_unref (op);
 
+  write_stream_begin (tcp_io);
   set_connectivity (tcp_io, FLOW_CONNECTIVITY_CONNECTING);
 }
 
@@ -425,6 +429,7 @@ gboolean
 flow_tcp_io_sync_connect (FlowTcpIO *tcp_io, FlowIPService *ip_service)
 {
   FlowTcpIOPrivate *priv;
+  FlowTcpConnectOp *op;
   FlowIO           *io;
 
   g_return_val_if_fail (FLOW_IS_TCP_IO (tcp_io), FALSE);
@@ -437,9 +442,11 @@ flow_tcp_io_sync_connect (FlowTcpIO *tcp_io, FlowIPService *ip_service)
 
   io = FLOW_IO (tcp_io);
 
-  flow_io_write_object (io, ip_service);
-  write_stream_begin (tcp_io);
+  op = flow_tcp_connect_op_new (ip_service, -1);
+  flow_io_write_object (io, op);
+  g_object_unref (op);
 
+  write_stream_begin (tcp_io);
   set_connectivity (tcp_io, FLOW_CONNECTIVITY_CONNECTING);
 
   while (priv->connectivity == FLOW_CONNECTIVITY_CONNECTING)
