@@ -219,6 +219,25 @@ flow_ip_service_new (void)
   return g_object_new (FLOW_TYPE_IP_SERVICE, NULL);
 }
 
+gboolean
+flow_ip_service_have_name (FlowIPService *ip_service)
+{
+  FlowIPServicePrivate *priv;
+  gboolean              have_name = FALSE;
+
+  g_return_val_if_fail (FLOW_IS_IP_SERVICE (ip_service), FALSE);
+
+  priv = ip_service->priv;
+
+  g_mutex_lock (priv->mutex);
+
+  if (priv->name)
+    have_name = TRUE;
+
+  g_mutex_unlock (priv->mutex);
+  return have_name;
+}
+
 gchar *
 flow_ip_service_get_name (FlowIPService *ip_service)
 {
@@ -331,6 +350,23 @@ flow_ip_service_sync_resolve (FlowIPService *ip_service)
   g_mutex_unlock (priv->mutex);
 
   return result;
+}
+
+gint
+flow_ip_service_get_n_addresses (FlowIPService *ip_service)
+{
+  FlowIPServicePrivate *priv;
+  gint                  n;
+
+  g_return_val_if_fail (FLOW_IS_IP_SERVICE (ip_service), 0);
+
+  priv = ip_service->priv;
+
+  g_mutex_lock (priv->mutex);
+  n = g_list_length (priv->addresses);
+  g_mutex_unlock (priv->mutex);
+
+  return n;
 }
 
 void

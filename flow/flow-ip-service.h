@@ -71,6 +71,8 @@ struct _FlowIPServiceClass
 
 FlowIPService       *flow_ip_service_new              (void);
 
+gboolean             flow_ip_service_have_name        (FlowIPService *ip_service);
+
 gchar               *flow_ip_service_get_name         (FlowIPService *ip_service);
 void                 flow_ip_service_set_name         (FlowIPService *ip_service, const gchar *name);
 
@@ -80,6 +82,7 @@ void                 flow_ip_service_set_port         (FlowIPService *ip_service
 FlowQuality          flow_ip_service_get_quality      (FlowIPService *ip_service);
 void                 flow_ip_service_set_quality      (FlowIPService *ip_service, FlowQuality quality);
 
+gint                 flow_ip_service_get_n_addresses  (FlowIPService *ip_service);
 FlowIPAddr          *flow_ip_service_get_nth_address  (FlowIPService *ip_service, gint n);
 FlowIPAddr          *flow_ip_service_find_address     (FlowIPService *ip_service, FlowIPAddrFamily family);
 GList               *flow_ip_service_list_addresses   (FlowIPService *ip_service);
