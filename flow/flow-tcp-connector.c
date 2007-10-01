@@ -26,8 +26,9 @@
 
 #include "flow-util.h"
 #include "flow-gobject-util.h"
-#include "flow-tcp-connector.h"
 #include "flow-detailed-event.h"
+#include "flow-tcp-connect-op.h"
+#include "flow-tcp-connector.h"
 
 #define MAX_BUFFER_PACKETS 16
 #define MAX_BUFFER_BYTES   4096
@@ -39,10 +40,10 @@ static FlowPacket *shunt_write (FlowShunt *shunt, FlowTcpConnector *tcp_connecto
 
 typedef struct
 {
-  FlowIPService   *remote_service;
-  FlowIPService   *next_remote_service;
+  FlowTcpConnectOp *op;
+  FlowTcpConnectOp *next_op;
 
-  FlowShunt       *shunt;
+  FlowShunt        *shunt;
 }
 FlowTcpConnectorPrivate;
 
@@ -87,39 +88,38 @@ connect_to_remote_service (FlowTcpConnector *tcp_connector)
     return;
   }
 
-  /* FIXME: Need a way to specify local (originating) port */
-
-  if (priv->next_remote_service)
+  if (priv->next_op)
   {
-    if (priv->remote_service)
-      g_object_unref (priv->remote_service);
+    if (priv->op)
+      g_object_unref (priv->op);
 
-    priv->remote_service = priv->next_remote_service;
-    priv->next_remote_service = NULL;
+    priv->op = priv->next_op;
+    priv->next_op = NULL;
   }
 
-  if (!priv->remote_service)
+  if (!priv->op)
   {
-    g_warning ("FlowTcpConnector got FLOW_STREAM_BEGIN before IP address.");
+    g_warning ("FlowTcpConnector got FLOW_STREAM_BEGIN before connect op.");
     return;
   }
 
-  priv->shunt = flow_connect_to_tcp (priv->remote_service, -1);
+  priv->shunt = flow_connect_to_tcp (flow_tcp_connect_op_get_remote_service (priv->op),
+                                     flow_tcp_connect_op_get_local_port (priv->op));
   setup_shunt (tcp_connector);
   flow_connector_set_state_internal (FLOW_CONNECTOR (tcp_connector), FLOW_CONNECTIVITY_CONNECTING);
 }
 
 static void
-set_remote_service (FlowTcpConnector *tcp_connector, FlowIPService *ip_service)
+set_op (FlowTcpConnector *tcp_connector, FlowTcpConnectOp *op)
 {
   FlowTcpConnectorPrivate *priv = tcp_connector->priv;
 
-  g_object_ref (ip_service);
+  g_object_ref (op);
 
-  if (priv->next_remote_service)
-    g_object_unref (priv->next_remote_service);
+  if (priv->next_op)
+    g_object_unref (priv->next_op);
 
-  priv->next_remote_service = ip_service;
+  priv->next_op = op;
 }
 
 static FlowPacket *
@@ -130,9 +130,9 @@ handle_outbound_packet (FlowTcpConnector *tcp_connector, FlowPacket *packet)
 
   if (packet_format == FLOW_PACKET_FORMAT_OBJECT)
   {
-    if (FLOW_IS_IP_SERVICE (packet_data))
+    if (FLOW_IS_TCP_CONNECT_OP (packet_data))
     {
-      set_remote_service (tcp_connector, packet_data);
+      set_op (tcp_connector, packet_data);
       flow_packet_free (packet);
       packet = NULL;
     }
@@ -331,8 +331,8 @@ flow_tcp_connector_dispose (FlowTcpConnector *tcp_connector)
 {
   FlowTcpConnectorPrivate *priv = tcp_connector->priv;
 
-  flow_gobject_unref_clear (priv->remote_service);
-  flow_gobject_unref_clear (priv->next_remote_service);
+  flow_gobject_unref_clear (priv->op);
+  flow_gobject_unref_clear (priv->next_op);
 
   if (priv->shunt)
   {
@@ -358,12 +358,32 @@ FlowIPService *
 flow_tcp_connector_get_remote_service (FlowTcpConnector *tcp_connector)
 {
   FlowTcpConnectorPrivate *priv;
+  FlowIPService           *remote_service = NULL;
 
   g_return_val_if_fail (FLOW_IS_TCP_CONNECTOR (tcp_connector), NULL);
 
   priv = tcp_connector->priv;
 
-  return priv->remote_service;
+  if (priv->op)
+    remote_service = flow_tcp_connect_op_get_remote_service (priv->op);
+
+  return remote_service;
+}
+
+gint
+flow_tcp_connector_get_local_port (FlowTcpConnector *tcp_connector)
+{
+  FlowTcpConnectorPrivate *priv;
+  gint                     local_port = -1;
+
+  g_return_val_if_fail (FLOW_IS_TCP_CONNECTOR (tcp_connector), -1);
+
+  priv = tcp_connector->priv;
+
+  if (priv->op)
+    local_port = flow_tcp_connect_op_get_local_port (priv->op);
+
+  return local_port;
 }
 
 /* For use in friend classes (e.g. FlowTcpListener) only */
@@ -388,7 +408,11 @@ _flow_tcp_connector_install_connected_shunt (FlowTcpConnector *tcp_connector, Fl
 
   object = flow_read_object_from_shunt (shunt);
   g_assert (FLOW_IS_IP_SERVICE (object));
-  priv->remote_service = object;
+
+  /* FIXME: Figure out local port instead of just setting -1? We won't use it
+   * for anything... */
+  priv->op = flow_tcp_connect_op_new (object, -1);
+  g_object_unref (object);
 
   /* Set up in connecting state */
 

@@ -66,6 +66,7 @@ struct _FlowTcpConnectorClass
 FlowTcpConnector *flow_tcp_connector_new                (void);
 
 FlowIPService    *flow_tcp_connector_get_remote_service (FlowTcpConnector *tcp_connector);
+gint              flow_tcp_connector_get_local_port     (FlowTcpConnector *tcp_connector);
 
 G_END_DECLS
 
