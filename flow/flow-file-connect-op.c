@@ -195,3 +195,25 @@ flow_file_connect_op_new (const gchar *path, FlowAccessMode access_mode)
                        "access-mode", access_mode,
                        NULL);
 }
+
+const gchar *
+flow_file_connect_op_get_path (FlowFileConnectOp *file_connect_op)
+{
+  FlowFileConnectOpPrivate *priv;
+
+  g_return_val_if_fail (FLOW_IS_FILE_CONNECT_OP (file_connect_op), NULL);
+
+  priv = file_connect_op->priv;
+  return priv->path;
+}
+
+FlowAccessMode
+flow_file_connect_op_get_access_mode (FlowFileConnectOp *file_connect_op)
+{
+  FlowFileConnectOpPrivate *priv;
+
+  g_return_val_if_fail (FLOW_IS_FILE_CONNECT_OP (file_connect_op), FLOW_NO_ACCESS);
+
+  priv = file_connect_op->priv;
+  return priv->access_mode;
+}

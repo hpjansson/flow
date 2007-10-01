@@ -86,7 +86,7 @@ FLOW_GOBJECT_PROPERTY         (G_TYPE_OBJECT,
                                G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY,
                                flow_tcp_connect_op_get_remote_ip_service_internal,
                                flow_tcp_connect_op_set_remote_ip_service_internal,
-                               NULL)
+                               flow_ip_service_get_type)
 FLOW_GOBJECT_PROPERTY_INT     (G_TYPE_INT, "local-port", "Local Port", "Local port to bind to",
                                G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY,
                                flow_tcp_connect_op_get_local_port_internal,
@@ -158,9 +158,10 @@ flow_tcp_connect_op_update_description (FlowTcpConnectOp *tcp_connect_op)
 
   /* Bring it all together */
 
-  event->description = g_strdup_printf ("Connect to IP %s port %d",
+  event->description = g_strdup_printf ("Connect to IP %s port %d %s",
                                         ip_list_str,
-                                        flow_ip_service_get_port (priv->remote_ip_service));
+                                        flow_ip_service_get_port (priv->remote_ip_service),
+                                        local_port_str);
 
   g_free (ip_list_str);
   if (must_free_local_port_str)
@@ -200,11 +201,7 @@ flow_tcp_connect_op_finalize (FlowTcpConnectOp *tcp_connect_op)
 {
   FlowTcpConnectOpPrivate *priv = tcp_connect_op->priv;
 
-  if (priv->remote_ip_service)
-  {
-    g_object_unref (priv->remote_ip_service);
-    priv->remote_ip_service = NULL;
-  }
+  flow_gobject_unref_clear (priv->remote_ip_service);
 }
 
 /* --- FlowTcpConnectOp public API --- */
@@ -215,7 +212,29 @@ flow_tcp_connect_op_new (FlowIPService *remote_ip_service, gint local_port)
   g_return_val_if_fail (FLOW_IS_IP_SERVICE (remote_ip_service), NULL);
 
   return g_object_new (FLOW_TYPE_TCP_CONNECT_OP,
-                       "remove-ip-service", remote_ip_service,
+                       "remote-ip-service", remote_ip_service,
                        "local-port", local_port,
                        NULL);
+}
+
+FlowIPService *
+flow_tcp_connect_op_get_remote_service (FlowTcpConnectOp *tcp_connect_op)
+{
+  FlowTcpConnectOpPrivate *priv;
+
+  g_return_val_if_fail (FLOW_IS_TCP_CONNECT_OP (tcp_connect_op), NULL);
+
+  priv = tcp_connect_op->priv;
+  return priv->remote_ip_service;
+}
+
+gint
+flow_tcp_connect_op_get_local_port (FlowTcpConnectOp *tcp_connect_op)
+{
+  FlowTcpConnectOpPrivate *priv;
+
+  g_return_val_if_fail (FLOW_IS_TCP_CONNECT_OP (tcp_connect_op), -1);
+
+  priv = tcp_connect_op->priv;
+  return priv->local_port;
 }

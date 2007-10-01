@@ -59,6 +59,9 @@ struct _FlowTcpConnectOpClass
   void (*_pad_4) (void);
 };
 
-FlowTcpConnectOp *flow_tcp_connect_op_new (FlowIPService *remote_ip_service, gint local_port);
+FlowTcpConnectOp *flow_tcp_connect_op_new                (FlowIPService *remote_ip_service, gint local_port);
+
+FlowIPService    *flow_tcp_connect_op_get_remote_service (FlowTcpConnectOp *tcp_connect_op);
+gint              flow_tcp_connect_op_get_local_port     (FlowTcpConnectOp *tcp_connect_op);
 
 #endif /* _FLOW_TCP_CONNECT_OP_H */

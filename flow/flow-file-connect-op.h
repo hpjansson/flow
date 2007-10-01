@@ -58,6 +58,9 @@ struct _FlowFileConnectOpClass
   void (*_pad_4) (void);
 };
 
-FlowFileConnectOp *flow_file_connect_op_new (const gchar *path, FlowAccessMode access_mode);
+FlowFileConnectOp *flow_file_connect_op_new             (const gchar *path, FlowAccessMode access_mode);
+
+const gchar       *flow_file_connect_op_get_path        (FlowFileConnectOp *file_connect_op);
+FlowAccessMode     flow_file_connect_op_get_access_mode (FlowFileConnectOp *file_connect_op);
 
 #endif /* _FLOW_FILE_CONNECT_OP_H */
