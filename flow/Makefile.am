@@ -40,7 +40,6 @@ libflow_la_SOURCES = \
 	flow-connector.c \
 	flow-context-mgmt.c \
 	flow-common.c \
-	flow-demux.c \
 	flow-destructor.c \
 	flow-detailed-event.c \
 	flow-element.c \
@@ -57,8 +56,10 @@ libflow_la_SOURCES = \
 	flow-ip-processor.c \
 	flow-ip-resolver.c \
 	flow-ip-service.c \
+	flow-joiner.c \
 	flow-messages.c \
 	flow-mux.c \
+	flow-mux-event.c \
 	flow-output-pad.c \
 	flow-packet.c \
 	flow-packet-queue.c \
@@ -68,6 +69,7 @@ libflow_la_SOURCES = \
 	flow-segment-request.c \
 	flow-shunt.c \
 	flow-simplex-element.c \
+	flow-splitter.c \
 	flow-tcp-connect-op.c \
 	flow-tcp-connector.c \
 	flow-tcp-io.c \
@@ -88,7 +90,6 @@ pkginclude_HEADERS = \
 	flow-collector.h \
 	flow-connector.h \
 	flow-context-mgmt.h \
-	flow-demux.h \
 	flow-destructor.h \
 	flow-detailed-event.h \
 	flow-element.h \
@@ -105,8 +106,10 @@ pkginclude_HEADERS = \
 	flow-ip-processor.h \
 	flow-ip-resolver.h \
 	flow-ip-service.h \
+	flow-joiner.h \
 	flow-messages.h \
 	flow-mux.h \
+	flow-mux-event.h \
 	flow-output-pad.h \
 	flow-packet.h \
 	flow-packet-queue.h \
@@ -116,6 +119,7 @@ pkginclude_HEADERS = \
 	flow-segment-request.h \
 	flow-shunt.h \
 	flow-simplex-element.h \
+	flow-splitter.h \
 	flow-tcp-connect-op.h \
 	flow-tcp-connector.h \
 	flow-tcp-io.h \

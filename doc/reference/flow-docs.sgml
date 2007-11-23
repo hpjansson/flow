@@ -20,9 +20,9 @@
 <!ENTITY FlowConnector "xml/flow-connector.xml">
 <!ENTITY FlowTcpConnector "xml/flow-tcp-connector.xml">
 <!ENTITY FlowUserAdapter "xml/flow-user-adapter.xml">
-<!ENTITY FlowDemux "xml/flow-demux.xml">
+<!ENTITY FlowSplitter "xml/flow-splitter.xml">
 <!ENTITY FlowEmitter "xml/flow-emitter.xml">
-<!ENTITY FlowMux "xml/flow-mux.xml">
+<!ENTITY FlowJoiner "xml/flow-joiner.xml">
 <!ENTITY FlowPad "xml/flow-pad.xml">
 <!ENTITY FlowInputPad "xml/flow-input-pad.xml">
 <!ENTITY FlowOutputPad "xml/flow-output-pad.xml">
@@ -78,8 +78,8 @@
       <xi:include href="xml/flow-collector.xml"/>
       <xi:include href="xml/flow-simplex-element.xml"/>
       <xi:include href="xml/flow-duplex-element.xml"/>
-      <xi:include href="xml/flow-mux.xml"/>
-      <xi:include href="xml/flow-demux.xml"/>
+      <xi:include href="xml/flow-joiner.xml"/>
+      <xi:include href="xml/flow-splitter.xml"/>
       <xi:include href="xml/flow-connector.xml"/>
     </chapter>
 

@@ -1,6 +1,8 @@
 noinst_PROGRAMS = \
 	benchmark-propagation \
+##	test-file-io \
 	test-ip-resolver \
+	test-mux \
 	test-packet \
 	test-packet-queue \
 	test-shunt-complex-file \

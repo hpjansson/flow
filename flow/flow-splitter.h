@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
 
-/* flow-mux.h - A one-to-many unidirectional element.
+/* flow-splitter.h - A one-to-many unidirectional element.
  *
  * Copyright (C) 2006 Hans Petter Jansson
  *
@@ -22,8 +22,8 @@
  * Authors: Hans Petter Jansson <hpj@copyleft.no>
  */
 
-#ifndef _FLOW_MUX_H
-#define _FLOW_MUX_H
+#ifndef _FLOW_SPLITTER_H
+#define _FLOW_SPLITTER_H
 
 #include <flow/flow-element.h>
 #include <flow/flow-input-pad.h>
@@ -31,25 +31,25 @@
 
 G_BEGIN_DECLS
 
-#define FLOW_TYPE_MUX            (flow_mux_get_type ())
-#define FLOW_MUX(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), FLOW_TYPE_MUX, FlowMux))
-#define FLOW_MUX_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass), FLOW_TYPE_MUX, FlowMuxClass))
-#define FLOW_IS_MUX(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), FLOW_TYPE_MUX))
-#define FLOW_IS_MUX_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), FLOW_TYPE_MUX))
-#define FLOW_MUX_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), FLOW_TYPE_MUX, FlowMuxClass))
-GType   flow_mux_get_type        (void) G_GNUC_CONST;
+#define FLOW_TYPE_SPLITTER            (flow_splitter_get_type ())
+#define FLOW_SPLITTER(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), FLOW_TYPE_SPLITTER, FlowSplitter))
+#define FLOW_SPLITTER_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass), FLOW_TYPE_SPLITTER, FlowSplitterClass))
+#define FLOW_IS_SPLITTER(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), FLOW_TYPE_SPLITTER))
+#define FLOW_IS_SPLITTER_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), FLOW_TYPE_SPLITTER))
+#define FLOW_SPLITTER_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), FLOW_TYPE_SPLITTER, FlowSplitterClass))
+GType   flow_splitter_get_type        (void) G_GNUC_CONST;
 
-typedef struct _FlowMux      FlowMux;
-typedef struct _FlowMuxClass FlowMuxClass;
+typedef struct _FlowSplitter      FlowSplitter;
+typedef struct _FlowSplitterClass FlowSplitterClass;
 
-struct _FlowMux
+struct _FlowSplitter
 {
   FlowElement    parent;
 
   gpointer       priv;
 };
 
-struct _FlowMuxClass
+struct _FlowSplitterClass
 {
   FlowElementClass parent_class;
 
@@ -63,9 +63,9 @@ struct _FlowMuxClass
 
 G_END_DECLS
 
-FlowOutputPad  *flow_mux_get_output_pad   (FlowMux *mux);
+FlowInputPad  *flow_splitter_get_input_pad     (FlowSplitter *splitter);
 
-FlowInputPad   *flow_mux_add_input_pad    (FlowMux *mux);
-void            flow_mux_remove_input_pad (FlowMux *mux, FlowInputPad *input_pad);
+FlowOutputPad *flow_splitter_add_output_pad    (FlowSplitter *splitter);
+void           flow_splitter_remove_output_pad (FlowSplitter *splitter, FlowOutputPad *output_pad);
 
-#endif  /* _FLOW_MUX_H */
+#endif  /* _FLOW_SPLITTER_H */

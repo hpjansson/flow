@@ -101,8 +101,8 @@ resides in the "flow" directory.
  - flow-collector.[ch]
  - flow-simplex-element.[ch]
  - flow-duplex-element.[ch]
- - flow-mux.[ch]
- - flow-demux.[ch]
+ - flow-joiner.[ch]
+ - flow-splitter.[ch]
 
    Abstract classes for various types of element, providing default policies
    and common ways to address pads. An emitter has a single output pad, a

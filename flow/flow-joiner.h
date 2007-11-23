@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
 
-/* flow-demux.h - A one-to-many unidirectional element.
+/* flow-joiner.h - A one-to-many unidirectional element.
  *
  * Copyright (C) 2006 Hans Petter Jansson
  *
@@ -22,8 +22,8 @@
  * Authors: Hans Petter Jansson <hpj@copyleft.no>
  */
 
-#ifndef _FLOW_DEMUX_H
-#define _FLOW_DEMUX_H
+#ifndef _FLOW_JOINER_H
+#define _FLOW_JOINER_H
 
 #include <flow/flow-element.h>
 #include <flow/flow-input-pad.h>
@@ -31,25 +31,25 @@
 
 G_BEGIN_DECLS
 
-#define FLOW_TYPE_DEMUX            (flow_demux_get_type ())
-#define FLOW_DEMUX(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), FLOW_TYPE_DEMUX, FlowDemux))
-#define FLOW_DEMUX_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass), FLOW_TYPE_DEMUX, FlowDemuxClass))
-#define FLOW_IS_DEMUX(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), FLOW_TYPE_DEMUX))
-#define FLOW_IS_DEMUX_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), FLOW_TYPE_DEMUX))
-#define FLOW_DEMUX_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), FLOW_TYPE_DEMUX, FlowDemuxClass))
-GType   flow_demux_get_type        (void) G_GNUC_CONST;
+#define FLOW_TYPE_JOINER            (flow_joiner_get_type ())
+#define FLOW_JOINER(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), FLOW_TYPE_JOINER, FlowJoiner))
+#define FLOW_JOINER_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass), FLOW_TYPE_JOINER, FlowJoinerClass))
+#define FLOW_IS_JOINER(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), FLOW_TYPE_JOINER))
+#define FLOW_IS_JOINER_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), FLOW_TYPE_JOINER))
+#define FLOW_JOINER_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), FLOW_TYPE_JOINER, FlowJoinerClass))
+GType   flow_joiner_get_type        (void) G_GNUC_CONST;
 
-typedef struct _FlowDemux      FlowDemux;
-typedef struct _FlowDemuxClass FlowDemuxClass;
+typedef struct _FlowJoiner      FlowJoiner;
+typedef struct _FlowJoinerClass FlowJoinerClass;
 
-struct _FlowDemux
+struct _FlowJoiner
 {
   FlowElement    parent;
 
   gpointer       priv;
 };
 
-struct _FlowDemuxClass
+struct _FlowJoinerClass
 {
   FlowElementClass parent_class;
 
@@ -63,9 +63,9 @@ struct _FlowDemuxClass
 
 G_END_DECLS
 
-FlowInputPad  *flow_demux_get_input_pad     (FlowDemux *demux);
+FlowOutputPad  *flow_joiner_get_output_pad   (FlowJoiner *joiner);
 
-FlowOutputPad *flow_demux_add_output_pad    (FlowDemux *demux);
-void           flow_demux_remove_output_pad (FlowDemux *demux, FlowOutputPad *output_pad);
+FlowInputPad   *flow_joiner_add_input_pad    (FlowJoiner *joiner);
+void            flow_joiner_remove_input_pad (FlowJoiner *joiner, FlowInputPad *input_pad);
 
-#endif  /* _FLOW_DEMUX_H */
+#endif  /* _FLOW_JOINER_H */

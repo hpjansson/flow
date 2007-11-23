@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
 
-/* flow-demux.c - A one-to-many unidirectional element.
+/* flow-splitter.c - A one-to-many unidirectional element.
  *
  * Copyright (C) 2006 Hans Petter Jansson
  *
@@ -25,28 +25,28 @@
 #include "config.h"
 #include "flow-gobject-util.h"
 #include "flow-util.h"
-#include "flow-demux.h"
+#include "flow-splitter.h"
 
-/* --- FlowDemux private data --- */
+/* --- FlowSplitter private data --- */
 
 typedef struct
 {
 }
-FlowDemuxPrivate;
+FlowSplitterPrivate;
 
-/* --- FlowDemux properties --- */
+/* --- FlowSplitter properties --- */
 
-FLOW_GOBJECT_PROPERTIES_BEGIN (flow_demux)
+FLOW_GOBJECT_PROPERTIES_BEGIN (flow_splitter)
 FLOW_GOBJECT_PROPERTIES_END   ()
 
-/* --- FlowDemux definition --- */
+/* --- FlowSplitter definition --- */
 
-FLOW_GOBJECT_MAKE_IMPL        (flow_demux, FlowDemux, FLOW_TYPE_ELEMENT, 0)
+FLOW_GOBJECT_MAKE_IMPL        (flow_splitter, FlowSplitter, FLOW_TYPE_ELEMENT, 0)
 
-/* --- FlowDemux implementation --- */
+/* --- FlowSplitter implementation --- */
 
 static void
-flow_demux_output_pad_blocked (FlowElement *element, FlowPad *output_pad)
+flow_splitter_output_pad_blocked (FlowElement *element, FlowPad *output_pad)
 {
   FlowPad *input_pad;
 
@@ -59,7 +59,7 @@ flow_demux_output_pad_blocked (FlowElement *element, FlowPad *output_pad)
 }
 
 static void
-flow_demux_output_pad_unblocked (FlowElement *element, FlowPad *outpud_pad)
+flow_splitter_output_pad_unblocked (FlowElement *element, FlowPad *outpud_pad)
 {
   guint i;
 
@@ -91,7 +91,7 @@ flow_demux_output_pad_unblocked (FlowElement *element, FlowPad *outpud_pad)
 }
 
 static void
-flow_demux_process_input (FlowElement *element, FlowPad *input_pad)
+flow_splitter_process_input (FlowElement *element, FlowPad *input_pad)
 {
   FlowPacketQueue *packet_queue;
   FlowPacket      *packet;
@@ -118,76 +118,76 @@ flow_demux_process_input (FlowElement *element, FlowPad *input_pad)
 }
 
 static void
-flow_demux_type_init (GType type)
+flow_splitter_type_init (GType type)
 {
 }
 
 static void
-flow_demux_class_init (FlowDemuxClass *klass)
+flow_splitter_class_init (FlowSplitterClass *klass)
 {
   FlowElementClass *element_klass = FLOW_ELEMENT_CLASS (klass);
 
-  element_klass->output_pad_blocked   = flow_demux_output_pad_blocked;
-  element_klass->output_pad_unblocked = flow_demux_output_pad_unblocked;
-  element_klass->process_input        = flow_demux_process_input;
+  element_klass->output_pad_blocked   = flow_splitter_output_pad_blocked;
+  element_klass->output_pad_unblocked = flow_splitter_output_pad_unblocked;
+  element_klass->process_input        = flow_splitter_process_input;
 }
 
 static void
-flow_demux_init (FlowDemux *demux)
+flow_splitter_init (FlowSplitter *splitter)
 {
-  FlowElement *element = (FlowElement *) demux;
+  FlowElement *element = (FlowElement *) splitter;
 
-  g_ptr_array_add (element->input_pads, g_object_new (FLOW_TYPE_INPUT_PAD, "owner-element", demux, NULL));
+  g_ptr_array_add (element->input_pads, g_object_new (FLOW_TYPE_INPUT_PAD, "owner-element", splitter, NULL));
 }
 
 static void
-flow_demux_construct (FlowDemux *demux)
-{
-}
-
-static void
-flow_demux_dispose (FlowDemux *demux)
+flow_splitter_construct (FlowSplitter *splitter)
 {
 }
 
 static void
-flow_demux_finalize (FlowDemux *demux)
+flow_splitter_dispose (FlowSplitter *splitter)
 {
 }
 
-/* --- FlowDemux public API --- */
+static void
+flow_splitter_finalize (FlowSplitter *splitter)
+{
+}
+
+/* --- FlowSplitter public API --- */
 
 FlowInputPad *
-flow_demux_get_input_pad (FlowDemux *demux)
+flow_splitter_get_input_pad (FlowSplitter *splitter)
 {
-  FlowElement *element = (FlowElement *) demux;
+  FlowElement *element = (FlowElement *) splitter;
 
-  g_return_val_if_fail (FLOW_IS_DEMUX (demux), NULL);
+  g_return_val_if_fail (FLOW_IS_SPLITTER (splitter), NULL);
 
   return g_ptr_array_index (element->input_pads, 0);
 }
 
 FlowOutputPad *
-flow_demux_add_output_pad (FlowDemux *demux)
+flow_splitter_add_output_pad (FlowSplitter *splitter)
 {
-  FlowElement   *element = (FlowElement *) demux;
+  FlowElement   *element = (FlowElement *) splitter;
   FlowOutputPad *output_pad;
 
-  g_return_val_if_fail (FLOW_IS_DEMUX (demux), NULL);
+  g_return_val_if_fail (FLOW_IS_SPLITTER (splitter), NULL);
 
-  output_pad = g_object_new (FLOW_TYPE_OUTPUT_PAD, "owner-element", demux, NULL);
+  output_pad = g_object_new (FLOW_TYPE_OUTPUT_PAD, "owner-element", splitter, NULL);
   flow_g_ptr_array_add_sparse (element->output_pads, output_pad);
 
   return output_pad;
 }
 
 void
-flow_demux_remove_output_pad (FlowDemux *demux, FlowOutputPad *output_pad)
+flow_splitter_remove_output_pad (FlowSplitter *splitter, FlowOutputPad *output_pad)
 {
-  FlowElement *element = (FlowElement *) demux;
+  FlowElement *element = (FlowElement *) splitter;
   gboolean     was_removed;
 
-  g_return_if_fail (FLOW_IS_DEMUX (demux));
+  g_return_if_fail (FLOW_IS_SPLITTER (splitter));
   g_return_if_fail (FLOW_IS_OUTPUT_PAD (output_pad));
 
   if (element->dispatch_depth)
@@ -202,7 +202,7 @@ flow_demux_remove_output_pad (FlowDemux *demux, FlowOutputPad *output_pad)
 
   if (!was_removed)
   {
-    g_warning ("Tried to remove unknown output pad from demux!");
+    g_warning ("Tried to remove unknown output pad from splitter!");
     return;
   }
 

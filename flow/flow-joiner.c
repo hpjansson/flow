@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
 
-/* flow-mux.c - A many-to-one unidirectional element.
+/* flow-joiner.c - A many-to-one unidirectional element.
  *
  * Copyright (C) 2006 Hans Petter Jansson
  *
@@ -25,28 +25,28 @@
 #include "config.h"
 #include "flow-gobject-util.h"
 #include "flow-util.h"
-#include "flow-mux.h"
+#include "flow-joiner.h"
 
-/* --- FlowMux private data --- */
+/* --- FlowJoiner private data --- */
 
 typedef struct
 {
 }
-FlowMuxPrivate;
+FlowJoinerPrivate;
 
-/* --- FlowMux properties --- */
+/* --- FlowJoiner properties --- */
 
-FLOW_GOBJECT_PROPERTIES_BEGIN (flow_mux)
+FLOW_GOBJECT_PROPERTIES_BEGIN (flow_joiner)
 FLOW_GOBJECT_PROPERTIES_END   ()
 
-/* --- FlowMux definition --- */
+/* --- FlowJoiner definition --- */
 
-FLOW_GOBJECT_MAKE_IMPL        (flow_mux, FlowMux, FLOW_TYPE_ELEMENT, 0)
+FLOW_GOBJECT_MAKE_IMPL        (flow_joiner, FlowJoiner, FLOW_TYPE_ELEMENT, 0)
 
-/* --- FlowMux implementation --- */
+/* --- FlowJoiner implementation --- */
 
 static void
-flow_mux_output_pad_blocked (FlowElement *element, FlowPad *output_pad)
+flow_joiner_output_pad_blocked (FlowElement *element, FlowPad *output_pad)
 {
   guint i;
 
@@ -65,7 +65,7 @@ flow_mux_output_pad_blocked (FlowElement *element, FlowPad *output_pad)
 }
 
 static void
-flow_mux_output_pad_unblocked (FlowElement *element, FlowPad *output_pad)
+flow_joiner_output_pad_unblocked (FlowElement *element, FlowPad *output_pad)
 {
   guint i;
 
@@ -84,7 +84,7 @@ flow_mux_output_pad_unblocked (FlowElement *element, FlowPad *output_pad)
 }
 
 static void
-flow_mux_process_input (FlowElement *element, FlowPad *input_pad)
+flow_joiner_process_input (FlowElement *element, FlowPad *input_pad)
 {
   FlowPacketQueue *packet_queue;
   FlowPacket      *packet;
@@ -99,76 +99,76 @@ flow_mux_process_input (FlowElement *element, FlowPad *input_pad)
 }
 
 static void
-flow_mux_type_init (GType type)
+flow_joiner_type_init (GType type)
 {
 }
 
 static void
-flow_mux_class_init (FlowMuxClass *klass)
+flow_joiner_class_init (FlowJoinerClass *klass)
 {
   FlowElementClass *element_klass = FLOW_ELEMENT_CLASS (klass);
 
-  element_klass->output_pad_blocked   = flow_mux_output_pad_blocked;
-  element_klass->output_pad_unblocked = flow_mux_output_pad_unblocked;
-  element_klass->process_input        = flow_mux_process_input;
+  element_klass->output_pad_blocked   = flow_joiner_output_pad_blocked;
+  element_klass->output_pad_unblocked = flow_joiner_output_pad_unblocked;
+  element_klass->process_input        = flow_joiner_process_input;
 }
 
 static void
-flow_mux_init (FlowMux *mux)
+flow_joiner_init (FlowJoiner *joiner)
 {
-  FlowElement *element = (FlowElement *) mux;
+  FlowElement *element = (FlowElement *) joiner;
 
-  g_ptr_array_add (element->output_pads, g_object_new (FLOW_TYPE_OUTPUT_PAD, "owner-element", mux, NULL));
+  g_ptr_array_add (element->output_pads, g_object_new (FLOW_TYPE_OUTPUT_PAD, "owner-element", joiner, NULL));
 }
 
 static void
-flow_mux_construct (FlowMux *mux)
-{
-}
-
-static void
-flow_mux_dispose (FlowMux *mux)
+flow_joiner_construct (FlowJoiner *joiner)
 {
 }
 
 static void
-flow_mux_finalize (FlowMux *mux)
+flow_joiner_dispose (FlowJoiner *joiner)
 {
 }
 
-/* --- FlowMux public API --- */
+static void
+flow_joiner_finalize (FlowJoiner *joiner)
+{
+}
+
+/* --- FlowJoiner public API --- */
 
 FlowOutputPad *
-flow_mux_get_output_pad (FlowMux *mux)
+flow_joiner_get_output_pad (FlowJoiner *joiner)
 {
-  FlowElement *element = (FlowElement *) mux;
+  FlowElement *element = (FlowElement *) joiner;
 
-  g_return_val_if_fail (FLOW_IS_MUX (mux), NULL);
+  g_return_val_if_fail (FLOW_IS_JOINER (joiner), NULL);
 
   return g_ptr_array_index (element->output_pads, 0);
 }
 
 FlowInputPad *
-flow_mux_add_input_pad (FlowMux *mux)
+flow_joiner_add_input_pad (FlowJoiner *joiner)
 {
-  FlowElement  *element = (FlowElement *) mux;
+  FlowElement  *element = (FlowElement *) joiner;
   FlowInputPad *input_pad;
 
-  g_return_val_if_fail (FLOW_IS_MUX (mux), NULL);
+  g_return_val_if_fail (FLOW_IS_JOINER (joiner), NULL);
 
-  input_pad = g_object_new (FLOW_TYPE_INPUT_PAD, "owner-element", mux, NULL);
+  input_pad = g_object_new (FLOW_TYPE_INPUT_PAD, "owner-element", joiner, NULL);
   flow_g_ptr_array_add_sparse (element->input_pads, input_pad);
 
   return input_pad;
 }
 
 void
-flow_mux_remove_input_pad (FlowMux *mux, FlowInputPad *input_pad)
+flow_joiner_remove_input_pad (FlowJoiner *joiner, FlowInputPad *input_pad)
 {
-  FlowElement *element = (FlowElement *) mux;
+  FlowElement *element = (FlowElement *) joiner;
   gboolean     was_removed;
 
-  g_return_if_fail (FLOW_IS_MUX (mux));
+  g_return_if_fail (FLOW_IS_JOINER (joiner));
   g_return_if_fail (FLOW_IS_INPUT_PAD (input_pad));
 
   if (element->dispatch_depth)
@@ -183,7 +183,7 @@ flow_mux_remove_input_pad (FlowMux *mux, FlowInputPad *input_pad)
 
   if (!was_removed)
   {
-    g_warning ("Tried to remove unknown input pad from mux!");
+    g_warning ("Tried to remove unknown input pad from joiner!");
     return;
   }
 

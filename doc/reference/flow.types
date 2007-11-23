@@ -5,7 +5,7 @@ flow_bin_get_type
 flow_duplex_element_get_type
 flow_collector_get_type
 flow_connector_get_type
-flow_demux_get_type
+flow_splitter_get_type
 flow_destructor_get_type
 flow_detailed_event_get_type
 flow_element_get_type
@@ -15,7 +15,7 @@ flow_io_get_type
 flow_ip_addr_get_type
 flow_ip_resolver_get_type
 flow_ip_service_get_type
-flow_mux_get_type
+flow_joiner_get_type
 flow_output_pad_get_type
 flow_packet_queue_get_type
 flow_pad_get_type
