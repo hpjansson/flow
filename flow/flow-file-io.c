@@ -1,0 +1,568 @@
+/* -*- Mode: C; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+
+/* flow-file-io.c - A prefab I/O class for local file connections.
+ *
+ * Copyright (C) 2007 Hans Petter Jansson
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the
+ * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ * Boston, MA 02111-1307, USA.
+ *
+ * Authors: Hans Petter Jansson <hpj@copyleft.no>
+ */
+
+#include <string.h>
+#include "config.h"
+#include "flow-element-util.h"
+#include "flow-gobject-util.h"
+#include "flow-event-codes.h"
+#include "flow-file-io.h"
+
+#define FILE_CONNECTOR_NAME "file-connector"
+
+#define return_if_invalid_bin(file_io) \
+  G_STMT_START { \
+    FlowFileIOPrivate *priv = file_io->priv; \
+\
+    if G_UNLIKELY (((FlowIO *) file_io)->need_to_check_bin) \
+      flow_io_check_bin ((FlowIO *) file_io); \
+\
+    if G_UNLIKELY (!priv->user_adapter || !priv->file_connector) \
+    { \
+      g_warning (G_STRLOC ": Misconfigured bin! Need a FlowUserAdapter and a FlowTcpConnector."); \
+      return; \
+    } \
+  } G_STMT_END
+
+#define return_val_if_invalid_bin(file_io, val) \
+  G_STMT_START { \
+    FlowFileIOPrivate *priv = file_io->priv; \
+\
+    if G_UNLIKELY (((FlowIO *) file_io)->need_to_check_bin) \
+      flow_io_check_bin ((FlowIO *) file_io); \
+\
+    if G_UNLIKELY (!priv->user_adapter || !priv->file_connector) \
+    { \
+      g_warning (G_STRLOC ": Misconfigured bin! Need a FlowUserAdapter and a FlowTcpConnector."); \
+      return val; \
+    } \
+  } G_STMT_END
+
+/* --- FlowFileIO private data --- */
+
+typedef struct
+{
+  FlowConnectivity   connectivity;
+  FlowConnectivity   last_connectivity;
+
+  FlowFileConnector *file_connector;
+  FlowUserAdapter   *user_adapter;
+
+  guint              wrote_stream_begin : 1;
+  guint              name_resolution_id;
+}
+FlowFileIOPrivate;
+
+/* --- FlowFileIO properties --- */
+
+FLOW_GOBJECT_PROPERTIES_BEGIN (flow_file_io)
+FLOW_GOBJECT_PROPERTIES_END   ()
+
+/* --- FlowFileIO definition --- */
+
+FLOW_GOBJECT_MAKE_IMPL        (flow_file_io, FlowFileIO, FLOW_TYPE_IO, 0)
+
+/* --- FlowFileIO implementation --- */
+
+static void
+write_stream_begin (FlowFileIO *file_io)
+{
+  FlowFileIOPrivate *priv = file_io->priv;
+  FlowDetailedEvent *detailed_event;
+
+  g_assert (priv->wrote_stream_begin == FALSE);
+
+  priv->wrote_stream_begin = TRUE;
+
+  detailed_event = flow_detailed_event_new (NULL);
+  flow_detailed_event_add_code (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_BEGIN);
+
+  flow_io_write_object (FLOW_IO (file_io), detailed_event);
+
+  g_object_unref (detailed_event);
+}
+
+static void
+write_stream_end (FlowFileIO *file_io, gboolean close_both_directions)
+{
+  FlowFileIOPrivate *priv = file_io->priv;
+  FlowDetailedEvent *detailed_event;
+
+  detailed_event = flow_detailed_event_new (NULL);
+  flow_detailed_event_add_code (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END);
+
+  if (close_both_directions)
+    flow_detailed_event_add_code (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END_CONVERSE);
+
+  flow_io_write_object (FLOW_IO (file_io), detailed_event);
+
+  priv->wrote_stream_begin = FALSE;
+
+  g_object_unref (detailed_event);
+}
+
+static void
+query_remote_connectivity (FlowFileIO *file_io)
+{
+  FlowFileIOPrivate *priv = file_io->priv;
+  FlowIO            *io   = FLOW_IO (file_io);
+  FlowConnectivity   before;
+  FlowConnectivity   after;
+
+  before = flow_connector_get_last_state (FLOW_CONNECTOR (priv->file_connector));
+  after  = flow_connector_get_state      (FLOW_CONNECTOR (priv->file_connector));
+
+  if (after == FLOW_CONNECTIVITY_DISCONNECTED)
+  {
+    /* When the connection is closed, we may be in a blocking write call. We have to
+     * interrupt it, or it might wait forever. Blocking reads are okay, since we'll get
+     * the end-of-stream packet back through the read pipeline. */
+
+    io->allow_blocking_write = FALSE;
+    flow_user_adapter_interrupt_output (priv->user_adapter);
+  }
+  else
+  {
+    io->allow_blocking_read  = TRUE;
+    io->allow_blocking_write = TRUE;
+  }
+}
+
+static void
+remote_connectivity_changed (FlowFileIO *file_io)
+{
+  return_if_invalid_bin (file_io);
+
+  query_remote_connectivity (file_io);
+}
+
+static void
+flow_file_io_check_bin (FlowFileIO *file_io)
+{
+  FlowFileIOPrivate *priv = file_io->priv;
+  FlowBin           *bin  = FLOW_BIN (file_io);
+
+  if (priv->file_connector)
+  {
+    g_signal_handlers_disconnect_by_func (priv->file_connector, remote_connectivity_changed, file_io);
+  }
+
+  flow_gobject_unref_clear (priv->user_adapter);
+  flow_gobject_unref_clear (priv->file_connector);
+
+  priv->user_adapter  = flow_io_get_user_adapter (FLOW_IO (file_io));
+  priv->file_connector = (FlowFileConnector *) flow_bin_get_element (bin, FILE_CONNECTOR_NAME);
+
+  if (priv->user_adapter)
+  {
+    if (FLOW_IS_USER_ADAPTER (priv->user_adapter))
+      g_object_ref (priv->user_adapter);
+    else
+      priv->user_adapter = NULL;
+  }
+
+  if (priv->file_connector)
+  {
+    if (FLOW_IS_FILE_CONNECTOR (priv->file_connector))
+    {
+      g_object_ref (priv->file_connector);
+      g_signal_connect_swapped (priv->file_connector, "connectivity-changed",
+                                G_CALLBACK (remote_connectivity_changed), file_io);
+      query_remote_connectivity (file_io);
+    }
+    else
+      priv->file_connector = NULL;
+  }
+}
+
+static void
+set_connectivity (FlowFileIO *file_io, FlowConnectivity new_connectivity)
+{
+  FlowFileIOPrivate *priv = file_io->priv;
+
+  if (new_connectivity == priv->connectivity)
+    return;
+
+  priv->last_connectivity = priv->connectivity;
+  priv->connectivity = new_connectivity;
+
+  g_signal_emit_by_name (file_io, "connectivity-changed");
+}
+
+static gboolean
+flow_file_io_handle_input_object (FlowFileIO *file_io, gpointer object)
+{
+  FlowFileIOPrivate *priv   = file_io->priv;
+  gboolean           result = FALSE;
+
+  if (FLOW_IS_DETAILED_EVENT (object))
+  {
+    FlowDetailedEvent *detailed_event = object;
+
+    if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_BEGIN))
+    {
+      FlowIO *io = FLOW_IO (file_io);
+
+      g_assert (priv->connectivity != FLOW_CONNECTIVITY_CONNECTED);
+
+      io->allow_blocking_read  = TRUE;
+      io->allow_blocking_write = TRUE;
+
+      set_connectivity (file_io, FLOW_CONNECTIVITY_CONNECTED);
+
+      result = TRUE;
+    }
+    else if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END) ||
+             flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_DENIED))
+    {
+      FlowIO *io = FLOW_IO (file_io);
+
+      g_assert (priv->connectivity != FLOW_CONNECTIVITY_DISCONNECTED);
+
+      io->allow_blocking_read  = FALSE;
+      io->allow_blocking_write = FALSE;
+
+      write_stream_end (file_io, FALSE);
+
+      set_connectivity (file_io, FLOW_CONNECTIVITY_DISCONNECTED);
+
+      result = TRUE;
+    }
+    /* FIXME: Do we really need this? */
+    else if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_SEGMENT_BEGIN) ||
+             flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_SEGMENT_END))
+    {
+      result = TRUE;
+    }
+  }
+
+  return result;
+}
+
+static void
+flow_file_io_type_init (GType type)
+{
+}
+
+static void
+flow_file_io_class_init (FlowFileIOClass *klass)
+{
+  FlowIOClass *io_klass = FLOW_IO_CLASS (klass);
+
+  io_klass->check_bin           = (void (*) (FlowIO *)) flow_file_io_check_bin;
+  io_klass->handle_input_object = (gboolean (*) (FlowIO *, gpointer)) flow_file_io_handle_input_object;
+
+  g_signal_newv ("connectivity-changed",
+                 G_TYPE_FROM_CLASS (klass),
+                 G_SIGNAL_RUN_LAST | G_SIGNAL_NO_HOOKS,
+                 NULL,                                   /* Class closure */
+                 NULL, NULL,                             /* Accumulator, accu data */
+                 g_cclosure_marshal_VOID__VOID,          /* Marshaller */
+                 G_TYPE_NONE,                            /* Return type */
+                 0, NULL);                               /* Number of params, param types */
+}
+
+static void
+flow_file_io_init (FlowFileIO *file_io)
+{
+  FlowFileIOPrivate *priv = file_io->priv;
+  FlowIO            *io   = FLOW_IO  (file_io);
+  FlowBin           *bin  = FLOW_BIN (file_io);
+
+  priv->user_adapter = flow_io_get_user_adapter (io);
+  g_object_ref (priv->user_adapter);
+
+  priv->file_connector = flow_file_connector_new ();
+  flow_bin_add_element (bin, FLOW_ELEMENT (priv->file_connector), FILE_CONNECTOR_NAME);
+
+  flow_connect_simplex__simplex (FLOW_SIMPLEX_ELEMENT (priv->file_connector),
+                                 FLOW_SIMPLEX_ELEMENT (priv->user_adapter));
+  flow_connect_simplex__simplex (FLOW_SIMPLEX_ELEMENT (priv->user_adapter),
+                                 FLOW_SIMPLEX_ELEMENT (priv->file_connector));
+
+  g_signal_connect_swapped (priv->file_connector, "connectivity-changed",
+                            G_CALLBACK (remote_connectivity_changed), file_io);
+
+  io->allow_blocking_read  = FALSE;
+  io->allow_blocking_write = FALSE;
+
+  priv->connectivity      = FLOW_CONNECTIVITY_DISCONNECTED;
+  priv->last_connectivity = FLOW_CONNECTIVITY_DISCONNECTED;
+}
+
+static void
+flow_file_io_construct (FlowFileIO *file_io)
+{
+}
+
+static void
+flow_file_io_dispose (FlowFileIO *file_io)
+{
+  FlowFileIOPrivate *priv = file_io->priv;
+
+  flow_gobject_unref_clear (priv->user_adapter);
+  flow_gobject_unref_clear (priv->file_connector);
+}
+
+static void
+flow_file_io_finalize (FlowFileIO *file_io)
+{
+}
+
+/* --- FlowFileIO public API --- */
+
+FlowFileIO *
+flow_file_io_new (void)
+{
+  return g_object_new (FLOW_TYPE_FILE_IO, NULL);
+}
+
+void
+flow_file_io_connect (FlowFileIO *file_io, FlowIPService *ip_service)
+{
+  FlowFileIOPrivate *priv;
+  FlowIO            *io;
+
+  g_return_if_fail (FLOW_IS_FILE_IO (file_io));
+  g_return_if_fail (FLOW_IS_IP_SERVICE (ip_service));
+  return_if_invalid_bin (file_io);
+
+  priv = file_io->priv;
+
+  g_return_if_fail (priv->connectivity == FLOW_CONNECTIVITY_DISCONNECTED);
+
+  io = FLOW_IO (file_io);
+
+  flow_io_write_object (io, ip_service);
+  write_stream_begin (file_io);
+
+  set_connectivity (file_io, FLOW_CONNECTIVITY_CONNECTING);
+}
+
+void
+flow_file_io_connect_by_name (FlowFileIO *file_io, const gchar *name, gint port)
+{
+  FlowFileIOPrivate *priv;
+  FlowIPService     *ip_service;
+
+  g_return_if_fail (FLOW_IS_FILE_IO (file_io));
+  g_return_if_fail (name != NULL);
+  g_return_if_fail (port > 0);
+  return_if_invalid_bin (file_io);
+
+  priv = file_io->priv;
+
+  g_return_if_fail (priv->connectivity == FLOW_CONNECTIVITY_DISCONNECTED);
+
+  ip_service = flow_ip_service_new ();
+  flow_ip_service_set_name (ip_service, name);
+  flow_ip_service_set_port (ip_service, port);
+
+  flow_file_io_connect (file_io, ip_service);
+
+  g_object_unref (ip_service);
+}
+
+void
+flow_file_io_disconnect (FlowFileIO *file_io, gboolean close_both_directions)
+{
+  FlowFileIOPrivate *priv;
+
+  g_return_if_fail (FLOW_IS_FILE_IO (file_io));
+  return_if_invalid_bin (file_io);
+
+  priv = file_io->priv;
+
+  if (priv->connectivity == FLOW_CONNECTIVITY_DISCONNECTED ||
+      priv->connectivity == FLOW_CONNECTIVITY_DISCONNECTING)
+    return;
+
+  write_stream_end (file_io, close_both_directions);
+
+  set_connectivity (file_io, FLOW_CONNECTIVITY_DISCONNECTING);
+}
+
+gboolean
+flow_file_io_sync_connect (FlowFileIO *file_io, FlowIPService *ip_service)
+{
+  FlowFileIOPrivate *priv;
+  FlowIO            *io;
+
+  g_return_val_if_fail (FLOW_IS_FILE_IO (file_io), FALSE);
+  g_return_val_if_fail (FLOW_IS_IP_SERVICE (ip_service), FALSE);
+  return_val_if_invalid_bin (file_io, FALSE);
+
+  priv = file_io->priv;
+
+  g_return_val_if_fail (priv->connectivity == FLOW_CONNECTIVITY_DISCONNECTED, FALSE);
+
+  io = FLOW_IO (file_io);
+
+  flow_io_write_object (io, ip_service);
+  write_stream_begin (file_io);
+
+  set_connectivity (file_io, FLOW_CONNECTIVITY_CONNECTING);
+
+  while (priv->connectivity == FLOW_CONNECTIVITY_CONNECTING)
+  {
+    flow_user_adapter_wait_for_input (priv->user_adapter);
+    flow_io_check_events (io);
+  }
+
+  return priv->connectivity == FLOW_CONNECTIVITY_CONNECTED ? TRUE : FALSE;
+}
+
+gboolean
+flow_file_io_sync_connect_by_name (FlowFileIO *file_io, const gchar *name, gint port)
+{
+  FlowFileIOPrivate *priv;
+  FlowIPService     *ip_service;
+  gboolean           result;
+
+  g_return_val_if_fail (FLOW_IS_FILE_IO (file_io), FALSE);
+  g_return_val_if_fail (name != NULL, FALSE);
+  g_return_val_if_fail (port > 0, FALSE);
+  return_val_if_invalid_bin (file_io, FALSE);
+
+  priv = file_io->priv;
+
+  g_return_val_if_fail (priv->connectivity == FLOW_CONNECTIVITY_DISCONNECTED, FALSE);
+
+  ip_service = flow_ip_service_new ();
+  flow_ip_service_set_name (ip_service, name);
+  flow_ip_service_set_port (ip_service, port);
+
+  result = flow_file_io_sync_connect (file_io, ip_service);
+
+  g_object_unref (ip_service);
+  return result;
+}
+
+void
+flow_file_io_sync_disconnect (FlowFileIO *file_io)
+{
+  FlowFileIOPrivate *priv;
+  FlowIO            *io;
+
+  g_return_if_fail (FLOW_IS_FILE_IO (file_io));
+  return_if_invalid_bin (file_io);
+
+  priv = file_io->priv;
+
+  if (priv->connectivity == FLOW_CONNECTIVITY_DISCONNECTED)
+    return;
+
+  if (priv->connectivity != FLOW_CONNECTIVITY_DISCONNECTING)
+  {
+    write_stream_end (file_io, TRUE);
+    set_connectivity (file_io, FLOW_CONNECTIVITY_DISCONNECTING);
+  }
+
+  io = FLOW_IO (file_io);
+
+  while (priv->connectivity == FLOW_CONNECTIVITY_DISCONNECTING)
+  {
+    flow_user_adapter_wait_for_input (priv->user_adapter);
+    flow_io_check_events (io);
+  }
+
+  g_assert (priv->connectivity == FLOW_CONNECTIVITY_DISCONNECTED);
+}
+
+gchar *
+flow_file_io_get_path (FlowFileIO *file_io)
+{
+  FlowFileIOPrivate *priv;
+
+  g_return_val_if_fail (FLOW_IS_FILE_IO (file_io), NULL);
+  return_val_if_invalid_bin (file_io, NULL);
+
+  priv = file_io->priv;
+
+  if (!priv->file_connector)
+    return NULL;
+
+  return flow_file_connector_get_path (priv->file_connector);
+}
+
+FlowConnectivity
+flow_file_io_get_connectivity (FlowFileIO *file_io)
+{
+  FlowFileIOPrivate *priv;
+
+  g_return_val_if_fail (FLOW_IS_FILE_IO (file_io), FLOW_CONNECTIVITY_DISCONNECTED);
+  return_val_if_invalid_bin (file_io, FLOW_CONNECTIVITY_DISCONNECTED);
+
+  priv = file_io->priv;
+
+  return priv->connectivity;
+}
+
+FlowConnectivity
+flow_file_io_get_last_connectivity (FlowFileIO *file_io)
+{
+  FlowFileIOPrivate *priv;
+
+  g_return_val_if_fail (FLOW_IS_FILE_IO (file_io), FLOW_CONNECTIVITY_DISCONNECTED);
+  return_val_if_invalid_bin (file_io, FLOW_CONNECTIVITY_DISCONNECTED);
+
+  priv = file_io->priv;
+
+  return priv->last_connectivity;
+}
+
+FlowFileConnector *
+flow_file_io_get_file_connector (FlowFileIO *file_io)
+{
+  g_return_val_if_fail (FLOW_IS_FILE_IO (file_io), NULL);
+
+  return FLOW_FILE_CONNECTOR (flow_bin_get_element (FLOW_BIN (file_io), FILE_CONNECTOR_NAME));
+}
+
+void
+flow_file_io_set_file_connector (FlowFileIO *file_io, FlowFileConnector *file_connector)
+{
+  FlowElement *old_file_connector;
+  FlowBin     *bin;
+
+  g_return_if_fail (FLOW_IS_FILE_IO (file_io));
+  g_return_if_fail (FLOW_IS_FILE_CONNECTOR (file_connector));
+
+  bin = FLOW_BIN (file_io);
+
+  old_file_connector = flow_bin_get_element (bin, FILE_CONNECTOR_NAME);
+
+  if ((FlowElement *) file_connector == old_file_connector)
+    return;
+
+  /* Changes to the bin will trigger an update of our internal pointers */
+
+  if (old_file_connector)
+  {
+    flow_replace_element (old_file_connector, (FlowElement *) file_connector);
+    flow_bin_remove_element (bin, old_file_connector);
+  }
+
+  flow_bin_add_element (bin, FLOW_ELEMENT (file_connector), FILE_CONNECTOR_NAME);
+}

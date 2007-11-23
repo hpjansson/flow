@@ -34,6 +34,8 @@
 #include <flow/flow-element.h>
 #include <flow/flow-element-util.h>
 #include <flow/flow-emitter.h>
+#include <flow/flow-file-connector.h>
+#include <flow/flow-file-io.h>
 #include <flow/flow-input-pad.h>
 #include <flow/flow-io.h>
 #include <flow/flow-ip-addr.h>
