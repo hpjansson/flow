@@ -3,6 +3,9 @@ noinst_PROGRAMS = \
 ##	test-file-io \
 	test-ip-resolver \
 	test-mux \
+	test-mux-serializer \
+	test-mux-deserializer \
+	test-demux \
 	test-packet \
 	test-packet-queue \
 	test-shunt-complex-file \
@@ -23,6 +26,7 @@ AM_CFLAGS  = $(FLOW_CFLAGS) -I$(top_srcdir)/flow
 
 EXTRA_DIST = \
 	benchmark-common.c \
+	test-mux-common.c \
 	test-common.c \
 	stress.sh \
 	tests.list

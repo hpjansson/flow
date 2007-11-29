@@ -50,7 +50,7 @@ typedef struct _FlowMuxEventClass
 
 GType flow_mux_event_get_type (void) G_GNUC_CONST;
 
-FlowMuxEvent *flow_mux_event_new (gint channel_id);
+FlowMuxEvent *flow_mux_event_new (guint channel_id);
 guint         flow_mux_event_get_channel_id (FlowMuxEvent *event);
 
 G_END_DECLS

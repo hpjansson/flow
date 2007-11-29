@@ -28,6 +28,7 @@
 #include <flow/flow-collector.h>
 #include <flow/flow-connector.h>
 #include <flow/flow-context-mgmt.h>
+#include <flow/flow-demux.h>
 #include <flow/flow-destructor.h>
 #include <flow/flow-detailed-event.h>
 #include <flow/flow-element.h>
@@ -42,6 +43,8 @@
 #include <flow/flow-ip-service.h>
 #include <flow/flow-joiner.h>
 #include <flow/flow-mux.h>
+#include <flow/flow-mux-deserializer.h>
+#include <flow/flow-mux-serializer.h>
 #include <flow/flow-output-pad.h>
 #include <flow/flow-packet.h>
 #include <flow/flow-packet-queue.h>

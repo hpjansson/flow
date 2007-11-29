@@ -40,6 +40,7 @@ libflow_la_SOURCES = \
 	flow-connector.c \
 	flow-context-mgmt.c \
 	flow-common.c \
+	flow-demux.c \
 	flow-destructor.c \
 	flow-detailed-event.c \
 	flow-element.c \
@@ -60,6 +61,8 @@ libflow_la_SOURCES = \
 	flow-messages.c \
 	flow-mux.c \
 	flow-mux-event.c \
+	flow-mux-serializer.c \
+	flow-mux-deserializer.c \
 	flow-output-pad.c \
 	flow-packet.c \
 	flow-packet-queue.c \
@@ -90,6 +93,7 @@ pkginclude_HEADERS = \
 	flow-collector.h \
 	flow-connector.h \
 	flow-context-mgmt.h \
+	flow-demux.h \
 	flow-destructor.h \
 	flow-detailed-event.h \
 	flow-element.h \
@@ -110,6 +114,8 @@ pkginclude_HEADERS = \
 	flow-messages.h \
 	flow-mux.h \
 	flow-mux-event.h \
+	flow-mux-deserializer.h \
+	flow-mux-serializer.h \
 	flow-output-pad.h \
 	flow-packet.h \
 	flow-packet-queue.h \

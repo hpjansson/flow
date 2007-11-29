@@ -39,7 +39,6 @@ typedef struct
 
 #define FLOW_MUX_GET_PRIVATE(o) (G_TYPE_INSTANCE_GET_PRIVATE ((o), FLOW_TYPE_MUX, FlowMuxPrivate))
 
-static void flow_mux_done (FlowMux *mux);
 static void flow_mux_process_input (FlowElement *element, FlowPad *input_pad);
 
 
@@ -47,9 +46,6 @@ static void flow_mux_process_input (FlowElement *element, FlowPad *input_pad);
 static void flow_mux_init (FlowMux *mux);
 static void flow_mux_dispose (GObject *object);
 static void flow_mux_finalize (GObject *object);
-static GObject *flow_mux_constructor (GType                  type,
-                                      guint                  n_construct_properties,
-                                      GObjectConstructParam *construct_properties);
 
 static GObjectClass *parent_class = NULL;
 static GQuark channel_info_quark;
@@ -68,7 +64,6 @@ flow_mux_class_init (FlowMuxClass * klass)
 
   element_class->process_input = flow_mux_process_input;
   
-  gobject_class->constructor = flow_mux_constructor;
   gobject_class->dispose = flow_mux_dispose;
   gobject_class->finalize = flow_mux_finalize;
 }
@@ -106,18 +101,6 @@ flow_mux_init (FlowMux *mux)
   priv->open_channels = 0;
 }
 
-static GObject *
-flow_mux_constructor (GType                  type,
-                      guint                  n_construct_properties,
-                      GObjectConstructParam *construct_properties)
-{
-  GObject *obj = parent_class->constructor (type,
-                                            n_construct_properties,
-                                            construct_properties);
-  
-  return obj;
-}
-
 static void
 flow_mux_dispose (GObject *object)
 {
@@ -134,7 +117,8 @@ flow_mux_dispose (GObject *object)
     ChannelInfo *info = g_object_get_qdata (G_OBJECT (pad), channel_info_quark);
     
     g_object_set_qdata (G_OBJECT (pad), channel_info_quark, NULL);
-    g_object_unref (info->event);
+    if (info->event)
+      g_object_unref (info->event);
     g_free (info);
   }
   G_OBJECT_CLASS (parent_class)->dispose (object);
@@ -181,7 +165,7 @@ flow_mux_add_channel (FlowMux *mux, FlowMuxEvent *event)
 }
 
 FlowInputPad *
-flow_mux_add_channel_id (FlowMux *mux, gint id)
+flow_mux_add_channel_id (FlowMux *mux, guint id)
 {
   FlowMuxEvent *event = flow_mux_event_new (id);
   FlowInputPad *pad = flow_mux_add_channel (mux, event);
@@ -191,15 +175,23 @@ flow_mux_add_channel_id (FlowMux *mux, gint id)
 }
 
 static void
-flow_mux_channel_shutdown (FlowMux *mux, ChannelInfo *info, gboolean call_done)
+flow_mux_channel_shutdown (FlowMux *mux, ChannelInfo *info)
 {
   FlowMuxPrivate *priv = FLOW_MUX_GET_PRIVATE (mux);
   
   g_object_unref (info->event);
+  info->event = NULL;
   priv->open_channels--;
 
-  if (call_done && priv->open_channels <= 0)
-    flow_mux_done (mux);
+  if (priv->open_channels <= 0)
+  {
+    FlowPad *output_pad = FLOW_PAD (flow_joiner_get_output_pad (FLOW_JOINER (mux)));
+    FlowPacket *packet;
+    
+    priv->current_input_pad = NULL;
+    packet = flow_create_simple_event_packet (FLOW_STREAM_DOMAIN, FLOW_STREAM_END);
+    flow_pad_push (output_pad, packet);
+  }
 }
 
 /* Called when one of the input pads is ready for reading */
@@ -214,6 +206,8 @@ flow_mux_process_input (FlowElement *element, FlowPad *input_pad)
   
   while ((packet = flow_packet_queue_pop_packet (packet_queue)) != NULL)
   {
+    gboolean forward_packet = TRUE;
+    
     if (flow_handle_universal_events (element, packet))
       continue;
 
@@ -224,10 +218,14 @@ flow_mux_process_input (FlowElement *element, FlowPad *input_pad)
       if (FLOW_IS_DETAILED_EVENT (object))
       {
         if (flow_detailed_event_matches (object, FLOW_STREAM_DOMAIN, FLOW_STREAM_END))
-          flow_mux_channel_shutdown (mux, info, TRUE);
+        {
+          flow_mux_channel_shutdown (mux, info);
+          flow_packet_free (packet);
+          forward_packet = FALSE;
+        }
       }
     }
-    else
+    if (forward_packet)
     {
       FlowPad *output_pad = FLOW_PAD (flow_joiner_get_output_pad (FLOW_JOINER (mux)));
       
@@ -241,16 +239,4 @@ flow_mux_process_input (FlowElement *element, FlowPad *input_pad)
       flow_pad_push (output_pad, packet);
     }
   }
-}
-
-static void
-flow_mux_done (FlowMux *mux)
-{
-  FlowMuxPrivate *priv = FLOW_MUX_GET_PRIVATE (mux);
-  FlowPad *output_pad = FLOW_PAD (flow_joiner_get_output_pad (FLOW_JOINER (mux)));
-  FlowPacket *packet;
-  
-  priv->current_input_pad = NULL;
-  packet = flow_create_simple_event_packet (FLOW_STREAM_DOMAIN, FLOW_STREAM_END);
-  flow_pad_push (output_pad, packet);
 }

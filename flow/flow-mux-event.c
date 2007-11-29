@@ -74,7 +74,7 @@ flow_mux_event_finalize (FlowMuxEvent *mux_event)
 }
 
 FlowMuxEvent *
-flow_mux_event_new (gint channel_id)
+flow_mux_event_new (guint channel_id)
 {
   return g_object_new (FLOW_TYPE_MUX_EVENT, "channel-id", channel_id, NULL);
 }
