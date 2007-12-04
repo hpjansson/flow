@@ -195,8 +195,8 @@ flow_mux_hdr_parse (const guint8 *buffer, guint *channel_id, guint32 *size,
 {
   const guint8 *data = buffer;
   
-  *channel_id = ntohs(*(guint16 *)data); data += 2;
-  *size = ntohl(*(guint32 *)data); data += 4;
+  *channel_id = g_ntohs(*(guint16 *)data); data += 2;
+  *size = g_ntohl(*(guint32 *)data); data += 4;
 }
 
 static void
@@ -207,8 +207,8 @@ flow_mux_hdr_unparse (guint8 *buffer, guint channel_id, guint32 size,
 
   g_return_if_fail (channel_id < (1 << 16));
   
-  *((guint16 *)data) = htons(channel_id); data += 2;
-  *((guint32 *)data) = htonl(size); data += 4;
+  *((guint16 *)data) = g_htons(channel_id); data += 2;
+  *((guint32 *)data) = g_htonl(size); data += 4;
 }
 
 /* Public API */

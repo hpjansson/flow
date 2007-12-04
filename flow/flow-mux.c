@@ -24,6 +24,7 @@
 #include "config.h"
 #include "flow-mux.h"
 #include "flow-util.h"
+#include "flow-gobject-util.h"
 
 typedef struct
 {
@@ -37,75 +38,50 @@ typedef struct
   gint open_channels;
 } FlowMuxPrivate;
 
-#define FLOW_MUX_GET_PRIVATE(o) (G_TYPE_INSTANCE_GET_PRIVATE ((o), FLOW_TYPE_MUX, FlowMuxPrivate))
+FLOW_GOBJECT_PROPERTIES_BEGIN (flow_mux)
+FLOW_GOBJECT_PROPERTIES_END   ()
+
+FLOW_GOBJECT_MAKE_IMPL        (flow_mux, FlowMux, FLOW_TYPE_JOINER, 0)
 
 static void flow_mux_process_input (FlowElement *element, FlowPad *input_pad);
 
 
 
-static void flow_mux_init (FlowMux *mux);
-static void flow_mux_dispose (GObject *object);
-static void flow_mux_finalize (GObject *object);
-
-static GObjectClass *parent_class = NULL;
 static GQuark channel_info_quark;
+
+static void
+flow_mux_type_init (GType type)
+{
+}
 
 static void
 flow_mux_class_init (FlowMuxClass * klass)
 {
-  GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
   FlowElementClass *element_class = FLOW_ELEMENT_CLASS (klass);
   
   channel_info_quark = g_quark_from_static_string ("flow-mux-channel-info");
   
-  parent_class = (GObjectClass *) g_type_class_peek_parent (klass);
-
-  g_type_class_add_private (klass, sizeof (FlowMuxPrivate));
-
   element_class->process_input = flow_mux_process_input;
-  
-  gobject_class->dispose = flow_mux_dispose;
-  gobject_class->finalize = flow_mux_finalize;
-}
-
-GType
-flow_mux_get_type (void)
-{
-  static const GTypeInfo mux_type_info = {
-    sizeof(FlowMuxClass),	/* class_size */
-    NULL,		/* base_init */
-    NULL,		/* base_finalize */
-    (GClassInitFunc) flow_mux_class_init,
-    NULL,		/* class_finalize */
-    NULL,		/* class_data */
-    sizeof(FlowMux),
-    0,		/* n_preallocs */
-    (GInstanceInitFunc) flow_mux_init,
-  };
-  static GType mux_type = 0;
-
-  if (!mux_type)
-    mux_type = g_type_register_static (FLOW_TYPE_JOINER,
-                                       "FlowMux",
-                                       &mux_type_info, 0);
-  
-  return mux_type;
 }
 
 static void
 flow_mux_init (FlowMux *mux)
 {
-  FlowMuxPrivate *priv = FLOW_MUX_GET_PRIVATE (mux);
+  FlowMuxPrivate *priv = mux->priv;
 
   priv->current_input_pad = NULL;
   priv->open_channels = 0;
 }
 
 static void
-flow_mux_dispose (GObject *object)
+flow_mux_construct (FlowMux *mux)
 {
-  FlowMux *mux = FLOW_MUX (object);
-  FlowElement *element = FLOW_ELEMENT (object);
+}
+
+static void
+flow_mux_dispose (FlowMux *mux)
+{
+  FlowElement *element = FLOW_ELEMENT (mux);
   gint i;
   
   if (FLOW_ELEMENT (mux)->was_disposed)
@@ -121,13 +97,11 @@ flow_mux_dispose (GObject *object)
       g_object_unref (info->event);
     g_free (info);
   }
-  G_OBJECT_CLASS (parent_class)->dispose (object);
 }
 
 static void
-flow_mux_finalize (GObject *object)
+flow_mux_finalize (FlowMux *mux)
 {
-  G_OBJECT_CLASS (parent_class)->finalize (object);
 }
 
 /* Public API */
@@ -148,8 +122,7 @@ flow_mux_add_channel (FlowMux *mux, FlowMuxEvent *event)
   g_return_val_if_fail (mux != NULL, NULL);
   g_return_val_if_fail (event != NULL, NULL);
 
-  priv = FLOW_MUX_GET_PRIVATE (mux);
-
+  priv = (FlowMuxPrivate *) mux->priv;
   pad = flow_joiner_add_input_pad (FLOW_JOINER (mux));
 
   info = g_new (ChannelInfo, 1);
@@ -177,7 +150,7 @@ flow_mux_add_channel_id (FlowMux *mux, guint id)
 static void
 flow_mux_channel_shutdown (FlowMux *mux, ChannelInfo *info)
 {
-  FlowMuxPrivate *priv = FLOW_MUX_GET_PRIVATE (mux);
+  FlowMuxPrivate *priv = mux->priv;
   
   g_object_unref (info->event);
   info->event = NULL;
@@ -200,7 +173,7 @@ flow_mux_process_input (FlowElement *element, FlowPad *input_pad)
 {
   ChannelInfo *info = (ChannelInfo *) g_object_get_qdata (G_OBJECT (input_pad), channel_info_quark);
   FlowMux *mux = FLOW_MUX (element);
-  FlowMuxPrivate *priv = FLOW_MUX_GET_PRIVATE (mux);
+  FlowMuxPrivate *priv = mux->priv;
   FlowPacketQueue *packet_queue = flow_pad_get_packet_queue (input_pad);
   FlowPacket *packet;
   

@@ -68,11 +68,12 @@ test_run (void)
       packet = flow_packet_new (FLOW_PACKET_FORMAT_BUFFER, buffer, len);
     else
     {
+      int j;
       packet = flow_create_simple_event_packet (FLOW_STREAM_DOMAIN, FLOW_STREAM_ERROR);
-      for (i = 0; i < N_PADS; i++)
+      for (j = 0; j < N_PADS; j++)
       {
-        if (i != k)
-          expected_packets[i] = g_list_prepend (expected_packets[i], flow_packet_copy (packet));
+        if (j != k)
+          expected_packets[j] = g_list_prepend (expected_packets[j], flow_packet_copy (packet));
       }
     }
     

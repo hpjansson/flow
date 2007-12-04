@@ -41,6 +41,8 @@ typedef struct _FlowDemuxClass FlowDemuxClass;
 struct _FlowDemux
 {
   FlowSplitter base;
+
+  gpointer priv;
 };
 
 struct _FlowDemuxClass

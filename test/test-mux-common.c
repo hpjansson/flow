@@ -66,5 +66,7 @@ check_user_adapter_packets (FlowUserAdapter *adapter,
     flow_packet_free (epacket);
     flow_packet_free (qpacket);
   }
+  if (flow_packet_queue_peek_packet (input_packet_queue, NULL, NULL))
+    test_end (TEST_RESULT_FAILED, "superfluous packet found");
 }
 

@@ -41,6 +41,8 @@ typedef struct _FlowMuxClass FlowMuxClass;
 struct _FlowMux
 {
   FlowJoiner base;
+
+  gpointer priv;
 };
 
 struct _FlowMuxClass
