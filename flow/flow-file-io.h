@@ -28,6 +28,7 @@
 #include <flow/flow-detailed-event.h>
 #include <flow/flow-io.h>
 #include <flow/flow-file-connector.h>
+#include <flow/flow-position.h>
 
 G_BEGIN_DECLS
 
@@ -67,6 +68,7 @@ FlowFileIO         *flow_file_io_new                   (void);
 
 void                flow_file_io_open                  (FlowFileIO *file_io, const gchar *path, FlowAccessMode access_mode);
 void                flow_file_io_close                 (FlowFileIO *file_io);
+void                flow_file_io_seek                  (FlowFileIO *file_io, FlowOffsetAnchor anchor, goffset offset);
 void                flow_file_io_seek_to               (FlowFileIO *file_io, goffset offset);
 
 gboolean            flow_file_io_sync_open             (FlowFileIO *file_io, const gchar *path, FlowAccessMode access_mode);

@@ -27,6 +27,8 @@
 #include "flow-element-util.h"
 #include "flow-gobject-util.h"
 #include "flow-event-codes.h"
+#include "flow-position.h"
+#include "flow-file-connect-op.h"
 #include "flow-file-io.h"
 
 #define FILE_CONNECTOR_NAME "file-connector"
@@ -97,29 +99,22 @@ write_stream_begin (FlowFileIO *file_io)
 
   detailed_event = flow_detailed_event_new (NULL);
   flow_detailed_event_add_code (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_BEGIN);
-
   flow_io_write_object (FLOW_IO (file_io), detailed_event);
-
   g_object_unref (detailed_event);
 }
 
 static void
-write_stream_end (FlowFileIO *file_io, gboolean close_both_directions)
+write_stream_end (FlowFileIO *file_io)
 {
   FlowFileIOPrivate *priv = file_io->priv;
   FlowDetailedEvent *detailed_event;
 
   detailed_event = flow_detailed_event_new (NULL);
   flow_detailed_event_add_code (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END);
-
-  if (close_both_directions)
-    flow_detailed_event_add_code (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END_CONVERSE);
-
   flow_io_write_object (FLOW_IO (file_io), detailed_event);
+  g_object_unref (detailed_event);
 
   priv->wrote_stream_begin = FALSE;
-
-  g_object_unref (detailed_event);
 }
 
 static void
@@ -243,8 +238,6 @@ flow_file_io_handle_input_object (FlowFileIO *file_io, gpointer object)
       io->allow_blocking_read  = FALSE;
       io->allow_blocking_write = FALSE;
 
-      write_stream_end (file_io, FALSE);
-
       set_connectivity (file_io, FLOW_CONNECTIVITY_DISCONNECTED);
 
       result = TRUE;
@@ -339,53 +332,31 @@ flow_file_io_new (void)
 }
 
 void
-flow_file_io_connect (FlowFileIO *file_io, FlowIPService *ip_service)
+flow_file_io_open (FlowFileIO *file_io, const gchar *path, FlowAccessMode access_mode)
 {
   FlowFileIOPrivate *priv;
   FlowIO            *io;
+  FlowFileConnectOp *file_connect_op;
 
   g_return_if_fail (FLOW_IS_FILE_IO (file_io));
-  g_return_if_fail (FLOW_IS_IP_SERVICE (ip_service));
   return_if_invalid_bin (file_io);
 
   priv = file_io->priv;
+  io = FLOW_IO (file_io);
 
   g_return_if_fail (priv->connectivity == FLOW_CONNECTIVITY_DISCONNECTED);
 
-  io = FLOW_IO (file_io);
+  file_connect_op = flow_file_connect_op_new (path, access_mode);
+  flow_io_write_object (io, file_connect_op);
+  g_object_unref (file_connect_op);
 
-  flow_io_write_object (io, ip_service);
   write_stream_begin (file_io);
 
   set_connectivity (file_io, FLOW_CONNECTIVITY_CONNECTING);
 }
 
 void
-flow_file_io_connect_by_name (FlowFileIO *file_io, const gchar *name, gint port)
-{
-  FlowFileIOPrivate *priv;
-  FlowIPService     *ip_service;
-
-  g_return_if_fail (FLOW_IS_FILE_IO (file_io));
-  g_return_if_fail (name != NULL);
-  g_return_if_fail (port > 0);
-  return_if_invalid_bin (file_io);
-
-  priv = file_io->priv;
-
-  g_return_if_fail (priv->connectivity == FLOW_CONNECTIVITY_DISCONNECTED);
-
-  ip_service = flow_ip_service_new ();
-  flow_ip_service_set_name (ip_service, name);
-  flow_ip_service_set_port (ip_service, port);
-
-  flow_file_io_connect (file_io, ip_service);
-
-  g_object_unref (ip_service);
-}
-
-void
-flow_file_io_disconnect (FlowFileIO *file_io, gboolean close_both_directions)
+flow_file_io_close (FlowFileIO *file_io)
 {
   FlowFileIOPrivate *priv;
 
@@ -398,28 +369,70 @@ flow_file_io_disconnect (FlowFileIO *file_io, gboolean close_both_directions)
       priv->connectivity == FLOW_CONNECTIVITY_DISCONNECTING)
     return;
 
-  write_stream_end (file_io, close_both_directions);
+  write_stream_end (file_io);
 
   set_connectivity (file_io, FLOW_CONNECTIVITY_DISCONNECTING);
 }
 
-gboolean
-flow_file_io_sync_connect (FlowFileIO *file_io, FlowIPService *ip_service)
+void
+flow_file_io_seek (FlowFileIO *file_io, FlowOffsetAnchor anchor, goffset offset)
 {
   FlowFileIOPrivate *priv;
   FlowIO            *io;
+  FlowPosition      *position;
+
+  g_return_if_fail (FLOW_IS_FILE_IO (file_io));
+  return_if_invalid_bin (file_io);
+
+  priv = file_io->priv;
+  io = FLOW_IO (file_io);
+
+  g_return_if_fail (priv->connectivity == FLOW_CONNECTIVITY_CONNECTED || priv->connectivity == FLOW_CONNECTIVITY_CONNECTING);
+
+  position = flow_position_new (anchor, offset);
+  flow_io_write_object (io, position);
+  g_object_unref (position);
+}
+
+void
+flow_file_io_seek_to (FlowFileIO *file_io, goffset offset)
+{
+  FlowFileIOPrivate *priv;
+  FlowIO            *io;
+  FlowPosition      *position;
+
+  g_return_if_fail (FLOW_IS_FILE_IO (file_io));
+  return_if_invalid_bin (file_io);
+
+  priv = file_io->priv;
+  io = FLOW_IO (file_io);
+
+  g_return_if_fail (priv->connectivity == FLOW_CONNECTIVITY_CONNECTED || priv->connectivity == FLOW_CONNECTIVITY_CONNECTING);
+
+  position = flow_position_new (FLOW_OFFSET_ANCHOR_BEGIN, offset);
+  flow_io_write_object (io, position);
+  g_object_unref (position);
+}
+
+gboolean
+flow_file_io_sync_open (FlowFileIO *file_io, const gchar *path, FlowAccessMode access_mode)
+{
+  FlowFileIOPrivate *priv;
+  FlowIO            *io;
+  FlowFileConnectOp *file_connect_op;
 
   g_return_val_if_fail (FLOW_IS_FILE_IO (file_io), FALSE);
-  g_return_val_if_fail (FLOW_IS_IP_SERVICE (ip_service), FALSE);
   return_val_if_invalid_bin (file_io, FALSE);
 
   priv = file_io->priv;
+  io = FLOW_IO (file_io);
 
   g_return_val_if_fail (priv->connectivity == FLOW_CONNECTIVITY_DISCONNECTED, FALSE);
 
-  io = FLOW_IO (file_io);
+  file_connect_op = flow_file_connect_op_new (path, access_mode);
+  flow_io_write_object (io, file_connect_op);
+  g_object_unref (file_connect_op);
 
-  flow_io_write_object (io, ip_service);
   write_stream_begin (file_io);
 
   set_connectivity (file_io, FLOW_CONNECTIVITY_CONNECTING);
@@ -433,34 +446,8 @@ flow_file_io_sync_connect (FlowFileIO *file_io, FlowIPService *ip_service)
   return priv->connectivity == FLOW_CONNECTIVITY_CONNECTED ? TRUE : FALSE;
 }
 
-gboolean
-flow_file_io_sync_connect_by_name (FlowFileIO *file_io, const gchar *name, gint port)
-{
-  FlowFileIOPrivate *priv;
-  FlowIPService     *ip_service;
-  gboolean           result;
-
-  g_return_val_if_fail (FLOW_IS_FILE_IO (file_io), FALSE);
-  g_return_val_if_fail (name != NULL, FALSE);
-  g_return_val_if_fail (port > 0, FALSE);
-  return_val_if_invalid_bin (file_io, FALSE);
-
-  priv = file_io->priv;
-
-  g_return_val_if_fail (priv->connectivity == FLOW_CONNECTIVITY_DISCONNECTED, FALSE);
-
-  ip_service = flow_ip_service_new ();
-  flow_ip_service_set_name (ip_service, name);
-  flow_ip_service_set_port (ip_service, port);
-
-  result = flow_file_io_sync_connect (file_io, ip_service);
-
-  g_object_unref (ip_service);
-  return result;
-}
-
 void
-flow_file_io_sync_disconnect (FlowFileIO *file_io)
+flow_file_io_sync_close (FlowFileIO *file_io)
 {
   FlowFileIOPrivate *priv;
   FlowIO            *io;
@@ -469,17 +456,16 @@ flow_file_io_sync_disconnect (FlowFileIO *file_io)
   return_if_invalid_bin (file_io);
 
   priv = file_io->priv;
+  io = FLOW_IO (file_io);
 
   if (priv->connectivity == FLOW_CONNECTIVITY_DISCONNECTED)
     return;
 
   if (priv->connectivity != FLOW_CONNECTIVITY_DISCONNECTING)
   {
-    write_stream_end (file_io, TRUE);
+    write_stream_end (file_io);
     set_connectivity (file_io, FLOW_CONNECTIVITY_DISCONNECTING);
   }
-
-  io = FLOW_IO (file_io);
 
   while (priv->connectivity == FLOW_CONNECTIVITY_DISCONNECTING)
   {

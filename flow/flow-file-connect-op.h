@@ -26,6 +26,7 @@
 #define _FLOW_FILE_CONNECT_OP_H
 
 #include <glib-object.h>
+#include <flow/flow-shunt.h>  /* For FlowAccessMode */
 
 #define FLOW_TYPE_FILE_CONNECT_OP            (flow_file_connect_op_get_type ())
 #define FLOW_FILE_CONNECT_OP(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), FLOW_TYPE_FILE_CONNECT_OP, FlowFileConnectOp))
