@@ -1,6 +1,6 @@
 noinst_PROGRAMS = \
 	benchmark-propagation \
-##	test-file-io \
+	test-file-io \
 	test-ip-resolver \
 	test-mux \
 	test-mux-serializer \
