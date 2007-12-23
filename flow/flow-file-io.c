@@ -72,7 +72,15 @@ typedef struct
   FlowUserAdapter   *user_adapter;
 
   guint              wrote_stream_begin : 1;
-  guint              name_resolution_id;
+
+  /* We get back one segment per request; if the user does a non-blocking read,
+   * then seeks or writes before the data arrives, we have to discard the
+   * resulting segment. This may happen repeatedly, resulting in multiple outstanding 
+   * segments to be discarded. */
+
+  guint              n_segments_to_drop;
+  guint              n_segments_wanted;
+  guint              n_bytes_wanted;
 }
 FlowFileIOPrivate;
 
@@ -243,9 +251,15 @@ flow_file_io_handle_input_object (FlowFileIO *file_io, gpointer object)
       result = TRUE;
     }
     /* FIXME: Do we really need this? */
-    else if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_SEGMENT_BEGIN) ||
-             flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_SEGMENT_END))
+    else if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_SEGMENT_BEGIN))
     {
+      result = TRUE;
+    }
+    else if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_SEGMENT_END))
+    {
+      if (priv->n_segments_to_drop > 0)
+        priv->n_segments_to_drop--;
+
       result = TRUE;
     }
   }
