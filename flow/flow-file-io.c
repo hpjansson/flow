@@ -73,8 +73,8 @@ typedef struct
 
   guint              wrote_stream_begin : 1;
 
-  /* We get back one segment per request; if the user does a non-blocking read,
-   * then seeks or writes before the data arrives, we have to discard the
+  /* We get back one segment per request; if the user does a non-blocking read
+   * request, then seeks or writes before the data arrives, we have to discard the
    * resulting segment. This may happen repeatedly, resulting in multiple outstanding 
    * segments to be discarded. */
 
