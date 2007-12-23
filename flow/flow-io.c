@@ -298,6 +298,8 @@ try_read_data (FlowIO *io, gpointer dest_buffer, gint max_len)
 
   packet_queue = flow_user_adapter_get_input_queue (priv->user_adapter);
 
+  /* Process objects until we get some data */
+
   while (flow_packet_queue_peek_packet (packet_queue, &packet, &packet_offset))
   {
     if G_LIKELY (flow_packet_get_format (packet) == FLOW_PACKET_FORMAT_BUFFER)
@@ -308,9 +310,14 @@ try_read_data (FlowIO *io, gpointer dest_buffer, gint max_len)
     packet = NULL;
   }
 
+  /* If we found some data, pop it off the queue */
+
   if G_LIKELY (packet)
   {
     gint len = flow_packet_get_size (packet) - packet_offset;
+
+    /* If the packet contains less data than requested, don't try to process
+     * additional packets. */
 
     if (len <= max_len)
     {
@@ -330,6 +337,18 @@ try_read_data (FlowIO *io, gpointer dest_buffer, gint max_len)
   return result;
 }
 
+/**
+ * try_read_object:
+ * 
+ * @io: A #FlowIO object.
+ * @object_dest: Location to store the pointer to found object.
+ * 
+ * Try to read an object from the queue that we need to handle. Let subclasses
+ * handle objects if possible. If we bump into data, stop and return a
+ * %NULL object.
+ * 
+ * Return value: %TRUE if there was something in the queue, %FALSE otherwise.
+ **/
 static gboolean
 try_read_object (FlowIO *io, gpointer *object_dest)
 {
@@ -343,6 +362,8 @@ try_read_object (FlowIO *io, gpointer *object_dest)
 
   while (flow_packet_queue_peek_packet (packet_queue, &packet, NULL))
   {
+    /* If we find data, leave it alone and return a NULL object. */
+
     if (flow_packet_get_format (packet) != FLOW_PACKET_FORMAT_OBJECT)
     {
       conclusive = TRUE;
@@ -351,6 +372,8 @@ try_read_object (FlowIO *io, gpointer *object_dest)
 
     object = flow_packet_get_data (packet);
 
+    /* If we find an object not handled by subclasses, return that. */
+
     if (!handle_object (io, object))
     {
       conclusive = TRUE;
@@ -358,6 +381,8 @@ try_read_object (FlowIO *io, gpointer *object_dest)
       flow_packet_queue_drop_packet (packet_queue);
       break;
     }
+
+    /* Object was handled by subclasses. Process next packet. */
 
     object = NULL;
     flow_packet_queue_drop_packet (packet_queue);
