@@ -129,8 +129,17 @@ user_adapter_input (FlowIO *io)
 
   while (flow_packet_queue_peek_packet (packet_queue, &packet, NULL))
   {
-    if G_LIKELY (flow_packet_get_format (packet) == FLOW_PACKET_FORMAT_BUFFER)
+    if (G_LIKELY (flow_packet_get_format (packet) == FLOW_PACKET_FORMAT_BUFFER))
+    {
+      if (io->drop_read_data)
+      {
+        flow_packet_queue_drop_packet (packet_queue);
+        packet = NULL;
+        continue;
+      }
+
       break;
+    }
 
     if (!handle_object (io, flow_packet_get_data (packet)))
       break;
@@ -302,8 +311,17 @@ try_read_data (FlowIO *io, gpointer dest_buffer, gint max_len)
 
   while (flow_packet_queue_peek_packet (packet_queue, &packet, &packet_offset))
   {
-    if G_LIKELY (flow_packet_get_format (packet) == FLOW_PACKET_FORMAT_BUFFER)
+    if (G_LIKELY (flow_packet_get_format (packet) == FLOW_PACKET_FORMAT_BUFFER))
+    {
+      if (io->drop_read_data)
+      {
+        flow_packet_queue_drop_packet (packet_queue);
+        packet = NULL;
+        continue;
+      }
+
       break;
+    }
 
     handle_object (io, flow_packet_get_data (packet));
     flow_packet_queue_drop_packet (packet_queue);
@@ -366,6 +384,14 @@ try_read_object (FlowIO *io, gpointer *object_dest)
 
     if (flow_packet_get_format (packet) != FLOW_PACKET_FORMAT_OBJECT)
     {
+      /* Unless we're dropping incoming data */
+
+      if (io->drop_read_data)
+      {
+        flow_packet_queue_drop_packet (packet_queue);
+        continue;
+      }
+
       conclusive = TRUE;
       break;
     }
@@ -925,7 +951,15 @@ flow_io_check_events (FlowIO *io)
     gpointer object;
 
     if (flow_packet_get_format (packet) != FLOW_PACKET_FORMAT_OBJECT)
+    {
+      if (io->drop_read_data)
+      {
+        flow_packet_queue_drop_packet (packet_queue);
+        continue;
+      }
+
       break;
+    }
 
     object = flow_packet_get_data (packet);
 
