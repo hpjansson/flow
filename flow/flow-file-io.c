@@ -29,6 +29,7 @@
 #include "flow-event-codes.h"
 #include "flow-position.h"
 #include "flow-file-connect-op.h"
+#include "flow-segment-request.h"
 #include "flow-file-io.h"
 
 #define FILE_CONNECTOR_NAME "file-connector"
@@ -79,8 +80,8 @@ typedef struct
    * segments to be discarded. */
 
   guint              n_segments_to_drop;
-  guint              n_segments_wanted;
-  guint              n_bytes_wanted;
+  guint              n_segments_requested;
+  guint              n_bytes_requested;
 }
 FlowFileIOPrivate;
 
@@ -268,6 +269,31 @@ flow_file_io_handle_input_object (FlowFileIO *file_io, gpointer object)
 }
 
 static void
+flow_file_io_prepare_read (FlowFileIO *file_io, gint request_len)
+{
+  FlowFileIOPrivate  *priv = file_io->priv;
+  FlowSegmentRequest *segment_request;
+  gint                n_bytes_to_request;
+
+  if (priv->n_bytes_requested >= request_len)
+    return;
+
+  /* FIXME: Maybe we have to send a FLOW_STREAM_BEGIN event first?
+   * See flow-io.c:ensure_downstream_open(). */
+
+  n_bytes_to_request = request_len - priv->n_bytes_requested;
+
+  g_print ("Requesting segment of %d bytes.\n", n_bytes_to_request);
+
+  segment_request = flow_segment_request_new (n_bytes_to_request);
+  flow_io_write_object (FLOW_IO (file_io), segment_request);
+  g_object_unref (segment_request);
+
+  priv->n_bytes_requested = request_len;
+  priv->n_segments_requested++;
+}
+
+static void
 flow_file_io_type_init (GType type)
 {
 }
@@ -279,6 +305,7 @@ flow_file_io_class_init (FlowFileIOClass *klass)
 
   io_klass->check_bin           = (void (*) (FlowIO *)) flow_file_io_check_bin;
   io_klass->handle_input_object = (gboolean (*) (FlowIO *, gpointer)) flow_file_io_handle_input_object;
+  io_klass->prepare_read        = (void (*) (FlowIO *io, gint request_len)) flow_file_io_prepare_read;
 
   g_signal_newv ("connectivity-changed",
                  G_TYPE_FROM_CLASS (klass),
