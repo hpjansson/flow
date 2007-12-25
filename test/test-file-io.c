@@ -156,50 +156,6 @@ subthread_main (void)
       flow_file_io_seek_to (file_io, offset);
       transfer_info.offset = offset;
     }
-
-
-
-
-
-
-
-
-
-
-
-
-#if 0
-    if (transfer_info.write_offset < BUFFER_SIZE)
-    {
-      gint len;
-
-      len = g_random_int_range (PACKET_MIN_SIZE, PACKET_MAX_SIZE);
-      len = MIN (len, BUFFER_SIZE - transfer_info.write_offset);
-
-      flow_io_sync_write (FLOW_IO (tcp_io), buffer + transfer_info.write_offset, len);
-      test_print ("Subthread wrote %d bytes\n", len);
-
-      transfer_info.write_offset += len;
-    }
-
-    if (transfer_info.read_offset < BUFFER_SIZE)
-    {
-      gint len;
-
-      len = g_random_int_range (PACKET_MIN_SIZE, PACKET_MAX_SIZE);
-      len = MIN (len, BUFFER_SIZE - transfer_info.read_offset);
-
-      if (!flow_io_sync_read_exact (FLOW_IO (tcp_io), temp_buffer, len))
-        test_end (TEST_RESULT_FAILED, "subthread short read");
-
-      test_print ("Subthread read %d bytes\n", len);
-
-      if (memcmp (buffer + transfer_info.read_offset, temp_buffer, len))
-        test_end (TEST_RESULT_FAILED, "subthread read mismatch");
-
-      transfer_info.read_offset += len;
-    }
-#endif
   }
 
   test_print ("Subthread disconnecting\n");
@@ -241,10 +197,8 @@ test_run (void)
 {
   gint i;
 
-#if 1
   if (!g_thread_supported ())
     g_thread_init (NULL);
-#endif
 
   g_random_set_seed (time (NULL));
 
