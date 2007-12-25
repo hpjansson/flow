@@ -27,8 +27,6 @@
 
 /* Test variables; adjustable */
 
-#define LOCAL_PORT             2533
-
 #define FILES_NUM              15
 #define FILES_CONCURRENT_MAX   5
 
