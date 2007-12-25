@@ -438,7 +438,7 @@ prepare_write (FlowIO *io, guint request_len)
     io_klass->prepare_write (io, request_len);
 }
 
-/* This is called before every data read function actually writes data, to ensure
+/* This is called before every data write function actually writes data, to ensure
  * we'll send FLOW_STREAM_BEGIN first. However, we don't enforce it for objects, as
  * they may be needed to set parameters before the stream is opened. */
 static void
