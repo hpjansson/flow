@@ -22,7 +22,7 @@
  * Authors: Hans Petter Jansson <hpj@copyleft.no>
  */
 
-#define TEST_UNIT_NAME "FlowTcpIO"
+#define TEST_UNIT_NAME "FlowFileIO"
 #define TEST_TIMEOUT_S 180
 
 /* Test variables; adjustable */
