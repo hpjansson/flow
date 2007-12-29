@@ -457,11 +457,22 @@ remove_shunt_from_shunt_source (FlowShunt *shunt)
 static void
 flow_shunt_init_common (FlowShunt *shunt, ShuntSource *shunt_source)
 {
+  GStaticMutex init_mutex = G_STATIC_MUTEX_INIT;
+
+  /* We need the mutex to guard against the case where two threads simultaneously
+   * try to init the first-ever shunt.
+   *
+   * FIXME: Could probably do something more fancy with atomic operations. */
+
+  g_static_mutex_lock (&init_mutex);
+
   if (!impl_is_initialized)
   {
     flow_shunt_impl_init ();
     impl_is_initialized = TRUE;
   }
+
+  g_static_mutex_unlock (&init_mutex);
 
   shunt->read_queue  = flow_packet_queue_new ();
   shunt->write_queue = flow_packet_queue_new ();
