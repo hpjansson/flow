@@ -189,6 +189,7 @@ dispatch_for_shunt (FlowShunt *shunt, gint *n_reads_done, gint *n_writes_done)
 {
   FlowPacket  *packet;
   FlowPacket  *packets [MAX_DISPATCH_PACKETS];
+  gboolean     received_end;
   gint         written_packets;
   gint         written_bytes;
   gint         read_packets;
@@ -196,6 +197,7 @@ dispatch_for_shunt (FlowShunt *shunt, gint *n_reads_done, gint *n_writes_done)
   gint         read_data_bytes;
   gint         j;
 
+  received_end = shunt->received_end;  /* FIXME: I guess this will always be FALSE here? */
   written_bytes = flow_packet_queue_get_length_bytes (shunt->write_queue);
 
   /* Peek packets from read queue. We stage them in an array so we don't
@@ -237,7 +239,7 @@ dispatch_for_shunt (FlowShunt *shunt, gint *n_reads_done, gint *n_writes_done)
 
   for (written_packets = 0; shunt->write_func && !shunt->block_writes && !shunt->was_destroyed &&
                             written_packets < MAX_DISPATCH_PACKETS && written_bytes <= MAX_BUFFER &&
-                            !shunt->received_end /* <- see below */; written_packets++)
+                            !received_end; written_packets++)
   {
     packet = shunt->write_func (shunt, shunt->write_func_data);
     if G_UNLIKELY (!packet)
@@ -257,9 +259,7 @@ dispatch_for_shunt (FlowShunt *shunt, gint *n_reads_done, gint *n_writes_done)
       if (FLOW_IS_DETAILED_EVENT (detailed_event) &&
           flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END))
       {
-        /* FIXME: This seems to work in practice, but since it's part of a bitfield
-         * it's dangerously un-threadsafe. */
-        shunt->received_end = TRUE;
+        received_end = TRUE;
       }
     }
   }
@@ -267,6 +267,7 @@ dispatch_for_shunt (FlowShunt *shunt, gint *n_reads_done, gint *n_writes_done)
   /* --- UNLOCKED CODE ENDS --- */
 
   flow_shunt_impl_lock ();
+  shunt->received_end = received_end;
   shunt->in_dispatch = FALSE;
 
   /* Steal (not drop!) read packets. NOTE: The packets may already have been
