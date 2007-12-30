@@ -57,6 +57,7 @@ struct _FlowShunt
   guint               shunt_type       : 4;
 
   guint               was_destroyed    : 1;  /* If user destroyed this shunt */
+  guint               was_destroyed_while_dispatching : 1;  /* If user destroyed shunt while in dispatch */
 
   guint               can_read         : 1;  /* If our channel is open for reads */
   guint               can_write        : 1;  /* If our channel is open for writes */
@@ -219,7 +220,7 @@ dispatch_for_shunt (FlowShunt *shunt, gint *n_reads_done, gint *n_writes_done)
 
   /* Dispatch reads */
 
-  for (j = 0; shunt->read_func && !shunt->block_reads && !shunt->was_destroyed && j < read_packets; j++)
+  for (j = 0; shunt->read_func && !shunt->block_reads && !shunt->was_destroyed_while_dispatching && j < read_packets; j++)
   {
     guint packet_size;
 
@@ -237,7 +238,7 @@ dispatch_for_shunt (FlowShunt *shunt, gint *n_reads_done, gint *n_writes_done)
 
   /* Dispatch writes */
 
-  for (written_packets = 0; shunt->write_func && !shunt->block_writes && !shunt->was_destroyed &&
+  for (written_packets = 0; shunt->write_func && !shunt->block_writes && !shunt->was_destroyed_while_dispatching &&
                             written_packets < MAX_DISPATCH_PACKETS && written_bytes <= MAX_BUFFER &&
                             !received_end; written_packets++)
   {
@@ -279,6 +280,9 @@ dispatch_for_shunt (FlowShunt *shunt, gint *n_reads_done, gint *n_writes_done)
 
   for (j = 0; j < written_packets; j++)
     flow_packet_queue_push_packet (shunt->write_queue, packets [j]);
+
+  if (G_UNLIKELY (shunt->was_destroyed_while_dispatching))
+    shunt->was_destroyed = TRUE;
 
   if G_UNLIKELY (shunt->was_destroyed)
   {
@@ -527,6 +531,7 @@ flow_shunt_read_state_changed (FlowShunt *shunt)
   gboolean new_need_reads;
 
   g_assert (shunt->was_destroyed == FALSE);
+  g_assert (shunt->was_destroyed_while_dispatching == FALSE);
 
   /* We watch for reads when these conditions are met:
    * - Either of the following:
@@ -560,6 +565,7 @@ flow_shunt_write_state_changed (FlowShunt *shunt)
   gboolean new_need_writes;
 
   g_assert (shunt->was_destroyed == FALSE);
+  g_assert (shunt->was_destroyed_while_dispatching == FALSE);
 
   /* We watch for writes when these conditions are met:
    * - There are packets in the outgoing queue. */
@@ -669,22 +675,23 @@ flow_shunt_destroy (FlowShunt *shunt)
 
   flow_shunt_impl_destroy_shunt (shunt);
 
-  shunt->was_destroyed = TRUE;
-
   if (shunt->wait_dispatch)
   {
     ShuntSource *shunt_source = shunt->shunt_source;
 
+    shunt->was_destroyed = TRUE;
     shunt->wait_dispatch = FALSE;
     flow_g_ptr_array_remove_sparse (shunt_source->waiting_shunts, shunt);
     flow_g_ptr_array_remove_sparse (shunt_source->dispatching_shunts, shunt);
   }
   else if (shunt->in_dispatch)
   {
-    /* Do nothing - it will be finalized in dispatcher */
+    /* Dispatcher will finalize when it's done */
+    shunt->was_destroyed_while_dispatching = TRUE;
   }
   else
   {
+    shunt->was_destroyed = TRUE;
     flow_shunt_impl_finalize_shunt (shunt);
   }
 
