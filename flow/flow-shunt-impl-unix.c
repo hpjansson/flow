@@ -912,7 +912,8 @@ flow_shunt_impl_destroy_shunt (FlowShunt *shunt)
   }
 }
 
-/* Invoked from generic dispatch_main () or flow_shunt_destroy () */
+/* Invoked from generic dispatch_for_shunt () or flow_shunt_destroy () */
+/* Assumes that caller is holding the impl lock */
 static void
 flow_shunt_impl_finalize_shunt (FlowShunt *shunt)
 {
@@ -1928,6 +1929,15 @@ file_shunt_write (FlowShunt *shunt)
                 flow_detailed_event_matches (object, FLOW_STREAM_DOMAIN, FLOW_STREAM_DENIED)))
       {
         /* User requested end-of-stream */
+
+        if (!shunt->dispatched_end)
+        {
+          /* FIXME: End segment? */
+          generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_END);
+          shunt->dispatched_end = TRUE;
+        }
+
+        close_read_fd (shunt);
         close_write_fd (shunt);
       }
 
@@ -2107,7 +2117,11 @@ create_file_shunt_params (const gchar *path, FlowAccessMode access_mode)
 
   file_shunt = g_slice_new0 (FileShunt);
   shunt = (FlowShunt *) file_shunt;
+
+  flow_shunt_impl_lock ();
   flow_shunt_init_common (shunt, NULL);
+  flow_shunt_impl_unlock ();
+
   shunt->shunt_type = SHUNT_TYPE_FILE;
 
   file_shunt->fd      = -1;
@@ -2231,6 +2245,8 @@ create_thread_shunt (FlowWorkerFunc func, gpointer user_data, gboolean filter_ob
   GThread           *thread;
   GError            *error = NULL;
 
+  flow_shunt_impl_lock ();
+
   thread_shunt = g_slice_new0 (ThreadShunt);
   shunt = (FlowShunt *) thread_shunt;
   flow_shunt_init_common (shunt, NULL);
@@ -2243,8 +2259,6 @@ create_thread_shunt (FlowWorkerFunc func, gpointer user_data, gboolean filter_ob
   params->thread_shunt = thread_shunt;
   params->worker_func  = func;
   params->worker_data  = user_data;
-
-  flow_shunt_impl_lock ();
 
   thread = g_thread_create ((GThreadFunc) thread_shunt_main, params,
                             FALSE /* joinable */, &error);
@@ -2309,7 +2323,11 @@ flow_shunt_impl_spawn_process (FlowWorkerFunc func, gpointer user_data)
 
   pipe_shunt = g_slice_new0 (PipeShunt);
   shunt = (FlowShunt *) pipe_shunt;
+
+  flow_shunt_impl_lock ();
   flow_shunt_init_common (shunt, NULL);
+  flow_shunt_impl_unlock ();
+
   shunt->shunt_type = SHUNT_TYPE_PIPE;
 
   if (pipe (up_fds) < 0)
@@ -2426,7 +2444,11 @@ flow_shunt_impl_spawn_command_line (const gchar *command_line)
 
   pipe_shunt = g_slice_new0 (PipeShunt);
   shunt = (FlowShunt *) pipe_shunt;
+
+  flow_shunt_impl_lock ();
   flow_shunt_init_common (shunt, NULL);
+  flow_shunt_impl_unlock ();
+
   shunt->shunt_type = SHUNT_TYPE_PIPE;
 
   if (!g_shell_parse_argv (command_line,
@@ -2523,7 +2545,11 @@ flow_shunt_impl_open_tcp_listener (FlowIPService *local_service)
 
   tcp_listener_shunt = g_slice_new0 (TcpListenerShunt);
   shunt = (FlowShunt *) tcp_listener_shunt;
+
+  flow_shunt_impl_lock ();
   flow_shunt_init_common (shunt, NULL);
+  flow_shunt_impl_unlock ();
+
   shunt->shunt_type = SHUNT_TYPE_TCP_LISTENER;
 
   if (local_service)
@@ -2686,7 +2712,11 @@ flow_shunt_impl_connect_to_tcp (FlowIPService *remote_service, gint local_port)
 
   tcp_shunt = g_slice_new0 (TcpShunt);
   shunt = (FlowShunt *) tcp_shunt;
+
+  flow_shunt_impl_lock ();
   flow_shunt_init_common (shunt, NULL);
+  flow_shunt_impl_unlock ();
+
   shunt->shunt_type = SHUNT_TYPE_TCP;
 
   memset (&sa, 0, sizeof (sa));
@@ -2800,7 +2830,11 @@ flow_shunt_impl_open_udp_port (FlowIPService *local_service)
 
   udp_shunt = g_slice_new0 (UdpShunt);
   shunt = (FlowShunt *) udp_shunt;
+
+  flow_shunt_impl_lock ();
   flow_shunt_init_common (shunt, NULL);
+  flow_shunt_impl_unlock ();
+
   shunt->shunt_type = SHUNT_TYPE_UDP;
 
   ip_addr = flow_ip_service_find_address (local_service, FLOW_IP_ADDR_ANY_FAMILY);

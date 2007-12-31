@@ -412,8 +412,17 @@ add_shunt_to_shunt_source (FlowShunt *shunt, ShuntSource *shunt_source)
 
   main_context = flow_get_main_context_for_current_thread ();
 
+  /* It's important to ref the main context, so it won't disappear if the
+   * master thread goes away before the worker (causing errors in
+   * remove_shunt_from_shunt_source ()'s g_source_unref (). */
+
+  g_main_context_ref (main_context);
+
   if G_UNLIKELY (!shunt_sources)
     shunt_sources = g_ptr_array_new ();
+
+  /* We only need one source per main context; the shunts associated with a context
+   * can share the dispatch source. See if we already have one. */
 
   for (i = 0; i < shunt_sources->len; i++)
   {
@@ -426,6 +435,8 @@ add_shunt_to_shunt_source (FlowShunt *shunt, ShuntSource *shunt_source)
       return;
     }
   }
+
+  /* Don't have a source for this main context, so create one. */
 
   source = g_source_new (&shunt_source_funcs, sizeof (ShuntSource));
   shunt_source = (ShuntSource *) source;
@@ -447,11 +458,14 @@ add_shunt_to_shunt_source (FlowShunt *shunt, ShuntSource *shunt_source)
 static void
 remove_shunt_from_shunt_source (FlowShunt *shunt)
 {
-  ShuntSource *shunt_source = shunt->shunt_source;
-  GSource     *source       = (GSource *) shunt_source;
+  ShuntSource  *shunt_source = shunt->shunt_source;
+  GSource      *source       = (GSource *) shunt_source;
+  GMainContext *main_context;
 
+  main_context = g_source_get_context (source);
   shunt->shunt_source = NULL;
   g_source_unref (source);
+  g_main_context_unref (main_context);
 }
 
 /* ---------------- *
@@ -459,25 +473,15 @@ remove_shunt_from_shunt_source (FlowShunt *shunt)
  * ---------------- */
 
 /* Invoked from implementation */
+/* Assumes that caller is holding the impl lock */
 static void
 flow_shunt_init_common (FlowShunt *shunt, ShuntSource *shunt_source)
 {
-  GStaticMutex init_mutex = G_STATIC_MUTEX_INIT;
-
-  /* We need the mutex to guard against the case where two threads simultaneously
-   * try to init the first-ever shunt.
-   *
-   * FIXME: Could probably do something more fancy with atomic operations. */
-
-  g_static_mutex_lock (&init_mutex);
-
   if (!impl_is_initialized)
   {
     flow_shunt_impl_init ();
     impl_is_initialized = TRUE;
   }
-
-  g_static_mutex_unlock (&init_mutex);
 
   shunt->read_queue  = flow_packet_queue_new ();
   shunt->write_queue = flow_packet_queue_new ();
@@ -486,6 +490,7 @@ flow_shunt_init_common (FlowShunt *shunt, ShuntSource *shunt_source)
 }
 
 /* Invoked from implementation */
+/* Assumes that caller is holding the impl lock */
 static void
 flow_shunt_finalize_common (FlowShunt *shunt)
 {
