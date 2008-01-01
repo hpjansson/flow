@@ -66,6 +66,7 @@ struct _FlowIOClass
   void     (*check_bin)           (FlowIO *io);
   gboolean (*handle_input_object) (FlowIO *io, gpointer object);
   void     (*prepare_read)        (FlowIO *io, gint request_len);
+  void     (*successful_read)     (FlowIO *io, gint len);
   void     (*prepare_write)       (FlowIO *io, gint request_len);
 
   /* Padding for future expansion */

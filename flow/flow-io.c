@@ -131,6 +131,9 @@ user_adapter_input (FlowIO *io)
   {
     if (G_LIKELY (flow_packet_get_format (packet) == FLOW_PACKET_FORMAT_BUFFER))
     {
+      /* Subclasses can set the drop_read_data flag, e.g. if we're currently receiving
+       * a segment of data they want to ignore silently. */
+
       if (io->drop_read_data)
       {
         flow_packet_queue_drop_packet (packet_queue);
@@ -279,6 +282,16 @@ flow_io_finalize (FlowIO *io)
 }
 
 static void
+successful_read (FlowIO *io, gint len)
+{
+  FlowIOClass *io_klass;
+
+  io_klass = FLOW_IO_GET_CLASS (io);
+  if (io_klass->successful_read)
+    io_klass->successful_read (io, len);
+}
+
+static void
 set_minimum_read_buffer (FlowIO *io, gint min_len)
 {
   FlowIOPrivate *priv = io->priv;
@@ -352,6 +365,9 @@ try_read_data (FlowIO *io, gpointer dest_buffer, gint max_len)
     }
   }
 
+  if (result > 0)
+    successful_read (io, result);
+
   return result;
 }
 
@@ -419,7 +435,7 @@ try_read_object (FlowIO *io, gpointer *object_dest)
 }
 
 static void
-prepare_read (FlowIO *io, guint request_len)
+prepare_read (FlowIO *io, gint request_len)
 {
   FlowIOClass *io_klass;
 
@@ -429,7 +445,7 @@ prepare_read (FlowIO *io, guint request_len)
 }
 
 static void
-prepare_write (FlowIO *io, guint request_len)
+prepare_write (FlowIO *io, gint request_len)
 {
   FlowIOClass *io_klass;
 
@@ -540,6 +556,8 @@ flow_io_read_exact (FlowIO *io, gpointer dest_buffer, gint exact_len)
     handle_object (io, flow_packet_get_data (packet));
     flow_packet_free (packet);
   }
+
+  successful_read (io, exact_len);
 
   return TRUE;
 }
@@ -802,6 +820,9 @@ flow_io_sync_read_exact (FlowIO *io, gpointer dest_buffer, gint exact_len)
 
     flow_user_adapter_wait_for_input (priv->user_adapter);
   }
+
+  if (result)
+    successful_read (io, exact_len);
 
   return result;
 }

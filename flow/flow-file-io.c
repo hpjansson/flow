@@ -77,11 +77,20 @@ typedef struct
   /* We get back one segment per request; if the user does a non-blocking read
    * request, then seeks or writes before the data arrives, we have to discard the
    * resulting segment. This may happen repeatedly, resulting in multiple outstanding 
-   * segments to be discarded. */
+   * segments to be discarded. These variables refer to data that's "in the pipeline",
+   * i.e. requested from the backend but not read by the user yet. */
 
   guint              n_segments_to_drop;
   guint              n_segments_requested;
   guint              n_bytes_requested;
+
+  /* The offset at which the next operation should take place, i.e. where the
+   * user thinks we are. In reality, we might have outstanding behind-the-scenes
+   * read requests that put us at a different offset, and we may need to
+   * compensate for these when issuing a write. */
+
+  FlowOffsetAnchor   user_anchor;
+  goffset            user_offset;
 }
 FlowFileIOPrivate;
 
@@ -251,7 +260,6 @@ flow_file_io_handle_input_object (FlowFileIO *file_io, gpointer object)
 
       result = TRUE;
     }
-    /* FIXME: Do we really need this? */
     else if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_SEGMENT_BEGIN))
     {
       result = TRUE;
@@ -264,8 +272,37 @@ flow_file_io_handle_input_object (FlowFileIO *file_io, gpointer object)
       result = TRUE;
     }
   }
+  else if (FLOW_IS_POSITION (object))
+  {
+    result = TRUE;
+  }
 
   return result;
+}
+
+static void
+update_user_offset (FlowFileIO *file_io, FlowOffsetAnchor anchor, goffset offset)
+{
+  FlowFileIOPrivate *priv = file_io->priv;
+
+  if (anchor == FLOW_OFFSET_ANCHOR_BEGIN)
+  {
+    priv->user_anchor = FLOW_OFFSET_ANCHOR_BEGIN;
+    priv->user_offset = offset;
+  }
+  else if (anchor == FLOW_OFFSET_ANCHOR_END)
+  {
+    priv->user_anchor = FLOW_OFFSET_ANCHOR_END;
+    priv->user_offset = offset;
+  }
+  else if (anchor == FLOW_OFFSET_ANCHOR_CURRENT)
+  {
+    priv->user_offset += offset;
+  }
+  else
+  {
+    g_assert_not_reached ();
+  }
 }
 
 static void
@@ -294,6 +331,55 @@ flow_file_io_prepare_read (FlowFileIO *file_io, gint request_len)
 }
 
 static void
+flow_file_io_successful_read (FlowFileIO *file_io, gint len)
+{
+  FlowFileIOPrivate *priv = file_io->priv;
+
+  g_assert (priv->n_bytes_requested >= len);
+
+  priv->n_bytes_requested -= len;
+  priv->user_offset += len;
+}
+
+static void
+drop_read_requests (FlowFileIO *file_io)
+{
+  FlowFileIOPrivate *priv = file_io->priv;
+
+  priv->n_segments_to_drop += priv->n_segments_requested;
+  priv->n_segments_requested = 0;
+  priv->n_bytes_requested = 0;
+}
+
+static void
+flow_file_io_prepare_write (FlowFileIO *file_io, gint request_len)
+{
+  FlowFileIOPrivate *priv = file_io->priv;
+
+  if (request_len == 0)
+    return;
+
+  if (priv->n_bytes_requested > 0)
+  {
+    FlowPosition *position;
+
+    /* Compensate for requested but not received reads */
+
+    position = flow_position_new (priv->user_anchor, priv->user_offset);
+    flow_io_write_object (FLOW_IO (file_io), position);
+    g_object_unref (position);
+  }
+
+  drop_read_requests (file_io);
+  priv->user_offset += request_len;
+
+  /* If we wrote past end-of-file, we are now at end-of-file */
+
+  if (priv->user_anchor == FLOW_OFFSET_ANCHOR_END && priv->user_offset > 0)
+    priv->user_offset = 0;
+}
+
+static void
 flow_file_io_type_init (GType type)
 {
 }
@@ -306,6 +392,8 @@ flow_file_io_class_init (FlowFileIOClass *klass)
   io_klass->check_bin           = (void (*) (FlowIO *)) flow_file_io_check_bin;
   io_klass->handle_input_object = (gboolean (*) (FlowIO *, gpointer)) flow_file_io_handle_input_object;
   io_klass->prepare_read        = (void (*) (FlowIO *io, gint request_len)) flow_file_io_prepare_read;
+  io_klass->successful_read     = (void (*) (FlowIO *io, gint len)) flow_file_io_successful_read;
+  io_klass->prepare_write       = (void (*) (FlowIO *io, gint request_len)) flow_file_io_prepare_write;
 
   g_signal_newv ("connectivity-changed",
                  G_TYPE_FROM_CLASS (klass),
@@ -343,6 +431,9 @@ flow_file_io_init (FlowFileIO *file_io)
 
   priv->connectivity      = FLOW_CONNECTIVITY_DISCONNECTED;
   priv->last_connectivity = FLOW_CONNECTIVITY_DISCONNECTED;
+
+  priv->user_anchor = FLOW_OFFSET_ANCHOR_BEGIN;
+  priv->user_offset = 0;
 }
 
 static void
@@ -430,6 +521,9 @@ flow_file_io_seek (FlowFileIO *file_io, FlowOffsetAnchor anchor, goffset offset)
 
   g_return_if_fail (priv->connectivity == FLOW_CONNECTIVITY_CONNECTED || priv->connectivity == FLOW_CONNECTIVITY_CONNECTING);
 
+  drop_read_requests (file_io);
+  update_user_offset (file_io, anchor, offset);
+
   position = flow_position_new (anchor, offset);
   flow_io_write_object (io, position);
   g_object_unref (position);
@@ -449,6 +543,9 @@ flow_file_io_seek_to (FlowFileIO *file_io, goffset offset)
   io = FLOW_IO (file_io);
 
   g_return_if_fail (priv->connectivity == FLOW_CONNECTIVITY_CONNECTED || priv->connectivity == FLOW_CONNECTIVITY_CONNECTING);
+
+  drop_read_requests (file_io);
+  update_user_offset (file_io, FLOW_OFFSET_ANCHOR_BEGIN, offset);
 
   position = flow_position_new (FLOW_OFFSET_ANCHOR_BEGIN, offset);
   flow_io_write_object (io, position);
