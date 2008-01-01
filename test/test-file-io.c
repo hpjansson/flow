@@ -27,8 +27,8 @@
 
 /* Test variables; adjustable */
 
-#define FILES_NUM              15
-#define FILES_CONCURRENT_MAX   5
+#define THREADS_TOTAL          15
+#define THREADS_CONCURRENT_MAX 5
 
 #define BUFFER_SIZE            5000000   /* Amount of data to transfer */
 #define PACKET_MAX_SIZE        8192      /* Max transfer unit */
@@ -60,17 +60,13 @@ TransferInfo;
 
 static guchar            *buffer                 = NULL;
 
-static GHashTable        *transfer_info_table    = NULL;
-
 static GMainLoop         *main_loop              = NULL;
-static gint               files_done           = 0;
-static gint               files_running        = 0;
 
-static void
-transfer_info_free (TransferInfo *transfer_info)
-{
-  g_slice_free (TransferInfo, transfer_info);
-}
+static GStaticMutex       global_mutex           = G_STATIC_MUTEX_INIT;
+
+static gint               threads_started        = 0;
+static gint               threads_running        = 0;
+static gint               threads_ended          = 0;
 
 static void
 subthread_main (void)
@@ -87,11 +83,11 @@ subthread_main (void)
   file_name = g_strdup_printf ("test-file-io-scratch-%08x", g_random_int ());
   file_io = flow_file_io_new ();
   result = flow_file_io_sync_open (file_io, file_name, FLOW_READ_ACCESS | FLOW_WRITE_ACCESS);
-  g_free (file_name);
 
   if (!result)
   {
     test_end (TEST_RESULT_FAILED, "failed to create scratch file");
+    g_free (file_name);
     return;
   }
 
@@ -113,11 +109,14 @@ subthread_main (void)
 
       if (transfer_info.offset < transfer_info.len)
       {
+        test_print ("Append: Seeking to EOF\n");
         flow_file_io_seek (file_io, FLOW_OFFSET_ANCHOR_END, 0);
       }
 
       len = g_random_int_range (PACKET_MIN_SIZE, PACKET_MAX_SIZE);
       len = MIN (len, BUFFER_SIZE - transfer_info.len);
+
+      test_print ("Append: Appending %d bytes\n", len);
 
       flow_io_sync_write (FLOW_IO (file_io), buffer + transfer_info.len, len);
 
@@ -133,6 +132,8 @@ subthread_main (void)
       if (transfer_info.offset == transfer_info.len)
       {
         gint offset = g_random_int_range (0, transfer_info.len);
+
+        test_print ("Read: Seeking to %d\n", offset);
         flow_file_io_seek_to (file_io, offset);
         transfer_info.offset = offset;
       }
@@ -140,16 +141,25 @@ subthread_main (void)
       len = g_random_int_range (PACKET_MIN_SIZE, PACKET_MAX_SIZE);
       len = MIN (len, transfer_info.len - transfer_info.offset);
 
-      /* TODO: Verify return value? */
-      flow_io_sync_read (FLOW_IO (file_io), temp_buffer, len);
+      test_print ("Read: Reading %d bytes\n", len);
 
-      /* TODO: memcmp () */
+      /* TODO: Verify return value? */
+      flow_io_sync_read_exact (FLOW_IO (file_io), temp_buffer, len);
+
+      if (memcmp (temp_buffer, buffer + transfer_info.offset, len))
+        test_end (TEST_RESULT_FAILED, "Data verification error");
+
+      test_print ("Verified %d bytes ok\n", len);
+
+      transfer_info.offset += len;
     }
     else if (transfer_info.len > 0)
     {
       gint offset = g_random_int_range (0, transfer_info.len);
 
       /* Seek to random offset */
+
+      test_print ("Seek: Seeking to %d\n", offset);
 
       flow_file_io_seek_to (file_io, offset);
       transfer_info.offset = offset;
@@ -162,18 +172,42 @@ subthread_main (void)
 
   g_object_unref (file_io);
   test_print ("Subthread cleaned up\n");
+
+  threads_ended++;
+  threads_running--;
+
+  remove (file_name);
+  g_free (file_name);
 }
 
 static gboolean
 spawn_subthread (void)
 {
-  if (files_running >= FILES_CONCURRENT_MAX || files_done >= FILES_NUM)
-    return TRUE;
+  gboolean run_again = TRUE;
 
-  test_print ("Spawning new subthread\n");
-  g_thread_create ((GThreadFunc) subthread_main, NULL, FALSE, NULL);
+  g_static_mutex_lock (&global_mutex);
 
-  files_running++;
+  if (threads_ended == THREADS_TOTAL)
+  {
+    g_main_loop_quit (main_loop);
+    run_again = FALSE;
+  }
+  else if (threads_started == THREADS_TOTAL ||
+           threads_running == THREADS_CONCURRENT_MAX)
+  {
+    /* Wait for threads to finish */
+  }
+  else
+  {
+    threads_started++;
+    threads_running++;
+
+    test_print ("Spawning new subthread\n");
+    g_thread_create ((GThreadFunc) subthread_main, NULL, FALSE, NULL);
+  }
+
+  g_static_mutex_unlock (&global_mutex);
+
   return TRUE;
 }
 
@@ -220,13 +254,7 @@ test_run (void)
     }
   }
 
-  transfer_info_table = g_hash_table_new_full (g_direct_hash, g_direct_equal,
-                                               NULL, (GDestroyNotify) transfer_info_free);
-
   long_test ();
-
-  g_hash_table_destroy (transfer_info_table);
-  transfer_info_table = NULL;
 
   g_free (buffer);
   buffer = NULL;
