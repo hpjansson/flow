@@ -187,8 +187,6 @@ handle_inbound_packet (FlowFileConnector *file_connector, FlowPacket *packet)
       else if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END) ||
                flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_DENIED))
       {
-        g_print ("disconnected\n");
-
         flow_shunt_destroy (priv->shunt);
         priv->shunt = NULL;
         flow_connector_set_state_internal (FLOW_CONNECTOR (file_connector), FLOW_CONNECTIVITY_DISCONNECTED);
