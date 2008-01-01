@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Runs battery of tests forever, with debug output. If
 # a test fails, the log is enumerated and saved, and a
