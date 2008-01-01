@@ -12,3 +12,4 @@ test-mux-serializer
 test-mux-deserializer
 test-tcp-io
 test-tls-tcp-io
+test-file-io
