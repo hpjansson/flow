@@ -406,7 +406,10 @@ add_shunt_to_shunt_source (FlowShunt *shunt, ShuntSource *shunt_source)
   if (shunt_source)
   {
     shunt->shunt_source = shunt_source;
+    main_context = g_source_get_context ((GSource *) shunt_source);
+
     g_source_ref ((GSource *) shunt_source);
+    g_main_context_ref (main_context);
     return;
   }
 
