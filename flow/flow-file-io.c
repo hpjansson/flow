@@ -320,8 +320,6 @@ flow_file_io_prepare_read (FlowFileIO *file_io, gint request_len)
 
   n_bytes_to_request = request_len - priv->n_bytes_requested;
 
-  g_print ("Requesting segment of %d bytes.\n", n_bytes_to_request);
-
   segment_request = flow_segment_request_new (n_bytes_to_request);
   flow_io_write_object (FLOW_IO (file_io), segment_request);
   g_object_unref (segment_request);
