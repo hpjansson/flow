@@ -425,6 +425,9 @@ flow_packet_queue_pop_bytes_exact (FlowPacketQueue *packet_queue, gpointer dest,
   /* Make sure we have enough contiguous data */
 
   packet = peek_packet (packet_queue);
+  if (flow_packet_get_format (packet) != FLOW_PACKET_FORMAT_BUFFER)
+    return FALSE;
+
   n_contiguous_bytes = flow_packet_get_size (packet) - packet_queue->packet_position;
 
   l = packet_queue->queue->head;
