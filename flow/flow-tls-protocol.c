@@ -37,6 +37,7 @@
 #define DOWNSTREAM_INDEX 1
 
 #define MAX_READ         4096
+#define MAX_PACKET_SIZE  4096
 #define DH_BITS_DEFAULT  1024
 
 typedef enum
@@ -775,6 +776,11 @@ process_input_from_upstream (FlowTlsProtocol *tls_protocol, FlowPad *input_pad)
     {
       g_assert_not_reached ();
     }
+
+    /* Check if something we did (close_from_upstream, perhaps) put us in a state
+     * where we have to break out of the processing loop. */
+    if (priv->from_upstream_state == STATE_CLOSING)
+      break;
   }
 }
 
@@ -845,6 +851,11 @@ process_input_from_downstream (FlowTlsProtocol *tls_protocol, FlowPad *input_pad
     {
       g_assert_not_reached ();
     }
+
+    /* Check if something we did (close_from_downstream, perhaps) put us in a state
+     * where we have to break out of the processing loop. */
+    if (priv->from_downstream_state == STATE_CLOSING)
+      break;
   }
 }
 
