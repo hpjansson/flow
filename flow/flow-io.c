@@ -659,8 +659,6 @@ flow_io_set_read_notify (FlowIO *io, FlowNotifyFunc func, gpointer user_data)
   priv->read_notify_data = user_data;
 
   update_user_adapter_blocks (io);
-
-  /* TODO? */
 }
 
 void
@@ -677,8 +675,6 @@ flow_io_set_write_notify (FlowIO *io, FlowNotifyFunc func, gpointer user_data)
   priv->write_notify_data = user_data;
 
   update_user_adapter_blocks (io);
-
-  /* TODO? */
 }
 
 void
@@ -696,8 +692,6 @@ flow_io_block_reads (FlowIO *io)
 
   priv->reads_are_blocked = TRUE;
   update_user_adapter_blocks (io);
-
-  /* TODO? */
 }
 
 void
@@ -715,8 +709,6 @@ flow_io_unblock_reads (FlowIO *io)
 
   priv->reads_are_blocked = FALSE;
   update_user_adapter_blocks (io);
-
-  /* TODO? */
 }
 
 void
@@ -734,8 +726,6 @@ flow_io_block_writes (FlowIO *io)
 
   priv->writes_are_blocked = TRUE;
   update_user_adapter_blocks (io);
-
-  /* TODO? */
 }
 
 void
@@ -753,8 +743,6 @@ flow_io_unblock_writes (FlowIO *io)
 
   priv->writes_are_blocked = FALSE;
   update_user_adapter_blocks (io);
-
-  /* TODO? */
 }
 
 gint
