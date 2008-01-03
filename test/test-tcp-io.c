@@ -118,7 +118,11 @@ subthread_main (void)
       len = g_random_int_range (PACKET_MIN_SIZE, PACKET_MAX_SIZE);
       len = MIN (len, BUFFER_SIZE - transfer_info.write_offset);
 
-      flow_io_sync_write (FLOW_IO (tcp_io), buffer + transfer_info.write_offset, len);
+      if (g_random_int_range (0, 2) == 0)
+        flow_io_sync_write (FLOW_IO (tcp_io), buffer + transfer_info.write_offset, len);
+      else
+        flow_io_write (FLOW_IO (tcp_io), buffer + transfer_info.write_offset, len);
+
       test_print ("Subthread wrote %d bytes\n", len);
 
       transfer_info.write_offset += len;
@@ -169,6 +173,7 @@ read_notify (FlowTcpIO *tcp_io)
 {
   TransferInfo *transfer_info;
   guchar        temp_buffer [PACKET_MAX_SIZE];
+  gint          desired_len;
   gint          len;
 
   test_print ("Main thread read notify (%p)\n", tcp_io);
@@ -176,16 +181,21 @@ read_notify (FlowTcpIO *tcp_io)
   transfer_info = g_hash_table_lookup (transfer_info_table, tcp_io);
   g_assert (transfer_info != NULL);
 
-  len = flow_io_read (FLOW_IO (tcp_io), temp_buffer, PACKET_MAX_SIZE);
-  test_print ("Main thread read %d bytes\n", len);
+  do
+  {
+    desired_len = g_random_int_range (1, PACKET_MAX_SIZE + 1);
+    len = flow_io_read (FLOW_IO (tcp_io), temp_buffer, desired_len);
+    test_print ("Main thread read %d bytes\n", len);
 
-  if (memcmp (buffer + transfer_info->read_offset, temp_buffer, len))
-    test_end (TEST_RESULT_FAILED, "main thread read mismatch");
+    if (memcmp (buffer + transfer_info->read_offset, temp_buffer, len))
+      test_end (TEST_RESULT_FAILED, "main thread read mismatch");
 
-  transfer_info->read_offset += len;
+    transfer_info->read_offset += len;
 
-  if (transfer_info->read_offset > BUFFER_SIZE)
-    test_end (TEST_RESULT_FAILED, "main thread read past buffer length");
+    if (transfer_info->read_offset > BUFFER_SIZE)
+      test_end (TEST_RESULT_FAILED, "main thread read past buffer length");
+  }
+  while (len == desired_len);
 }
 
 static void
