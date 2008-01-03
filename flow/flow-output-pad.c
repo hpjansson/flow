@@ -125,17 +125,22 @@ flow_output_pad_block (FlowPad *pad)
 static void
 flow_output_pad_unblock (FlowPad *pad)
 {
-  FlowElement      *element = pad->owner_element;
-  FlowElementClass *element_klass;
+  FlowElement *element = pad->owner_element;
 
   element_dispatch_enter (element);
   pad_dispatch_enter (pad);
 
-  element_klass = FLOW_ELEMENT_GET_CLASS (element);
-  if (element_klass->output_pad_unblocked)
-    element_klass->output_pad_unblocked (element, pad);
-
   try_push_to_connected (pad);
+
+  /* The push may cause us to become blocked again, so check */
+
+  if (!pad->is_blocked)
+  {
+    FlowElementClass *element_klass = FLOW_ELEMENT_GET_CLASS (element);
+
+    if (element_klass->output_pad_unblocked)
+      element_klass->output_pad_unblocked (element, pad);
+  }
 
   pad_dispatch_leave (pad);
 
