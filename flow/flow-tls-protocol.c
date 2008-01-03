@@ -37,7 +37,7 @@
 #define DOWNSTREAM_INDEX 1
 
 #define MAX_READ         4096
-#define MAX_PACKET_SIZE  4096
+#define MAX_PACKET_SIZE  8192
 #define DH_BITS_DEFAULT  1024
 
 typedef enum
@@ -214,14 +214,25 @@ send_for_gnutls (FlowTlsProtocol *tls_protocol, gconstpointer src, size_t len)
 {
   FlowElement *element = (FlowElement *) tls_protocol;
   FlowPad     *output_pad;
-  FlowPacket  *packet;
-
-  /* TODO: Check how big the packets can get, and optionally split them up so
-   * memory can be re-used with higher granularity. */
+  size_t       offset;
 
   output_pad = g_ptr_array_index (element->output_pads, DOWNSTREAM_INDEX);
-  packet = flow_packet_new (FLOW_PACKET_FORMAT_BUFFER, (gpointer) src, len);
-  flow_pad_push (output_pad, packet);
+
+  /* Split the data up into multiple packets if necessary, so memory can be
+   * freed sooner, and in smaller increments. */
+
+  for (offset = 0; offset < len; offset += MAX_PACKET_SIZE)
+  {
+    FlowPacket *packet;
+    size_t      packet_len;
+
+    packet_len = len - offset;
+    packet_len = MIN (packet_len, MAX_PACKET_SIZE);
+
+    packet = flow_packet_new (FLOW_PACKET_FORMAT_BUFFER,
+                              (guchar *) src + offset, packet_len);
+    flow_pad_push (output_pad, packet);
+  }
 
   return len;
 }
