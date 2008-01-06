@@ -49,6 +49,33 @@ Describes an IP-based service
 @Returns: 
 
 
+<!-- ##### FUNCTION flow_ip_service_have_name ##### -->
+<para>
+
+</para>
+
+@ip_service: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_ip_service_get_name ##### -->
+<para>
+
+</para>
+
+@ip_service: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_ip_service_set_name ##### -->
+<para>
+
+</para>
+
+@ip_service: 
+@name: 
+
+
 <!-- ##### FUNCTION flow_ip_service_get_port ##### -->
 <para>
 
@@ -83,5 +110,78 @@ Describes an IP-based service
 
 @ip_service: 
 @quality: 
+
+
+<!-- ##### FUNCTION flow_ip_service_get_n_addresses ##### -->
+<para>
+
+</para>
+
+@ip_service: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_ip_service_get_nth_address ##### -->
+<para>
+
+</para>
+
+@ip_service: 
+@n: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_ip_service_find_address ##### -->
+<para>
+
+</para>
+
+@ip_service: 
+@family: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_ip_service_list_addresses ##### -->
+<para>
+
+</para>
+
+@ip_service: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_ip_service_add_address ##### -->
+<para>
+
+</para>
+
+@ip_service: 
+@ip_addr: 
+
+
+<!-- ##### FUNCTION flow_ip_service_remove_address ##### -->
+<para>
+
+</para>
+
+@ip_service: 
+@ip_addr: 
+
+
+<!-- ##### FUNCTION flow_ip_service_resolve ##### -->
+<para>
+
+</para>
+
+@ip_service: 
+
+
+<!-- ##### FUNCTION flow_ip_service_sync_resolve ##### -->
+<para>
+
+</para>
+
+@ip_service: 
+@Returns: 
 
 

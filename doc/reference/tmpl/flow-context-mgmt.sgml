@@ -17,14 +17,6 @@ Manage per-thread main contexts
 <!-- ##### SECTION Stability_Level ##### -->
 
 
-<!-- ##### FUNCTION flow_get_main_context_for_current_thread ##### -->
-<para>
-
-</para>
-
-@Returns: 
-
-
 <!-- ##### FUNCTION flow_idle_add_full ##### -->
 <para>
 
@@ -88,5 +80,21 @@ Manage per-thread main contexts
 </para>
 
 @source_id: 
+
+
+<!-- ##### FUNCTION flow_get_main_context_for_current_thread ##### -->
+<para>
+
+</para>
+
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_set_main_context_for_current_thread ##### -->
+<para>
+
+</para>
+
+@main_context: 
 
 

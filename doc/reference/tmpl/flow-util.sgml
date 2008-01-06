@@ -25,61 +25,6 @@ Commonly needed functions
 @user_data: 
 
 
-<!-- ##### FUNCTION flow_connect_simplex__simplex ##### -->
-<para>
-
-</para>
-
-@output_simplex: 
-@input_simplex: 
-
-
-<!-- ##### FUNCTION flow_connect_duplex__duplex ##### -->
-<para>
-
-</para>
-
-@downstream_duplex: 
-@upstream_duplex: 
-
-
-<!-- ##### FUNCTION flow_connect_simplex_simplex__duplex ##### -->
-<para>
-
-</para>
-
-@downstream_simplex_output: 
-@downstream_simplex_input: 
-@upstream_duplex: 
-
-
-<!-- ##### FUNCTION flow_connect_duplex__simplex_simplex ##### -->
-<para>
-
-</para>
-
-@downstream_duplex: 
-@upstream_simplex_output: 
-@upstream_simplex_input: 
-
-
-<!-- ##### FUNCTION flow_disconnect_element ##### -->
-<para>
-
-</para>
-
-@element: 
-
-
-<!-- ##### FUNCTION flow_strerror ##### -->
-<para>
-
-</para>
-
-@errnum: 
-@Returns: 
-
-
 <!-- ##### FUNCTION flow_create_simple_event_packet ##### -->
 <para>
 
@@ -144,6 +89,23 @@ Commonly needed functions
 </para>
 
 @array: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_unref_and_free_object_list ##### -->
+<para>
+
+</para>
+
+@object_list: 
+
+
+<!-- ##### FUNCTION flow_strerror ##### -->
+<para>
+
+</para>
+
+@errnum: 
 @Returns: 
 
 

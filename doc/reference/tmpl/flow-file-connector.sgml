@@ -1,31 +1,33 @@
 <!-- ##### SECTION Title ##### -->
-FlowDemux
+FlowFileConnector
 
 <!-- ##### SECTION Short_Description ##### -->
-Element with N input pads and one output pad
+
 
 <!-- ##### SECTION Long_Description ##### -->
 <para>
 
 </para>
 
+
 <!-- ##### SECTION See_Also ##### -->
 <para>
 
 </para>
 
+
 <!-- ##### SECTION Stability_Level ##### -->
 
 
-<!-- ##### STRUCT FlowDemux ##### -->
+<!-- ##### STRUCT FlowFileConnector ##### -->
 <para>
 
 </para>
 
-@base: 
+@parent: 
 @priv: 
 
-<!-- ##### FUNCTION flow_demux_new ##### -->
+<!-- ##### FUNCTION flow_file_connector_new ##### -->
 <para>
 
 </para>
@@ -33,13 +35,12 @@ Element with N input pads and one output pad
 @Returns: 
 
 
-<!-- ##### FUNCTION flow_demux_add_channel ##### -->
+<!-- ##### FUNCTION flow_file_connector_get_path ##### -->
 <para>
 
 </para>
 
-@demux: 
-@channel_id: 
+@file_connector: 
 @Returns: 
 
 

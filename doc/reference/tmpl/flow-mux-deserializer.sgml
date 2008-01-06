@@ -1,23 +1,25 @@
 <!-- ##### SECTION Title ##### -->
-FlowDemux
+FlowMuxDeserializer
 
 <!-- ##### SECTION Short_Description ##### -->
-Element with N input pads and one output pad
+
 
 <!-- ##### SECTION Long_Description ##### -->
 <para>
 
 </para>
 
+
 <!-- ##### SECTION See_Also ##### -->
 <para>
 
 </para>
 
+
 <!-- ##### SECTION Stability_Level ##### -->
 
 
-<!-- ##### STRUCT FlowDemux ##### -->
+<!-- ##### STRUCT FlowMuxDeserializer ##### -->
 <para>
 
 </para>
@@ -25,7 +27,7 @@ Element with N input pads and one output pad
 @base: 
 @priv: 
 
-<!-- ##### FUNCTION flow_demux_new ##### -->
+<!-- ##### FUNCTION flow_mux_deserializer_new ##### -->
 <para>
 
 </para>
@@ -33,13 +35,23 @@ Element with N input pads and one output pad
 @Returns: 
 
 
-<!-- ##### FUNCTION flow_demux_add_channel ##### -->
+<!-- ##### FUNCTION flow_mux_deserializer_get_header_size ##### -->
 <para>
 
 </para>
 
-@demux: 
+@deserializer: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_mux_deserializer_unparse_header ##### -->
+<para>
+
+</para>
+
+@deserializer: 
+@hdr: 
 @channel_id: 
-@Returns: 
+@size: 
 
 

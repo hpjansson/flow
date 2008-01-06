@@ -1,51 +1,57 @@
 <!-- ##### SECTION Title ##### -->
-FlowTcpConnector
+FlowTcpConnectOp
 
 <!-- ##### SECTION Short_Description ##### -->
-Element with remote TCP origin/endpoint
+
 
 <!-- ##### SECTION Long_Description ##### -->
 <para>
 
 </para>
 
+
 <!-- ##### SECTION See_Also ##### -->
 <para>
 
 </para>
 
+
 <!-- ##### SECTION Stability_Level ##### -->
 
 
-<!-- ##### STRUCT FlowTcpConnector ##### -->
+<!-- ##### STRUCT FlowTcpConnectOp ##### -->
 <para>
 
 </para>
 
+@parent: 
+@priv: 
 
-<!-- ##### FUNCTION flow_tcp_connector_new ##### -->
+<!-- ##### FUNCTION flow_tcp_connect_op_new ##### -->
 <para>
 
 </para>
 
+@remote_ip_service: 
+@local_port: 
 @Returns: 
 
 
-<!-- ##### FUNCTION flow_tcp_connector_get_remote_service ##### -->
+<!-- ##### FUNCTION flow_tcp_connect_op_get_remote_service ##### -->
 <para>
 
 </para>
 
-@tcp_connector: 
+@tcp_connect_op: 
 @Returns: 
 
 
-<!-- ##### FUNCTION flow_tcp_connector_get_local_port ##### -->
+<!-- ##### FUNCTION flow_tcp_connect_op_get_local_port ##### -->
 <para>
 
 </para>
 
-@tcp_connector: 
+@tcp_connect_op: 
 @Returns: 
 
 

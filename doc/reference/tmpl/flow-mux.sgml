@@ -22,31 +22,34 @@ Element with one input pad and N output pads
 
 </para>
 
+@base: 
+@priv: 
 
-<!-- ##### FUNCTION flow_mux_get_output_pad ##### -->
+<!-- ##### FUNCTION flow_mux_new ##### -->
 <para>
 
 </para>
 
-@mux: 
 @Returns: 
 
 
-<!-- ##### FUNCTION flow_mux_add_input_pad ##### -->
+<!-- ##### FUNCTION flow_mux_add_channel ##### -->
 <para>
 
 </para>
 
 @mux: 
+@event: 
 @Returns: 
 
 
-<!-- ##### FUNCTION flow_mux_remove_input_pad ##### -->
+<!-- ##### FUNCTION flow_mux_add_channel_id ##### -->
 <para>
 
 </para>
 
 @mux: 
-@input_pad: 
+@channel_id: 
+@Returns: 
 
 

@@ -1,0 +1,39 @@
+<!-- ##### SECTION Title ##### -->
+flow-mux-event
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### FUNCTION flow_mux_event_new ##### -->
+<para>
+
+</para>
+
+@channel_id: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_mux_event_get_channel_id ##### -->
+<para>
+
+</para>
+
+@event: 
+@Returns: 
+
+

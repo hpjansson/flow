@@ -23,3 +23,39 @@ Element with two input and two output pads
 </para>
 
 
+<!-- ##### FUNCTION flow_duplex_element_get_upstream_input_pad ##### -->
+<para>
+
+</para>
+
+@duplex_element: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_duplex_element_get_upstream_output_pad ##### -->
+<para>
+
+</para>
+
+@duplex_element: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_duplex_element_get_downstream_input_pad ##### -->
+<para>
+
+</para>
+
+@duplex_element: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_duplex_element_get_downstream_output_pad ##### -->
+<para>
+
+</para>
+
+@duplex_element: 
+@Returns: 
+
+

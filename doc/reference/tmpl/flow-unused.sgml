@@ -7,6 +7,30 @@
 @arg1: 
 @arg2: 
 
+<!-- ##### FUNCTION flow_demux_add_output_pad ##### -->
+<para>
+
+</para>
+
+@demux: 
+@Returns: 
+
+<!-- ##### FUNCTION flow_demux_get_input_pad ##### -->
+<para>
+
+</para>
+
+@demux: 
+@Returns: 
+
+<!-- ##### FUNCTION flow_demux_remove_output_pad ##### -->
+<para>
+
+</para>
+
+@demux: 
+@output_pad: 
+
 <!-- ##### FUNCTION flow_duplex_element_get_downstream_pads ##### -->
 <para>
 
@@ -32,6 +56,30 @@
 
 @thread: 
 @Returns: 
+
+<!-- ##### FUNCTION flow_mux_add_input_pad ##### -->
+<para>
+
+</para>
+
+@mux: 
+@Returns: 
+
+<!-- ##### FUNCTION flow_mux_get_output_pad ##### -->
+<para>
+
+</para>
+
+@mux: 
+@Returns: 
+
+<!-- ##### FUNCTION flow_mux_remove_input_pad ##### -->
+<para>
+
+</para>
+
+@mux: 
+@input_pad: 
 
 <!-- ##### FUNCTION flow_set_main_context_for_thread ##### -->
 <para>

@@ -1,45 +1,54 @@
 <!-- ##### SECTION Title ##### -->
-FlowDemux
+FlowJoiner
 
 <!-- ##### SECTION Short_Description ##### -->
-Element with N input pads and one output pad
+
 
 <!-- ##### SECTION Long_Description ##### -->
 <para>
 
 </para>
 
+
 <!-- ##### SECTION See_Also ##### -->
 <para>
 
 </para>
 
+
 <!-- ##### SECTION Stability_Level ##### -->
 
 
-<!-- ##### STRUCT FlowDemux ##### -->
+<!-- ##### STRUCT FlowJoiner ##### -->
 <para>
 
 </para>
 
-@base: 
-@priv: 
 
-<!-- ##### FUNCTION flow_demux_new ##### -->
+<!-- ##### FUNCTION flow_joiner_get_output_pad ##### -->
 <para>
 
 </para>
 
+@joiner: 
 @Returns: 
 
 
-<!-- ##### FUNCTION flow_demux_add_channel ##### -->
+<!-- ##### FUNCTION flow_joiner_add_input_pad ##### -->
 <para>
 
 </para>
 
-@demux: 
-@channel_id: 
+@joiner: 
 @Returns: 
+
+
+<!-- ##### FUNCTION flow_joiner_remove_input_pad ##### -->
+<para>
+
+</para>
+
+@joiner: 
+@input_pad: 
 
 

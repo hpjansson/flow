@@ -1,0 +1,73 @@
+<!-- ##### SECTION Title ##### -->
+FlowIPProcessor
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### STRUCT FlowIPProcessor ##### -->
+<para>
+
+</para>
+
+@parent: 
+@priv: 
+
+<!-- ##### FUNCTION flow_ip_processor_new ##### -->
+<para>
+
+</para>
+
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_ip_processor_get_resolve_to_addrs ##### -->
+<para>
+
+</para>
+
+@ip_processor: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_ip_processor_set_resolve_to_addrs ##### -->
+<para>
+
+</para>
+
+@ip_processor: 
+@resolve_to_addrs: 
+
+
+<!-- ##### FUNCTION flow_ip_processor_get_resolve_to_names ##### -->
+<para>
+
+</para>
+
+@ip_processor: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_ip_processor_set_resolve_to_names ##### -->
+<para>
+
+</para>
+
+@ip_processor: 
+@resolve_to_names: 
+
+

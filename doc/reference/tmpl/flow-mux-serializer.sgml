@@ -1,0 +1,72 @@
+<!-- ##### SECTION Title ##### -->
+FlowMuxSerializer
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### STRUCT FlowMuxHeaderOps ##### -->
+<para>
+
+</para>
+
+@get_size: 
+@parse: 
+@unparse: 
+
+<!-- ##### STRUCT FlowMuxSerializer ##### -->
+<para>
+
+</para>
+
+@base: 
+@priv: 
+
+<!-- ##### FUNCTION flow_mux_serializer_new ##### -->
+<para>
+
+</para>
+
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_mux_serializer_get_header_size ##### -->
+<para>
+
+</para>
+
+@serializer: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_mux_serializer_parse_header ##### -->
+<para>
+
+</para>
+
+@serializer: 
+@hdr: 
+@channel_id: 
+@size: 
+
+
+<!-- ##### VARIABLE flow_mux_serializer_default_ops ##### -->
+<para>
+
+</para>
+
+

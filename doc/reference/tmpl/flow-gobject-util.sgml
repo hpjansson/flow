@@ -119,6 +119,22 @@ Simplify class and property creation
 @defval: 
 
 
+<!-- ##### MACRO FLOW_GOBJECT_PROPERTY_DOUBLE ##### -->
+<para>
+
+</para>
+
+@name: 
+@nick: 
+@blurb: 
+@param_flags: 
+@value_getter: 
+@value_setter: 
+@min: 
+@max: 
+@defval: 
+
+
 <!-- ##### MACRO FLOW_GOBJECT_PROPERTY_STRING ##### -->
 <para>
 

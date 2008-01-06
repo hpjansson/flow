@@ -1,0 +1,152 @@
+<!-- ##### SECTION Title ##### -->
+flow-element-util
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### FUNCTION flow_disconnect_element ##### -->
+<para>
+
+</para>
+
+@element: 
+
+
+<!-- ##### FUNCTION flow_replace_element ##### -->
+<para>
+
+</para>
+
+@original: 
+@replacement: 
+
+
+<!-- ##### FUNCTION flow_connect_simplex__simplex ##### -->
+<para>
+
+</para>
+
+@output_simplex: 
+@input_simplex: 
+
+
+<!-- ##### FUNCTION flow_connect_duplex__duplex ##### -->
+<para>
+
+</para>
+
+@downstream_duplex: 
+@upstream_duplex: 
+
+
+<!-- ##### FUNCTION flow_connect_simplex_simplex__duplex ##### -->
+<para>
+
+</para>
+
+@downstream_simplex_output: 
+@downstream_simplex_input: 
+@upstream_duplex: 
+
+
+<!-- ##### FUNCTION flow_connect_duplex__simplex_simplex ##### -->
+<para>
+
+</para>
+
+@downstream_duplex: 
+@upstream_simplex_output: 
+@upstream_simplex_input: 
+
+
+<!-- ##### FUNCTION flow_insert_Isimplex__simplex ##### -->
+<para>
+
+</para>
+
+@output_simplex_inserted: 
+@input_simplex: 
+
+
+<!-- ##### FUNCTION flow_insert_simplex__Isimplex ##### -->
+<para>
+
+</para>
+
+@output_simplex: 
+@input_simplex_inserted: 
+
+
+<!-- ##### FUNCTION flow_insert_Iduplex__duplex ##### -->
+<para>
+
+</para>
+
+@downstream_duplex_inserted: 
+@upstream_duplex: 
+
+
+<!-- ##### FUNCTION flow_insert_duplex__Iduplex ##### -->
+<para>
+
+</para>
+
+@downstream_duplex: 
+@upstream_duplex_inserted: 
+
+
+<!-- ##### FUNCTION flow_insert_Isimplex_Isimplex__duplex ##### -->
+<para>
+
+</para>
+
+@downstream_simplex_output_inserted: 
+@downstream_simplex_input_inserted: 
+@upstream_duplex: 
+
+
+<!-- ##### FUNCTION flow_insert_duplex__Isimplex_Isimplex ##### -->
+<para>
+
+</para>
+
+@downstream_duplex: 
+@upstream_simplex_output_inserted: 
+@upstream_simplex_input_inserted: 
+
+
+<!-- ##### FUNCTION flow_insert_Iduplex__simplex_simplex ##### -->
+<para>
+
+</para>
+
+@downstream_duplex_inserted: 
+@upstream_simplex_output: 
+@upstream_simplex_input: 
+
+
+<!-- ##### FUNCTION flow_insert_simplex_simplex__Iduplex ##### -->
+<para>
+
+</para>
+
+@downstream_simplex_output: 
+@downstream_simplex_input: 
+@upstream_duplex_inserted: 
+
+

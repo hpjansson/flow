@@ -1,0 +1,148 @@
+<!-- ##### SECTION Title ##### -->
+FlowFileIO
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### STRUCT FlowFileIO ##### -->
+<para>
+
+</para>
+
+@parent: 
+@priv: 
+
+<!-- ##### FUNCTION flow_file_io_new ##### -->
+<para>
+
+</para>
+
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_file_io_open ##### -->
+<para>
+
+</para>
+
+@file_io: 
+@path: 
+@access_mode: 
+
+
+<!-- ##### FUNCTION flow_file_io_close ##### -->
+<para>
+
+</para>
+
+@file_io: 
+
+
+<!-- ##### FUNCTION flow_file_io_seek ##### -->
+<para>
+
+</para>
+
+@file_io: 
+@anchor: 
+@offset: 
+
+
+<!-- ##### FUNCTION flow_file_io_seek_to ##### -->
+<para>
+
+</para>
+
+@file_io: 
+@offset: 
+
+
+<!-- ##### FUNCTION flow_file_io_sync_open ##### -->
+<para>
+
+</para>
+
+@file_io: 
+@path: 
+@access_mode: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_file_io_sync_close ##### -->
+<para>
+
+</para>
+
+@file_io: 
+
+
+<!-- ##### FUNCTION flow_file_io_sync_seek_to ##### -->
+<para>
+
+</para>
+
+@file_io: 
+@offset: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_file_io_get_path ##### -->
+<para>
+
+</para>
+
+@file_io: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_file_io_get_connectivity ##### -->
+<para>
+
+</para>
+
+@file_io: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_file_io_get_last_connectivity ##### -->
+<para>
+
+</para>
+
+@file_io: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_file_io_get_file_connector ##### -->
+<para>
+
+</para>
+
+@io: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_file_io_set_file_connector ##### -->
+<para>
+
+</para>
+
+@io: 
+@file_connector: 
+
+
