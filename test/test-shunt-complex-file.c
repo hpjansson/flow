@@ -54,8 +54,10 @@ static gint       pre_pos;
 static gint       post_pos;
 
 static gint       n_packets_written = 0;
+static gint       n_segments_remaining = 0;
 
 static gboolean   finished_writing;
+static gboolean   quitting_main_loop;
 static gboolean   writes_are_blocked;
 
 static gboolean   started_reading;
@@ -357,6 +359,8 @@ write_random (FlowShunt *shunt, gpointer data)
     packet = flow_packet_new_take_object (flow_segment_request_new (r), 0);
     pre_pos += MIN (r, BUFFER_SIZE - pre_pos);
 
+    n_segments_remaining++;
+
     test_print ("Write: Request %d bytes\n", r);
   }
   else
@@ -381,9 +385,22 @@ write_random (FlowShunt *shunt, gpointer data)
 
     if (n_packets_written >= TOTAL_EXPECTED_PACKETS)
     {
-      /* Wait a bit before quitting, so shunts have a chance to generate invalid events */
+      /* Done writing */
+
+      test_print ("Done writing.");
       flow_shunt_block_writes (shunt);
-      g_timeout_add (1000, (GSourceFunc) test_quit_main_loop, NULL);
+      finished_writing = TRUE;
+
+      if (n_segments_remaining == 0 && !quitting_main_loop)
+      {
+        test_print (" No outstanding requests - quitting after short delay...\n");
+        quitting_main_loop = TRUE;
+        g_timeout_add (1000, (GSourceFunc) test_quit_main_loop, NULL);
+      }
+      else
+      {
+        test_print ("\n");
+      }
     }
   }
 
@@ -478,6 +495,7 @@ read_random (FlowShunt *shunt, FlowPacket *packet, gpointer data)
           test_end (TEST_RESULT_FAILED, "end of segment, but no segment open");
 
         in_segment = FALSE;
+        n_segments_remaining--;
       }
     }
     else if (FLOW_IS_POSITION (packet_data))
@@ -522,6 +540,15 @@ read_random (FlowShunt *shunt, FlowPacket *packet, gpointer data)
   else
   {
     test_end (TEST_RESULT_FAILED, "got unknown packet format");
+  }
+
+  if (finished_writing && n_segments_remaining == 0 && !quitting_main_loop)
+  {
+    /* Done reading. Wait a little bit to see if shunt will generate any bogus events. */
+
+    test_print ("Done reading. Quitting after short delay...\n");
+    quitting_main_loop = TRUE;
+    g_timeout_add (1000, (GSourceFunc) test_quit_main_loop, NULL);
   }
 
   flow_packet_free (packet);
@@ -640,6 +667,8 @@ test_run (void)
 
   /* Do random I/O on file and validate results */
 
+  finished_reading = FALSE;
+  finished_writing = FALSE;
   pre_pos  = BUFFER_SIZE;
   post_pos = BUFFER_SIZE;
   flow_shunt_set_read_func  (global_shunt, read_random,  global_shunt);
@@ -652,6 +681,8 @@ test_run (void)
 
   /* Re-read entire file and validate results */
 
+  finished_reading = FALSE;
+  finished_writing = FALSE;
   pre_pos  = BUFFER_SIZE;
   post_pos = BUFFER_SIZE;
   flow_shunt_set_read_func  (global_shunt, read_stream,        global_shunt);
