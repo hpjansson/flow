@@ -84,7 +84,7 @@ FlowGObjectPropElem;
   0, 0, defval, 0.0, 0.0, 0.0, NULL },
 
 #define FLOW_GOBJECT_PROPERTY_FLAGS(name, nick, blurb, param_flags,                     \
-                                   value_getter, value_setter, defval, type_getter)     \
+                                    value_getter, value_setter, defval, type_getter)    \
 { G_TYPE_FLAGS, name, nick, blurb, param_flags,                                         \
   (void (*)(void)) value_getter, (void (*)(void)) value_setter, type_getter,            \
   0, 0, defval, 0.0, 0.0, 0.0, NULL },
@@ -96,7 +96,7 @@ FlowGObjectPropElem;
   0, 0, 0, min, max, defval, NULL },
 
 #define FLOW_GOBJECT_PROPERTY_DOUBLE(name, nick, blurb, param_flags,                    \
-                                    value_getter, value_setter, min, max, defval)       \
+                                     value_getter, value_setter, min, max, defval)      \
 { G_TYPE_DOUBLE, name, nick, blurb, param_flags,                                        \
   (void (*)(void)) value_getter, (void (*)(void)) value_setter, NULL,                   \
   0, 0, 0, min, max, defval, NULL },
