@@ -23,4 +23,5 @@
  */
 
 #include "flow-position.h"
+#include "flow-shunt.h"
 #include "flow-tls-protocol.h"

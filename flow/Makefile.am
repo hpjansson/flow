@@ -8,6 +8,7 @@ pkgconfig_DATA     = flow.pc
 
 flow_headers_to_scan_for_enums = \
 	flow-position.h \
+	flow-shunt.h \
 	flow-tls-protocol.h
 
 EXTRA_DIST         = flow.pc.in
