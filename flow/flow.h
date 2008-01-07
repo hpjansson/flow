@@ -34,6 +34,7 @@
 #include <flow/flow-element.h>
 #include <flow/flow-element-util.h>
 #include <flow/flow-emitter.h>
+#include <flow/flow-file-connect-op.h>
 #include <flow/flow-file-connector.h>
 #include <flow/flow-file-io.h>
 #include <flow/flow-input-pad.h>
@@ -44,6 +45,7 @@
 #include <flow/flow-joiner.h>
 #include <flow/flow-mux.h>
 #include <flow/flow-mux-deserializer.h>
+#include <flow/flow-mux-event.h>
 #include <flow/flow-mux-serializer.h>
 #include <flow/flow-output-pad.h>
 #include <flow/flow-packet.h>
@@ -55,6 +57,7 @@
 #include <flow/flow-shunt.h>
 #include <flow/flow-simplex-element.h>
 #include <flow/flow-splitter.h>
+#include <flow/flow-tcp-connect-op.h>
 #include <flow/flow-tcp-connector.h>
 #include <flow/flow-tcp-io.h>
 #include <flow/flow-tcp-io-listener.h>
