@@ -17,6 +17,14 @@ A stream packet that can contain data or an object reference
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### STRUCT FlowPacket ##### -->
+<para>
+
+</para>
+
+@format: 
+@size: 
+
 <!-- ##### MACRO FLOW_PACKET_MAX_SIZE ##### -->
 <para>
 
@@ -31,14 +39,6 @@ A stream packet that can contain data or an object reference
 
 @FLOW_PACKET_FORMAT_BUFFER: 
 @FLOW_PACKET_FORMAT_OBJECT: 
-
-<!-- ##### STRUCT FlowPacket ##### -->
-<para>
-
-</para>
-
-@format: 
-@size: 
 
 <!-- ##### FUNCTION flow_packet_new ##### -->
 <para>

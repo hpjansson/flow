@@ -9,12 +9,10 @@ FlowFileIO
 
 </para>
 
-
 <!-- ##### SECTION See_Also ##### -->
 <para>
 
 </para>
-
 
 <!-- ##### SECTION Stability_Level ##### -->
 
@@ -24,8 +22,13 @@ FlowFileIO
 
 </para>
 
-@parent: 
-@priv: 
+
+<!-- ##### SIGNAL FlowFileIO::connectivity-changed ##### -->
+<para>
+
+</para>
+
+@flowfileio: the object which received the signal.
 
 <!-- ##### FUNCTION flow_file_io_new ##### -->
 <para>

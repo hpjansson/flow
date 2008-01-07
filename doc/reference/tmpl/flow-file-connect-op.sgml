@@ -9,12 +9,10 @@ FlowFileConnectOp
 
 </para>
 
-
 <!-- ##### SECTION See_Also ##### -->
 <para>
 
 </para>
-
 
 <!-- ##### SECTION Stability_Level ##### -->
 
@@ -24,8 +22,16 @@ FlowFileConnectOp
 
 </para>
 
-@parent: 
-@priv: 
+
+<!-- ##### ARG FlowFileConnectOp:access-mode ##### -->
+<para>
+
+</para>
+
+<!-- ##### ARG FlowFileConnectOp:path ##### -->
+<para>
+
+</para>
 
 <!-- ##### FUNCTION flow_file_connect_op_new ##### -->
 <para>

@@ -1,5 +1,5 @@
 <!-- ##### SECTION Title ##### -->
-flow-mux-event
+FlowMuxEvent
 
 <!-- ##### SECTION Short_Description ##### -->
 
@@ -9,15 +9,24 @@ flow-mux-event
 
 </para>
 
-
 <!-- ##### SECTION See_Also ##### -->
 <para>
 
 </para>
 
-
 <!-- ##### SECTION Stability_Level ##### -->
 
+
+<!-- ##### STRUCT FlowMuxEvent ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG FlowMuxEvent:channel-id ##### -->
+<para>
+
+</para>
 
 <!-- ##### FUNCTION flow_mux_event_new ##### -->
 <para>

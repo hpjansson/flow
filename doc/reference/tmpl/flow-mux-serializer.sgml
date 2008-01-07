@@ -9,12 +9,10 @@ FlowMuxSerializer
 
 </para>
 
-
 <!-- ##### SECTION See_Also ##### -->
 <para>
 
 </para>
-
 
 <!-- ##### SECTION Stability_Level ##### -->
 
@@ -33,8 +31,6 @@ FlowMuxSerializer
 
 </para>
 
-@base: 
-@priv: 
 
 <!-- ##### FUNCTION flow_mux_serializer_new ##### -->
 <para>

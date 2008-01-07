@@ -9,12 +9,10 @@ FlowMuxDeserializer
 
 </para>
 
-
 <!-- ##### SECTION See_Also ##### -->
 <para>
 
 </para>
-
 
 <!-- ##### SECTION Stability_Level ##### -->
 
@@ -24,8 +22,6 @@ FlowMuxDeserializer
 
 </para>
 
-@base: 
-@priv: 
 
 <!-- ##### FUNCTION flow_mux_deserializer_new ##### -->
 <para>

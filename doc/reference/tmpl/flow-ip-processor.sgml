@@ -9,12 +9,10 @@ FlowIPProcessor
 
 </para>
 
-
 <!-- ##### SECTION See_Also ##### -->
 <para>
 
 </para>
-
 
 <!-- ##### SECTION Stability_Level ##### -->
 
@@ -24,8 +22,16 @@ FlowIPProcessor
 
 </para>
 
-@parent: 
-@priv: 
+
+<!-- ##### ARG FlowIPProcessor:resolve-to-addresses ##### -->
+<para>
+
+</para>
+
+<!-- ##### ARG FlowIPProcessor:resolve-to-names ##### -->
+<para>
+
+</para>
 
 <!-- ##### FUNCTION flow_ip_processor_new ##### -->
 <para>

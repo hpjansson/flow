@@ -9,12 +9,10 @@ FlowFileConnector
 
 </para>
 
-
 <!-- ##### SECTION See_Also ##### -->
 <para>
 
 </para>
-
 
 <!-- ##### SECTION Stability_Level ##### -->
 
@@ -24,8 +22,6 @@ FlowFileConnector
 
 </para>
 
-@parent: 
-@priv: 
 
 <!-- ##### FUNCTION flow_file_connector_new ##### -->
 <para>

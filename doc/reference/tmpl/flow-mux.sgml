@@ -22,8 +22,6 @@ Element with one input pad and N output pads
 
 </para>
 
-@base: 
-@priv: 
 
 <!-- ##### FUNCTION flow_mux_new ##### -->
 <para>

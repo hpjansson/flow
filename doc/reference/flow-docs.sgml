@@ -19,6 +19,7 @@
 <!ENTITY FlowSimplexElement "xml/flow-simplex-element.xml">
 <!ENTITY FlowConnector "xml/flow-connector.xml">
 <!ENTITY FlowTcpConnector "xml/flow-tcp-connector.xml">
+<!ENTITY FlowTcpConnectOp "xml/flow-tcp-connect-op.xml">
 <!ENTITY FlowUserAdapter "xml/flow-user-adapter.xml">
 <!ENTITY FlowSplitter "xml/flow-splitter.xml">
 <!ENTITY FlowEmitter "xml/flow-emitter.xml">
@@ -29,10 +30,20 @@
 <!ENTITY FlowIPAddr "xml/flow-ip-addr.xml">
 <!ENTITY FlowIPService "xml/flow-ip-service.xml">
 <!ENTITY FlowIPResolver "xml/flow-ip-resolver.xml">
+<!ENTITY FlowPacket "xml/flow-packet.xml">
 <!ENTITY FlowPacketQueue "xml/flow-packet-queue.xml">
 <!ENTITY FlowTcpListener "xml/flow-tcp-listener.xml">
 <!ENTITY FlowTcpIOListener "xml/flow-tcp-io-listener.xml">
 <!ENTITY FlowTlsTcpIOListener "xml/flow-tls-tcp-io-listener.xml">
+<!ENTITY FlowFileConnectOp "xml/flow-file-connect-op.xml">
+<!ENTITY FlowFileConnector "xml/flow-file-connector.xml">
+<!ENTITY FlowFileIO "xml/flow-file-io.xml">
+<!ENTITY FlowIPProcessor "xml/flow-ip-processor.xml">
+<!ENTITY FlowJoiner "xml/flow-joiner.xml">
+<!ENTITY FlowSplitter "xml/flow-splitter.xml">
+<!ENTITY FlowMux "xml/flow-mux.xml">
+<!ENTITY FlowDemux "xml/flow-demux.xml">
+<!ENTITY FlowMuxEvent "xml/flow-mux-event.xml">
 
 <!ENTITY version SYSTEM "version.xml">
 <!ENTITY index-Object-Tree SYSTEM "xml/tree_index.sgml">
@@ -49,6 +60,7 @@
     <chapter>
       <title>Convenience I/O Classes</title>
       <xi:include href="xml/flow-io.xml"/>
+      <xi:include href="xml/flow-file-io.xml"/>
       <xi:include href="xml/flow-tcp-io.xml"/>
       <xi:include href="xml/flow-tcp-io-listener.xml"/>
       <xi:include href="xml/flow-tls-tcp-io.xml"/>
@@ -58,17 +70,22 @@
     <chapter>
       <title>Internet Protocol</title>
       <xi:include href="xml/flow-ip-addr.xml"/>
-      <xi:include href="xml/flow-ip-resolver.xml"/>
       <xi:include href="xml/flow-ip-service.xml"/>
+      <xi:include href="xml/flow-ip-resolver.xml"/>
       <xi:include href="xml/flow-tcp-connector.xml"/>
       <xi:include href="xml/flow-tcp-listener.xml"/>
     </chapter>
 
     <chapter>
       <title>Miscellaneous Elements</title>
+      <xi:include href="xml/flow-user-adapter.xml"/>
       <xi:include href="xml/flow-tls-protocol.xml"/>
       <xi:include href="xml/flow-destructor.xml"/>
-      <xi:include href="xml/flow-user-adapter.xml"/>
+      <xi:include href="xml/flow-ip-processor.xml"/>
+      <xi:include href="xml/flow-mux.xml"/>
+      <xi:include href="xml/flow-demux.xml"/>
+      <xi:include href="xml/flow-mux-serializer.xml"/>
+      <xi:include href="xml/flow-mux-deserializer.xml"/>
     </chapter>
 
     <chapter>
@@ -98,13 +115,17 @@
       <xi:include href="xml/flow-anonymous-event.xml"/>
       <xi:include href="xml/flow-detailed-event.xml"/>
       <xi:include href="xml/flow-property-event.xml"/>
+      <xi:include href="xml/flow-mux-event.xml"/>
       <xi:include href="xml/flow-position.xml"/>
       <xi:include href="xml/flow-segment-request.xml"/>
+      <xi:include href="xml/flow-file-connect-op.xml"/>
+      <xi:include href="xml/flow-tcp-connect-op.xml"/>
       <xi:include href="xml/flow-event-codes.xml"/>
     </chapter>
 
     <chapter>
       <title>Utilities</title>
+      <xi:include href="xml/flow-element-util.xml"/>
       <xi:include href="xml/flow-gobject-util.xml"/>
       <xi:include href="xml/flow-context-mgmt.xml"/>
       <xi:include href="xml/flow-util.xml"/>

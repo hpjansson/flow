@@ -22,8 +22,6 @@ Element with N input pads and one output pad
 
 </para>
 
-@base: 
-@priv: 
 
 <!-- ##### FUNCTION flow_demux_new ##### -->
 <para>

@@ -9,12 +9,10 @@ FlowTcpConnectOp
 
 </para>
 
-
 <!-- ##### SECTION See_Also ##### -->
 <para>
 
 </para>
-
 
 <!-- ##### SECTION Stability_Level ##### -->
 
@@ -24,8 +22,16 @@ FlowTcpConnectOp
 
 </para>
 
-@parent: 
-@priv: 
+
+<!-- ##### ARG FlowTcpConnectOp:local-port ##### -->
+<para>
+
+</para>
+
+<!-- ##### ARG FlowTcpConnectOp:remote-ip-service ##### -->
+<para>
+
+</para>
 
 <!-- ##### FUNCTION flow_tcp_connect_op_new ##### -->
 <para>
