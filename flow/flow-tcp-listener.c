@@ -228,10 +228,13 @@ flow_tcp_listener_set_local_service (FlowTcpListener *tcp_listener, FlowIPServic
   {
     gpointer  object;
 
-    if (!flow_ip_service_find_address (ip_service, FLOW_IP_ADDR_ANY_FAMILY))
+    if (!flow_ip_service_find_address (ip_service, FLOW_IP_ADDR_ANY_FAMILY) &&
+        flow_ip_service_have_name (ip_service))
     {
       /* If the caller didn't resolve the IP service, we try to look it up
-       * for him. This blocks. */
+       * for him. This blocks, using the current thread's Flow main context. Note
+       * that for the main thread, this is not the default GLib main context, so
+       * e.g. GUI callbacks won't fire. */
 
       flow_ip_service_sync_resolve (ip_service);
     }

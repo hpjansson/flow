@@ -564,13 +564,9 @@ flow_ip_addr_get_sockaddr (FlowIPAddr *ip_addr, FlowSockaddr *dest_sa, gint port
   gboolean  result;
 
   addr_str = flow_ip_addr_get_string (ip_addr);
-
-  if (addr_str)
-    result = flow_sockaddr_init (dest_sa, ip_addr->family, addr_str, port);
-  else
-    result = flow_sockaddr_init (dest_sa, FLOW_IP_ADDR_IPV4, NULL, 0);
-
+  result = flow_sockaddr_init (dest_sa, ip_addr ? ip_addr->family : FLOW_IP_ADDR_IPV4, addr_str, port);
   g_free (addr_str);
+
   return result;
 }
 
@@ -615,6 +611,8 @@ flow_ip_service_get_sockaddr (FlowIPService *ip_service, FlowSockaddr *dest_sa, 
 
   if (ip_addr)
     result = flow_ip_addr_get_sockaddr (ip_addr, dest_sa, flow_ip_service_get_port (ip_service));
+  else
+    result = flow_sockaddr_init (dest_sa, FLOW_IP_ADDR_IPV4, NULL, flow_ip_service_get_port (ip_service));
 
   free_object_list (ip_addr_list);
   return result;

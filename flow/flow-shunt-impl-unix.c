@@ -2561,11 +2561,15 @@ flow_shunt_impl_open_tcp_listener (FlowIPService *local_service)
 
     if (ip_addr)
     {
+      /* Passed-in service provided an IP to bind to */
+
       g_object_ref (local_service);
     }
     else
     {
       FlowIPService *new_local_service;
+
+      /* No IP; use passed-in port and quality, and bind to all interfaces */
 
       new_local_service = flow_ip_service_new ();
       flow_ip_service_set_port (new_local_service, flow_ip_service_get_port (local_service));
@@ -2576,16 +2580,19 @@ flow_shunt_impl_open_tcp_listener (FlowIPService *local_service)
   }
   else
   {
+    /* No information provided; use a random, OS-assigned port, and bind to
+     * all interfaces. */
+
     local_service = flow_ip_service_new ();
   }
 
   if (!ip_addr)
   {
+    /* No IP; Bind to all interfaces, use provided port */
+
     ip_addr = flow_ip_addr_new ();
     flow_ip_addr_set_string (ip_addr, "0.0.0.0");
-
     flow_ip_service_add_address (local_service, ip_addr);
-    flow_ip_service_set_port (local_service, 0);
   }
 
   tcp_listener_shunt->quality = flow_ip_service_get_quality (local_service);
