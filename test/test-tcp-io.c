@@ -70,7 +70,6 @@ static FlowTcpIO         *tcp_writer             = NULL;
 
 static GHashTable        *transfer_info_table    = NULL;
 
-static GMainLoop         *main_loop              = NULL;
 static gint               sockets_done           = 0;
 static gint               sockets_running        = 0;
 
@@ -261,7 +260,7 @@ lost_connection (FlowTcpIO *tcp_io)
   if (sockets_done >= SOCKETS_NUM && sockets_running == 0)
   {
     test_print ("quitting main loop!\n");
-    g_main_loop_quit (main_loop);
+    test_quit_main_loop ();
   }
 }
 
@@ -291,14 +290,16 @@ new_connection (void)
 static void
 long_test (void)
 {
+  guint id;
+
   test_print ("Long test begin\n");
 
-  g_timeout_add (250, (GSourceFunc) spawn_subthread, NULL);
-
+  id = g_timeout_add (250, (GSourceFunc) spawn_subthread, NULL);
   g_signal_connect (tcp_listener, "new-connection", (GCallback) new_connection, NULL);
 
-  main_loop = g_main_loop_new (g_main_context_default (), FALSE);
-  g_main_loop_run (main_loop);
+  test_run_main_loop ();
+
+  g_source_remove (id);
 
   test_print ("Long test end\n");
 }

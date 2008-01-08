@@ -68,7 +68,6 @@ static FlowTlsTcpIO         *tls_tcp_writer         = NULL;
 
 static GHashTable           *transfer_info_table    = NULL;
 
-static GMainLoop            *main_loop              = NULL;
 static gint                  sockets_done           = 0;
 static gint                  sockets_running        = 0;
 
@@ -275,7 +274,7 @@ lost_connection (FlowTlsTcpIO *tls_tcp_io)
   sockets_running--;
 
   if (sockets_done >= SOCKETS_NUM && sockets_running == 0)
-    g_main_loop_quit (main_loop);
+    test_quit_main_loop ();
 }
 
 static void
@@ -304,15 +303,18 @@ new_connection (void)
 static void
 long_test (void)
 {
+  guint id [2];
+
   test_print ("Long test begin\n");
 
-  g_timeout_add (250, (GSourceFunc) spawn_subthread, NULL);
-  g_timeout_add (5000, (GSourceFunc) print_status, NULL);
-
+  id [0] = g_timeout_add (250, (GSourceFunc) spawn_subthread, NULL);
+  id [1] = g_timeout_add (5000, (GSourceFunc) print_status, NULL);
   g_signal_connect (tls_tcp_listener, "new-connection", (GCallback) new_connection, NULL);
 
-  main_loop = g_main_loop_new (g_main_context_default (), FALSE);
-  g_main_loop_run (main_loop);
+  test_run_main_loop ();
+
+  g_source_remove (id [0]);
+  g_source_remove (id [1]);
 
   test_print ("Long test end\n");
 }

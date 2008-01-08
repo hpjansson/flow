@@ -60,8 +60,6 @@ TransferInfo;
 
 static guchar            *buffer                 = NULL;
 
-static GMainLoop         *main_loop              = NULL;
-
 static GStaticMutex       global_mutex           = G_STATIC_MUTEX_INIT;
 
 static gint               threads_started        = 0;
@@ -192,7 +190,7 @@ spawn_subthread (void)
 
   if (threads_ended == THREADS_TOTAL)
   {
-    g_main_loop_quit (main_loop);
+    test_quit_main_loop ();
     run_again = FALSE;
   }
   else if (threads_started == THREADS_TOTAL ||
@@ -217,12 +215,13 @@ spawn_subthread (void)
 static void
 long_test (void)
 {
+  guint id;
+
   test_print ("Long test begin\n");
 
-  g_timeout_add (250, (GSourceFunc) spawn_subthread, NULL);
-
-  main_loop = g_main_loop_new (g_main_context_default (), FALSE);
-  g_main_loop_run (main_loop);
+  id = g_timeout_add (250, (GSourceFunc) spawn_subthread, NULL);
+  test_run_main_loop ();
+  g_source_remove (id);
 
   test_print ("Long test end\n");
 }
