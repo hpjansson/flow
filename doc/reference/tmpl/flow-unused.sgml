@@ -81,6 +81,14 @@
 @mux: 
 @input_pad: 
 
+<!-- ##### FUNCTION flow_segment_request_set_length ##### -->
+<para>
+
+</para>
+
+@segment_request: 
+@length: 
+
 <!-- ##### FUNCTION flow_set_main_context_for_thread ##### -->
 <para>
 

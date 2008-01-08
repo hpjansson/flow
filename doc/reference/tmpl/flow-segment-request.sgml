@@ -46,12 +46,3 @@ Request data from a seekable stream
 @Returns: 
 
 
-<!-- ##### FUNCTION flow_segment_request_set_length ##### -->
-<para>
-
-</para>
-
-@segment_request: 
-@length: 
-
-

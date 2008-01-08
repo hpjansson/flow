@@ -28,7 +28,32 @@ FlowFileConnectOp
 
 </para>
 
+<!-- ##### ARG FlowFileConnectOp:create ##### -->
+<para>
+
+</para>
+
+<!-- ##### ARG FlowFileConnectOp:create-mode-group ##### -->
+<para>
+
+</para>
+
+<!-- ##### ARG FlowFileConnectOp:create-mode-others ##### -->
+<para>
+
+</para>
+
+<!-- ##### ARG FlowFileConnectOp:create-mode-user ##### -->
+<para>
+
+</para>
+
 <!-- ##### ARG FlowFileConnectOp:path ##### -->
+<para>
+
+</para>
+
+<!-- ##### ARG FlowFileConnectOp:replace ##### -->
 <para>
 
 </para>
@@ -40,6 +65,11 @@ FlowFileConnectOp
 
 @path: 
 @access_mode: 
+@do_create: 
+@do_replace: 
+@create_mode_user: 
+@create_mode_group: 
+@create_mode_others: 
 @Returns: 
 
 
