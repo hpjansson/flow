@@ -59,9 +59,19 @@ struct _FlowFileConnectOpClass
   void (*_pad_4) (void);
 };
 
-FlowFileConnectOp *flow_file_connect_op_new             (const gchar *path, FlowAccessMode access_mode);
+FlowFileConnectOp *flow_file_connect_op_new              (const gchar *path, FlowAccessMode access_mode,
+                                                          gboolean do_create, gboolean do_replace,
+                                                          FlowAccessMode create_mode_user,
+                                                          FlowAccessMode create_mode_group,
+                                                          FlowAccessMode create_mode_others);
 
-const gchar       *flow_file_connect_op_get_path        (FlowFileConnectOp *file_connect_op);
-FlowAccessMode     flow_file_connect_op_get_access_mode (FlowFileConnectOp *file_connect_op);
+const gchar       *flow_file_connect_op_get_path         (FlowFileConnectOp *file_connect_op);
+FlowAccessMode     flow_file_connect_op_get_access_mode  (FlowFileConnectOp *file_connect_op);
+gboolean           flow_file_connect_op_get_create       (FlowFileConnectOp *file_connect_op);
+gboolean           flow_file_connect_op_get_replace      (FlowFileConnectOp *file_connect_op);
+void               flow_file_connect_op_get_create_modes (FlowFileConnectOp *file_connect_op,
+                                                          FlowAccessMode *create_mode_user,
+                                                          FlowAccessMode *create_mode_group,
+                                                          FlowAccessMode *create_mode_others);
 
 #endif /* _FLOW_FILE_CONNECT_OP_H */

@@ -103,17 +103,30 @@ connect_to_path (FlowFileConnector *file_connector)
     return;
   }
 
-#if 0
-  priv->shunt = flow_open_file (flow_file_connect_op_get_path (priv->op),
-                                flow_file_connect_op_get_access_mode (priv->op));
-#else
-  priv->shunt = flow_create_file (flow_file_connect_op_get_path (priv->op),
-                                  flow_file_connect_op_get_access_mode (priv->op),
-                                  TRUE,
-                                  FLOW_READ_ACCESS | FLOW_WRITE_ACCESS,
-                                  FLOW_NO_ACCESS,
-                                  FLOW_NO_ACCESS);
-#endif
+  if (flow_file_connect_op_get_create (priv->op))
+  {
+    FlowAccessMode create_mode_user;
+    FlowAccessMode create_mode_group;
+    FlowAccessMode create_mode_others;
+
+    flow_file_connect_op_get_create_modes (priv->op,
+                                           &create_mode_user,
+                                           &create_mode_group,
+                                           &create_mode_others);
+
+    priv->shunt = flow_create_file (flow_file_connect_op_get_path (priv->op),
+                                    flow_file_connect_op_get_access_mode (priv->op),
+                                    flow_file_connect_op_get_replace (priv->op),
+                                    create_mode_user,
+                                    create_mode_group,
+                                    create_mode_others);
+  }
+  else
+  {
+    priv->shunt = flow_open_file (flow_file_connect_op_get_path (priv->op),
+                                  flow_file_connect_op_get_access_mode (priv->op));
+  }
+
   setup_shunt (file_connector);
   flow_connector_set_state_internal (FLOW_CONNECTOR (file_connector), FLOW_CONNECTIVITY_CONNECTING);
 }

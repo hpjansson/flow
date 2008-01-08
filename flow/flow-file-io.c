@@ -476,7 +476,36 @@ flow_file_io_open (FlowFileIO *file_io, const gchar *path, FlowAccessMode access
 
   g_return_if_fail (priv->connectivity == FLOW_CONNECTIVITY_DISCONNECTED);
 
-  file_connect_op = flow_file_connect_op_new (path, access_mode);
+  file_connect_op = flow_file_connect_op_new (path, access_mode, FALSE, FALSE,
+                                              FLOW_NO_ACCESS, FLOW_NO_ACCESS, FLOW_NO_ACCESS);
+  flow_io_write_object (io, file_connect_op);
+  g_object_unref (file_connect_op);
+
+  write_stream_begin (file_io);
+
+  set_connectivity (file_io, FLOW_CONNECTIVITY_CONNECTING);
+}
+
+void
+flow_file_io_create (FlowFileIO *file_io, const gchar *path, FlowAccessMode access_mode,
+                     gboolean replace_existing, FlowAccessMode create_mode_user,
+                     FlowAccessMode create_mode_group, FlowAccessMode create_mode_others)
+{
+  FlowFileIOPrivate *priv;
+  FlowIO            *io;
+  FlowFileConnectOp *file_connect_op;
+
+  g_return_if_fail (FLOW_IS_FILE_IO (file_io));
+  return_if_invalid_bin (file_io);
+
+  priv = file_io->priv;
+  io = FLOW_IO (file_io);
+
+  g_return_if_fail (priv->connectivity == FLOW_CONNECTIVITY_DISCONNECTED);
+
+  file_connect_op = flow_file_connect_op_new (path, access_mode, TRUE, replace_existing,
+                                              create_mode_user, create_mode_group,
+                                              create_mode_others);
   flow_io_write_object (io, file_connect_op);
   g_object_unref (file_connect_op);
 
@@ -565,7 +594,44 @@ flow_file_io_sync_open (FlowFileIO *file_io, const gchar *path, FlowAccessMode a
 
   g_return_val_if_fail (priv->connectivity == FLOW_CONNECTIVITY_DISCONNECTED, FALSE);
 
-  file_connect_op = flow_file_connect_op_new (path, access_mode);
+  file_connect_op = flow_file_connect_op_new (path, access_mode, FALSE, FALSE,
+                                              FLOW_NO_ACCESS, FLOW_NO_ACCESS, FLOW_NO_ACCESS);
+  flow_io_write_object (io, file_connect_op);
+  g_object_unref (file_connect_op);
+
+  write_stream_begin (file_io);
+
+  set_connectivity (file_io, FLOW_CONNECTIVITY_CONNECTING);
+
+  while (priv->connectivity == FLOW_CONNECTIVITY_CONNECTING)
+  {
+    flow_user_adapter_wait_for_input (priv->user_adapter);
+    flow_io_check_events (io);
+  }
+
+  return priv->connectivity == FLOW_CONNECTIVITY_CONNECTED ? TRUE : FALSE;
+}
+
+gboolean
+flow_file_io_sync_create (FlowFileIO *file_io, const gchar *path, FlowAccessMode access_mode,
+                          gboolean replace_existing, FlowAccessMode create_mode_user,
+                          FlowAccessMode create_mode_group, FlowAccessMode create_mode_others)
+{
+  FlowFileIOPrivate *priv;
+  FlowIO            *io;
+  FlowFileConnectOp *file_connect_op;
+
+  g_return_val_if_fail (FLOW_IS_FILE_IO (file_io), FALSE);
+  return_val_if_invalid_bin (file_io, FALSE);
+
+  priv = file_io->priv;
+  io = FLOW_IO (file_io);
+
+  g_return_val_if_fail (priv->connectivity == FLOW_CONNECTIVITY_DISCONNECTED, FALSE);
+
+  file_connect_op = flow_file_connect_op_new (path, access_mode, TRUE, replace_existing,
+                                              create_mode_user, create_mode_group,
+                                              create_mode_others);
   flow_io_write_object (io, file_connect_op);
   g_object_unref (file_connect_op);
 

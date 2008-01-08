@@ -29,6 +29,7 @@
 #include "flow-gobject-util.h"
 #include "flow-shunt.h"
 #include "flow-event.h"
+#include "flow-enum-types.h"
 #include "flow-file-connect-op.h"
 
 /* --- FlowFileConnectOp private data --- */
@@ -37,6 +38,13 @@ typedef struct
 {
   gchar          *path;
   FlowAccessMode  access_mode;
+
+  guint           do_create  : 1;
+  guint           do_replace : 1;
+
+  FlowAccessMode  create_mode_user;
+  FlowAccessMode  create_mode_group;
+  FlowAccessMode  create_mode_others;
 }
 FlowFileConnectOpPrivate;
 
@@ -75,6 +83,86 @@ flow_file_connect_op_set_access_mode_internal (FlowFileConnectOp *file_connect_o
   priv->access_mode = access_mode;
 }
 
+static gboolean
+flow_file_connect_op_get_create_internal (FlowFileConnectOp *file_connect_op)
+{
+  FlowFileConnectOpPrivate *priv = file_connect_op->priv;
+
+  return priv->do_create;
+}
+
+static void
+flow_file_connect_op_set_create_internal (FlowFileConnectOp *file_connect_op, gboolean do_create)
+{
+  FlowFileConnectOpPrivate *priv = file_connect_op->priv;
+
+  priv->do_create = do_create;
+}
+
+static gboolean
+flow_file_connect_op_get_replace_internal (FlowFileConnectOp *file_connect_op)
+{
+  FlowFileConnectOpPrivate *priv = file_connect_op->priv;
+
+  return priv->do_replace;
+}
+
+static void
+flow_file_connect_op_set_replace_internal (FlowFileConnectOp *file_connect_op, gboolean do_replace)
+{
+  FlowFileConnectOpPrivate *priv = file_connect_op->priv;
+
+  priv->do_replace = do_replace;
+}
+
+static FlowAccessMode
+flow_file_connect_op_get_create_mode_user_internal (FlowFileConnectOp *file_connect_op)
+{
+  FlowFileConnectOpPrivate *priv = file_connect_op->priv;
+
+  return priv->create_mode_user;
+}
+
+static void
+flow_file_connect_op_set_create_mode_user_internal (FlowFileConnectOp *file_connect_op, FlowAccessMode create_mode_user)
+{
+  FlowFileConnectOpPrivate *priv = file_connect_op->priv;
+
+  priv->create_mode_user = create_mode_user;
+}
+
+static FlowAccessMode
+flow_file_connect_op_get_create_mode_group_internal (FlowFileConnectOp *file_connect_op)
+{
+  FlowFileConnectOpPrivate *priv = file_connect_op->priv;
+
+  return priv->create_mode_group;
+}
+
+static void
+flow_file_connect_op_set_create_mode_group_internal (FlowFileConnectOp *file_connect_op, FlowAccessMode create_mode_group)
+{
+  FlowFileConnectOpPrivate *priv = file_connect_op->priv;
+
+  priv->create_mode_group = create_mode_group;
+}
+
+static FlowAccessMode
+flow_file_connect_op_get_create_mode_others_internal (FlowFileConnectOp *file_connect_op)
+{
+  FlowFileConnectOpPrivate *priv = file_connect_op->priv;
+
+  return priv->create_mode_others;
+}
+
+static void
+flow_file_connect_op_set_create_mode_others_internal (FlowFileConnectOp *file_connect_op, FlowAccessMode create_mode_others)
+{
+  FlowFileConnectOpPrivate *priv = file_connect_op->priv;
+
+  priv->create_mode_others = create_mode_others;
+}
+
 FLOW_GOBJECT_PROPERTIES_BEGIN (flow_file_connect_op)
 FLOW_GOBJECT_PROPERTY_STRING  ("path", "Local Path", "Path to local file to open",
                                G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY,
@@ -86,6 +174,34 @@ FLOW_GOBJECT_PROPERTY_INT     (G_TYPE_UINT, "access-mode", "Access Mode", "File 
                                flow_file_connect_op_get_access_mode_internal,
                                flow_file_connect_op_set_access_mode_internal,
                                0, G_MAXUINT, 0)
+FLOW_GOBJECT_PROPERTY_BOOLEAN ("replace", "Replace", "Whether to replace file if it exists",
+                               G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY,
+                               flow_file_connect_op_get_replace_internal,
+                               flow_file_connect_op_set_replace_internal,
+                               FALSE)
+FLOW_GOBJECT_PROPERTY_BOOLEAN ("create", "Create", "Whether to create file if it does not exist",
+                               G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY,
+                               flow_file_connect_op_get_create_internal,
+                               flow_file_connect_op_set_create_internal,
+                               FALSE)
+FLOW_GOBJECT_PROPERTY_FLAGS   ("create-mode-user", "Create Mode User", "New file permissions for owning user",
+                               G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY,
+                               flow_file_connect_op_get_create_mode_user_internal,
+                               flow_file_connect_op_set_create_mode_user_internal,
+                               FLOW_READ_ACCESS | FLOW_WRITE_ACCESS,
+                               flow_access_mode_get_type)
+FLOW_GOBJECT_PROPERTY_FLAGS   ("create-mode-group", "Create Mode Group", "New file permissions for owning group",
+                               G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY,
+                               flow_file_connect_op_get_create_mode_group_internal,
+                               flow_file_connect_op_set_create_mode_group_internal,
+                               FLOW_READ_ACCESS | FLOW_WRITE_ACCESS,
+                               flow_access_mode_get_type)
+FLOW_GOBJECT_PROPERTY_FLAGS   ("create-mode-others", "Create Mode Others", "New file permissions for other users",
+                               G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY,
+                               flow_file_connect_op_get_create_mode_others_internal,
+                               flow_file_connect_op_set_create_mode_others_internal,
+                               FLOW_READ_ACCESS | FLOW_WRITE_ACCESS,
+                               flow_access_mode_get_type)
 FLOW_GOBJECT_PROPERTIES_END   ()
 
 /* --- FlowFileConnectOp definition --- */
@@ -185,14 +301,23 @@ flow_file_connect_op_finalize (FlowFileConnectOp *file_connect_op)
 /* --- FlowFileConnectOp public API --- */
 
 FlowFileConnectOp *
-flow_file_connect_op_new (const gchar *path, FlowAccessMode access_mode)
+flow_file_connect_op_new (const gchar *path, FlowAccessMode access_mode,
+                          gboolean do_create, gboolean do_replace,
+                          FlowAccessMode create_mode_user,
+                          FlowAccessMode create_mode_group,
+                          FlowAccessMode create_mode_others)
 {
   g_return_val_if_fail (path != NULL, NULL);
   g_return_val_if_fail (access_mode != FLOW_NO_ACCESS, NULL);
 
   return g_object_new (FLOW_TYPE_FILE_CONNECT_OP,
-                       "path", path,
-                       "access-mode", access_mode,
+                       "path",               path,
+                       "access-mode",        access_mode,
+                       "create",             do_create,
+                       "replace",            do_replace,
+                       "create-mode-user",   create_mode_user,
+                       "create-mode-group",  create_mode_group,
+                       "create-mode-others", create_mode_others,
                        NULL);
 }
 
@@ -216,4 +341,46 @@ flow_file_connect_op_get_access_mode (FlowFileConnectOp *file_connect_op)
 
   priv = file_connect_op->priv;
   return priv->access_mode;
+}
+
+gboolean
+flow_file_connect_op_get_create (FlowFileConnectOp *file_connect_op)
+{
+  FlowFileConnectOpPrivate *priv;
+
+  g_return_val_if_fail (FLOW_IS_FILE_CONNECT_OP (file_connect_op), FALSE);
+
+  priv = file_connect_op->priv;
+  return priv->do_create;
+}
+
+gboolean
+flow_file_connect_op_get_replace (FlowFileConnectOp *file_connect_op)
+{
+  FlowFileConnectOpPrivate *priv;
+
+  g_return_val_if_fail (FLOW_IS_FILE_CONNECT_OP (file_connect_op), FALSE);
+
+  priv = file_connect_op->priv;
+  return priv->do_replace;
+}
+
+void
+flow_file_connect_op_get_create_modes (FlowFileConnectOp *file_connect_op,
+                                       FlowAccessMode *create_mode_user,
+                                       FlowAccessMode *create_mode_group,
+                                       FlowAccessMode *create_mode_others)
+{
+  FlowFileConnectOpPrivate *priv;
+
+  g_return_if_fail (FLOW_IS_FILE_CONNECT_OP (file_connect_op));
+
+  priv = file_connect_op->priv;
+
+  if (create_mode_user)
+    *create_mode_user = priv->create_mode_user;
+  if (create_mode_group)
+    *create_mode_group = priv->create_mode_group;
+  if (create_mode_others)
+    *create_mode_others = priv->create_mode_others;
 }
