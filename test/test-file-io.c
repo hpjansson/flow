@@ -82,7 +82,10 @@ subthread_main (void)
   /* FIXME: Add thread ID to file name */
   file_name = g_strdup_printf ("test-file-io-scratch-%08x", g_random_int ());
   file_io = flow_file_io_new ();
-  result = flow_file_io_sync_open (file_io, file_name, FLOW_READ_ACCESS | FLOW_WRITE_ACCESS);
+  result = flow_file_io_sync_create (file_io, file_name, FLOW_READ_ACCESS | FLOW_WRITE_ACCESS, TRUE,
+                                     FLOW_READ_ACCESS | FLOW_WRITE_ACCESS,
+                                     FLOW_NO_ACCESS,
+                                     FLOW_NO_ACCESS);
 
   if (!result)
   {
