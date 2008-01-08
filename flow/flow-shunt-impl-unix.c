@@ -1966,9 +1966,10 @@ file_shunt_open (FileShuntParams *params)
     flags |= O_CREAT;
   if (params->destructive)
     flags |= O_TRUNC;
+
   if (params->proc_access & FLOW_READ_ACCESS)
   {
-    if (params->proc_access & FLOW_WRITE_ACCESS)
+    if (params->proc_access & FLOW_WRITE_ACCESS || params->destructive || params->create)
       flags |= O_RDWR;
     else
       flags |= O_RDONLY;
