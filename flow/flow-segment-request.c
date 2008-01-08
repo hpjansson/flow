@@ -55,7 +55,7 @@ flow_segment_request_set_length_internal (FlowSegmentRequest *segment_request, g
 
 FLOW_GOBJECT_PROPERTIES_BEGIN (flow_segment_request)
 FLOW_GOBJECT_PROPERTY_INT     (G_TYPE_INT64, "length", "Length", "Number of bytes to read",
-                               G_PARAM_READWRITE,
+                               G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY,
                                flow_segment_request_get_length_internal, flow_segment_request_set_length_internal,
                                G_MININT64, G_MAXINT64, -1)
 FLOW_GOBJECT_PROPERTIES_END   ()
@@ -113,12 +113,4 @@ flow_segment_request_get_length (FlowSegmentRequest *segment_request)
 
   g_object_get (segment_request, "length", &length, NULL);
   return length;
-}
-
-void
-flow_segment_request_set_length (FlowSegmentRequest *segment_request, gint64 length)
-{
-  g_return_if_fail (FLOW_IS_SEGMENT_REQUEST (segment_request));
-
-  g_object_set (segment_request, "length", length, NULL);
 }

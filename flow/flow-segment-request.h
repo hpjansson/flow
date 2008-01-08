@@ -64,7 +64,6 @@ struct _FlowSegmentRequestClass
 FlowSegmentRequest *flow_segment_request_new        (gint64 length);
 
 gint64              flow_segment_request_get_length (FlowSegmentRequest *segment_request);
-void                flow_segment_request_set_length (FlowSegmentRequest *segment_request, gint64 length);
 
 G_END_DECLS
 
