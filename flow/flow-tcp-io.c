@@ -262,7 +262,6 @@ flow_tcp_io_handle_input_object (FlowTcpIO *tcp_io, gpointer object)
 
       result = TRUE;
     }
-    /* FIXME: Do we really need this? */
     else if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_SEGMENT_BEGIN) ||
              flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_SEGMENT_END))
     {
