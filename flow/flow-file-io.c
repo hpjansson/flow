@@ -315,9 +315,6 @@ flow_file_io_prepare_read (FlowFileIO *file_io, gint request_len)
   if (priv->n_bytes_requested >= request_len)
     return;
 
-  /* FIXME: Maybe we have to send a FLOW_STREAM_BEGIN event first?
-   * See flow-io.c:ensure_downstream_open(). */
-
   n_bytes_to_request = request_len - priv->n_bytes_requested;
 
   segment_request = flow_segment_request_new (n_bytes_to_request);
