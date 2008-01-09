@@ -83,7 +83,6 @@ gboolean            flow_file_io_sync_create           (FlowFileIO *file_io, con
                                                         FlowAccessMode create_mode_group,
                                                         FlowAccessMode create_mode_others);
 void                flow_file_io_sync_close            (FlowFileIO *file_io);
-gboolean            flow_file_io_sync_seek_to          (FlowFileIO *file_io, goffset offset);
 
 gchar              *flow_file_io_get_path              (FlowFileIO *file_io);
 FlowConnectivity    flow_file_io_get_connectivity      (FlowFileIO *file_io);
