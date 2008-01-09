@@ -394,7 +394,7 @@ flow_ip_addr_is_loopback (FlowIPAddr *ip_addr)
 
     addr = GUINT32_FROM_BE (*((guint32 *) ip_addr->addr));
 
-    if ((addr & 0xFF000000) == 127 << 24)
+    if ((addr & 0xff000000) == 127 << 24)
       return TRUE;
   }
   else
@@ -420,7 +420,7 @@ flow_ip_addr_is_multicast (FlowIPAddr *ip_addr)
 
     addr = GUINT32_FROM_BE (*((guint32 *) ip_addr->addr));
 
-    if ((addr & 0xF0000000) == 0xE0000000)
+    if ((addr & 0xf0000000) == 0xe0000000)
       return TRUE;
   }
   else
@@ -441,7 +441,7 @@ flow_ip_addr_is_broadcast (FlowIPAddr *ip_addr)
 
     addr = GUINT32_FROM_BE (*((guint32 *) ip_addr->addr));
 
-    if (addr == 0xFFFFFFFF)
+    if (addr == 0xffffffff)
       return TRUE;
   }
 
@@ -459,10 +459,10 @@ flow_ip_addr_is_reserved (FlowIPAddr *ip_addr)
 
     addr = GUINT32_FROM_BE (*((guint32 *) ip_addr->addr));
 
-    if ((addr & 0xFFFF0000) == 0)
+    if ((addr & 0xffff0000) == 0)
       return TRUE;
 
-    if ((addr & 0xF8000000) == 0xF0000000)
+    if ((addr & 0xf8000000) == 0xf0000000)
       return TRUE;
   }
   else
@@ -533,13 +533,13 @@ flow_ip_addr_is_private (FlowIPAddr *ip_addr)
 
     addr = GUINT32_FROM_BE (*((guint32 *) ip_addr->addr));
 
-    if ((addr & 0xFF000000) == (10 << 24))  /* 10.0.0.0/8 */
+    if ((addr & 0xff000000) == (10 << 24))  /* 10.0.0.0/8 */
       return TRUE;
 
-    if ((addr & 0xFFF00000) == 0xAC100000)  /* 172.16.0.0/12 */
+    if ((addr & 0xfff00000) == 0xac100000)  /* 172.16.0.0/12 */
       return TRUE;
 
-    if ((addr & 0xFFFF0000) == 0xC0A80000)  /* 192.168.0.0/16 */
+    if ((addr & 0xffff0000) == 0xc0a80000)  /* 192.168.0.0/16 */
       return TRUE;
   }
   else
