@@ -397,8 +397,16 @@ flow_ip_addr_is_loopback (FlowIPAddr *ip_addr)
     if ((addr & 0xFF000000) == 127 << 24)
       return TRUE;
   }
+  else
+  {
+    const guint8 loopback_addr [16] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                                        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 };
 
-  /* TODO: IPv6 */
+    /* ::1 (loopback) */
+
+    if (!memcmp (ip_addr->addr, loopback_addr, 16))
+      return TRUE;
+  }
 
   return FALSE;
 }
@@ -415,8 +423,11 @@ flow_ip_addr_is_multicast (FlowIPAddr *ip_addr)
     if ((addr & 0xF0000000) == 0xE0000000)
       return TRUE;
   }
-
-  /* TODO: IPv6 */
+  else
+  {
+    if (ip_addr->addr [0] == 0xff)
+      return TRUE;
+  }
 
   return FALSE;
 }
@@ -434,7 +445,7 @@ flow_ip_addr_is_broadcast (FlowIPAddr *ip_addr)
       return TRUE;
   }
 
-  /* TODO: IPv6 */
+  /* Broadcast is not defined in IPv6; instead, multicast is used */
 
   return FALSE;
 }
@@ -454,8 +465,61 @@ flow_ip_addr_is_reserved (FlowIPAddr *ip_addr)
     if ((addr & 0xF8000000) == 0xF0000000)
       return TRUE;
   }
+  else
+  {
+    guint8 b, t;
 
-  /* TODO: IPv6 */
+    /* See http://www.iana.org/assignments/ipv6-address-space */
+
+    b = ip_addr->addr [0];
+
+    /* Exception for the loopback address, ::1 */
+    if (b == 0x00 && ip_addr->addr [15] != 0x01)
+      return TRUE;
+
+    if (b == 0x01)
+      return TRUE;
+
+    if ((b & 0xfe) == 0x02)
+      return TRUE;
+
+    if ((b & 0xfc) == 0x04)
+      return TRUE;
+
+    if ((b & 0xf8) == 0x08)
+      return TRUE;
+
+    if ((b & 0xf0) == 0x10)
+      return TRUE;
+
+    /* 2000::/3 is the global unicast block (the Internets) */
+
+    t = b & 0xe0;
+
+    if (t == 0x40 || t == 0x60 || t == 0x80 || t == 0xa0 || t == 0xc0)
+      return TRUE;
+
+    if ((b & 0xf0) == 0xe0)
+      return TRUE;
+
+    if ((b & 0xf8) == 0xf0)
+      return TRUE;
+
+    if ((b & 0xfc) == 0xf8)
+      return TRUE;
+
+    /* fc00::/7 is the unique local unicast block (site-local prefix) */
+
+    if (b == 0xfe && (ip_addr->addr [1] & 0x80) == 0x00)
+      return TRUE;
+
+    /* fe80::/10 is the link local unicast block (link-local prefix) */
+
+    if (b == 0xfe && (ip_addr->addr [1] & 0xc0) == 0xc0)
+      return TRUE;
+
+    /* ff00::/8 is the multicast block */
+  }
 
   return FALSE;
 }
@@ -469,17 +533,27 @@ flow_ip_addr_is_private (FlowIPAddr *ip_addr)
 
     addr = GUINT32_FROM_BE (*((guint32 *) ip_addr->addr));
 
-    if ((addr & 0xFF000000) == (10 << 24))
+    if ((addr & 0xFF000000) == (10 << 24))  /* 10.0.0.0/8 */
       return TRUE;
 
-    if ((addr & 0xFFF00000) == 0xAC100000)
+    if ((addr & 0xFFF00000) == 0xAC100000)  /* 172.16.0.0/12 */
       return TRUE;
 
-    if ((addr & 0xFFFF0000) == 0xC0A80000)
+    if ((addr & 0xFFFF0000) == 0xC0A80000)  /* 192.168.0.0/16 */
       return TRUE;
   }
+  else
+  {
+    /* Site-local prefix */
 
-  /* TODO: IPv6 */
+    if ((ip_addr->addr [0] & 0xfe) == 0xfc)
+      return TRUE;
+
+    /* Link-local prefix */
+
+    if (ip_addr->addr [0] == 0xfe && (ip_addr->addr [1] & 0xc0) == 0x80)
+      return TRUE;
+  }
 
   return FALSE;
 }
