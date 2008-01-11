@@ -22,20 +22,7 @@
  * Authors: Hans Petter Jansson <hpj@copyleft.no>
  */
 
-#define __USE_GNU 1
-
 #include "config.h"
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <signal.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/time.h>
-#include <fcntl.h>
-#include <glib/gprintf.h>
-
 #include <flow/flow.h>
 
 gint
@@ -50,10 +37,12 @@ main (gint argc, gchar *argv [])
   internet_interface = flow_ip_addr_get_internet_interface ();
   interface_list = flow_ip_addr_get_interfaces ();
 
+  if (!interface_list)
+    g_print ("No interfaces found.\n");
+
   for (l = interface_list; l; l = g_list_next (l))
   {
     FlowIPAddr       *this_interface = l->data;
-    FlowIPAddrFamily *family;
     gchar            *name;
 
     name = flow_ip_addr_get_string (this_interface);
@@ -76,5 +65,6 @@ main (gint argc, gchar *argv [])
   g_list_free (interface_list);
   if (internet_interface)
     g_object_unref (internet_interface);
+
   return 0;
 }
