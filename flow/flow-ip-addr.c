@@ -578,44 +578,14 @@ flow_ip_addr_get_internet_interface (void)
 {
   FlowIPAddr *ip_addr;
   FlowIPAddr *if_addr;
-  GList      *if_list;
-  GList      *l;
 
   /* Try fix.no's address */
   ip_addr = flow_ip_addr_new ();
   flow_ip_addr_set_string (ip_addr, "212.71.72.21");
 
   if_addr = flow_ip_addr_get_interface_to (ip_addr);
+
   g_object_unref (ip_addr);
-
-  if (if_addr && flow_ip_addr_is_internet (if_addr))
-    return if_addr;
-
-  if (if_addr)
-  {
-    g_object_unref (if_addr);
-    if_addr = NULL;
-  }
-
-  if_list = flow_ip_addr_get_interfaces ();
-  for (l = if_list; l; l = g_list_next (l))
-  {
-    ip_addr = l->data;
-
-    if (flow_ip_addr_is_internet (ip_addr))
-    {
-      if_addr = ip_addr;
-      break;
-    }
-  }
-
-  if (if_addr)
-    g_object_ref (if_addr);
-
-  for (l = if_list; l; l = g_list_next (l))
-    g_object_unref (l->data);
-
-  g_list_free (if_list);
   return if_addr;
 }
 
