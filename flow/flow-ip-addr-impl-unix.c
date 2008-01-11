@@ -113,7 +113,7 @@ flow_ip_addr_impl_get_interfaces (void)
   if (fd < 0)
     return NULL;
 
-  len     = 8 * sizeof (struct ifreq);
+  len     = 16 * sizeof (struct ifreq);
   lastlen = 0;
 
   for (;;)
