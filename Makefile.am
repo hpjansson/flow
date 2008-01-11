@@ -1,4 +1,4 @@
-SUBDIRS = flow test doc
+SUBDIRS = flow test example doc
 
 EXTRA_DIST =                \
         flow.spec           \

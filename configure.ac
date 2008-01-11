@@ -166,6 +166,7 @@ dnl --- Output ---
 AC_OUTPUT(Makefile                \
           flow/Makefile           \
           test/Makefile           \
+          example/Makefile        \
 	  doc/Makefile		  \
 	  doc/reference/Makefile  \
 	  doc/reference/version.xml \
