@@ -250,8 +250,8 @@ flow_io_init (FlowIO *io)
 
   priv->min_read_buffer = 1;
 
-  io->allow_blocking_read  = TRUE;
-  io->allow_blocking_write = TRUE;
+  io->read_stream_is_open  = TRUE;
+  io->write_stream_is_open = TRUE;
 
   g_signal_connect (io, "element-added",   G_CALLBACK (bin_changed), NULL);
   g_signal_connect (io, "element-removed", G_CALLBACK (bin_changed), NULL);
@@ -519,6 +519,9 @@ flow_io_read (FlowIO *io, gpointer dest_buffer, gint max_len)
   g_return_val_if_fail (max_len >= 0, 0);
   return_val_if_invalid_bin (io, 0);
 
+  /* Must check after invalid_bin test */
+  g_return_val_if_fail (io->read_stream_is_open == TRUE, 0);
+
   set_minimum_read_buffer (io, 1);
   prepare_read (io, max_len);
 
@@ -535,6 +538,9 @@ flow_io_read_exact (FlowIO *io, gpointer dest_buffer, gint exact_len)
   g_return_val_if_fail (dest_buffer != NULL, FALSE);
   g_return_val_if_fail (exact_len >= 0, FALSE);
   return_val_if_invalid_bin (io, FALSE);
+
+  /* Must check after invalid_bin test */
+  g_return_val_if_fail (io->read_stream_is_open == TRUE, FALSE);
 
   priv = io->priv;
 
@@ -588,6 +594,9 @@ flow_io_write (FlowIO *io, gpointer src_buffer, gint exact_len)
   g_return_if_fail (exact_len >= 0);
   return_if_invalid_bin (io);
 
+  /* Must check after invalid_bin test */
+  g_return_if_fail (io->write_stream_is_open == TRUE);
+
   priv = io->priv;
 
   ensure_downstream_open (io);
@@ -632,6 +641,9 @@ flow_io_flush (FlowIO *io)
 
   g_return_if_fail (FLOW_IS_IO (io));
   return_if_invalid_bin (io);
+
+  /* Must check after invalid_bin test */
+  g_return_if_fail (io->write_stream_is_open == TRUE);
 
   priv = io->priv;
 
@@ -757,6 +769,9 @@ flow_io_sync_read (FlowIO *io, gpointer dest_buffer, gint max_len)
   g_return_val_if_fail (max_len >= 0, 0);
   return_val_if_invalid_bin (io, 0);
 
+  /* Must check after invalid_bin test */
+  g_return_val_if_fail (io->read_stream_is_open == TRUE, 0);
+
   priv = io->priv;
 
   set_minimum_read_buffer (io, 1);
@@ -764,7 +779,7 @@ flow_io_sync_read (FlowIO *io, gpointer dest_buffer, gint max_len)
 
   packet_queue = flow_user_adapter_get_input_queue (priv->user_adapter);
 
-  while (!(result = try_read_data (io, dest_buffer, max_len)) && io->allow_blocking_read)
+  while (!(result = try_read_data (io, dest_buffer, max_len)) && io->read_stream_is_open)
   {
     flow_user_adapter_wait_for_input (priv->user_adapter);
   }
@@ -783,6 +798,9 @@ flow_io_sync_read_exact (FlowIO *io, gpointer dest_buffer, gint exact_len)
   g_return_val_if_fail (dest_buffer != NULL, FALSE);
   g_return_val_if_fail (exact_len >= 0, FALSE);
   return_val_if_invalid_bin (io, FALSE);
+
+  /* Must check after invalid_bin test */
+  g_return_val_if_fail (io->read_stream_is_open == TRUE, FALSE);
 
   priv = io->priv;
 
@@ -803,7 +821,7 @@ flow_io_sync_read_exact (FlowIO *io, gpointer dest_buffer, gint exact_len)
       continue;
     }
 
-    if (!io->allow_blocking_read)
+    if (!io->read_stream_is_open)
       break;
 
     flow_user_adapter_wait_for_input (priv->user_adapter);
@@ -829,7 +847,7 @@ flow_io_sync_read_object (FlowIO *io)
   set_minimum_read_buffer (io, 1);
   prepare_read (io, 0);
 
-  while (!try_read_object (io, &object) && io->allow_blocking_read)
+  while (!try_read_object (io, &object) && io->read_stream_is_open)
   {
     flow_user_adapter_wait_for_input (priv->user_adapter);
   }
@@ -848,6 +866,9 @@ flow_io_sync_write (FlowIO *io, gpointer src_buffer, gint exact_len)
   g_return_if_fail (exact_len >= 0);
   return_if_invalid_bin (io);
 
+  /* Must check after invalid_bin test */
+  g_return_if_fail (io->write_stream_is_open == TRUE);
+
   priv = io->priv;
 
   ensure_downstream_open (io);
@@ -858,7 +879,7 @@ flow_io_sync_write (FlowIO *io, gpointer src_buffer, gint exact_len)
   flow_packet_queue_push_bytes (packet_queue, src_buffer, exact_len);
   flow_user_adapter_push (priv->user_adapter);
 
-  while (io->allow_blocking_write && flow_packet_queue_get_length_packets (packet_queue))
+  while (io->write_stream_is_open && flow_packet_queue_get_length_packets (packet_queue))
   {
     flow_user_adapter_wait_for_output (priv->user_adapter);
   }
@@ -887,7 +908,7 @@ flow_io_sync_write_object (FlowIO *io, gpointer object)
 
   flow_user_adapter_push (priv->user_adapter);
 
-  while (io->allow_blocking_write && flow_packet_queue_get_length_packets (packet_queue))
+  while (io->write_stream_is_open && flow_packet_queue_get_length_packets (packet_queue))
   {
     flow_user_adapter_wait_for_output (priv->user_adapter);
   }
@@ -903,6 +924,9 @@ flow_io_sync_flush (FlowIO *io)
   g_return_if_fail (FLOW_IS_IO (io));
   return_if_invalid_bin (io);
 
+  /* Must check after invalid_bin test */
+  g_return_if_fail (io->write_stream_is_open == TRUE);
+
   priv = io->priv;
 
   ensure_downstream_open (io);
@@ -915,7 +939,7 @@ flow_io_sync_flush (FlowIO *io)
 
   flow_user_adapter_push (priv->user_adapter);
 
-  while (io->allow_blocking_write && flow_packet_queue_get_length_packets (packet_queue))
+  while (io->write_stream_is_open && flow_packet_queue_get_length_packets (packet_queue))
   {
     flow_user_adapter_wait_for_output (priv->user_adapter);
   }

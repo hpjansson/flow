@@ -47,8 +47,8 @@ struct _FlowIO
 
   /* --- Protected --- */
 
-  guint            allow_blocking_read     : 1;
-  guint            allow_blocking_write    : 1;
+  guint            read_stream_is_open     : 1;
+  guint            write_stream_is_open    : 1;
   guint            need_to_check_bin       : 1;
   guint            drop_read_data          : 1;
 

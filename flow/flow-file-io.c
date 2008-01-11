@@ -152,13 +152,13 @@ query_remote_connectivity (FlowFileIO *file_io)
      * interrupt it, or it might wait forever. Blocking reads are okay, since we'll get
      * the end-of-stream packet back through the read pipeline. */
 
-    io->allow_blocking_write = FALSE;
+    io->write_stream_is_open = FALSE;
     flow_user_adapter_interrupt_output (priv->user_adapter);
   }
   else
   {
-    io->allow_blocking_read  = TRUE;
-    io->allow_blocking_write = TRUE;
+    io->read_stream_is_open  = TRUE;
+    io->write_stream_is_open = TRUE;
   }
 }
 
@@ -239,8 +239,8 @@ flow_file_io_handle_input_object (FlowFileIO *file_io, gpointer object)
 
       g_assert (priv->connectivity != FLOW_CONNECTIVITY_CONNECTED);
 
-      io->allow_blocking_read  = TRUE;
-      io->allow_blocking_write = TRUE;
+      io->read_stream_is_open  = TRUE;
+      io->write_stream_is_open = TRUE;
 
       set_connectivity (file_io, FLOW_CONNECTIVITY_CONNECTED);
 
@@ -253,8 +253,8 @@ flow_file_io_handle_input_object (FlowFileIO *file_io, gpointer object)
 
       g_assert (priv->connectivity != FLOW_CONNECTIVITY_DISCONNECTED);
 
-      io->allow_blocking_read  = FALSE;
-      io->allow_blocking_write = FALSE;
+      io->read_stream_is_open  = FALSE;
+      io->write_stream_is_open = FALSE;
 
       set_connectivity (file_io, FLOW_CONNECTIVITY_DISCONNECTED);
 
@@ -421,8 +421,8 @@ flow_file_io_init (FlowFileIO *file_io)
   g_signal_connect_swapped (priv->file_connector, "connectivity-changed",
                             G_CALLBACK (remote_connectivity_changed), file_io);
 
-  io->allow_blocking_read  = FALSE;
-  io->allow_blocking_write = FALSE;
+  io->read_stream_is_open  = FALSE;
+  io->write_stream_is_open = FALSE;
 
   priv->connectivity      = FLOW_CONNECTIVITY_DISCONNECTED;
   priv->last_connectivity = FLOW_CONNECTIVITY_DISCONNECTED;
