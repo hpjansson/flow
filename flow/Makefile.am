@@ -155,8 +155,8 @@ EXTRA_DIST += \
 	flow-marshallers.list \
 	flow-enum-headers.h \
 	flow-common-impl-unix.c \
-	flow-ip-addr-impl-unix.c \
 	flow-ip-resolver-impl-unix.c \
+	flow-network-util-impl-unix.c \
 	flow-shunt-impl-unix.c
 
 # Don't build the library until we have built the header that it needs:
