@@ -33,6 +33,8 @@
 # include <winsock2.h>
 #endif
 
+G_BEGIN_DECLS
+
 #define FLOW_TYPE_IP_ADDR            (flow_ip_addr_get_type ())
 #define FLOW_IP_ADDR(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), FLOW_TYPE_IP_ADDR, FlowIPAddr))
 #define FLOW_IP_ADDR_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass), FLOW_TYPE_IP_ADDR, FlowIPAddrClass))
@@ -91,5 +93,7 @@ gboolean          flow_ip_addr_is_broadcast            (FlowIPAddr *ip_addr);
 gboolean          flow_ip_addr_is_reserved             (FlowIPAddr *ip_addr);
 gboolean          flow_ip_addr_is_private              (FlowIPAddr *ip_addr);
 gboolean          flow_ip_addr_is_internet             (FlowIPAddr *ip_addr);
+
+G_END_DECLS
 
 #endif /* _FLOW_IP_ADDR_H */
