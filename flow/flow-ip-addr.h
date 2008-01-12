@@ -92,8 +92,4 @@ gboolean          flow_ip_addr_is_reserved             (FlowIPAddr *ip_addr);
 gboolean          flow_ip_addr_is_private              (FlowIPAddr *ip_addr);
 gboolean          flow_ip_addr_is_internet             (FlowIPAddr *ip_addr);
 
-FlowIPAddr       *flow_ip_addr_get_internet_interface  (void);
-GList            *flow_ip_addr_get_interfaces          (void);
-FlowIPAddr       *flow_ip_addr_get_interface_to        (FlowIPAddr *ip_addr);
-
 #endif /* _FLOW_IP_ADDR_H */

@@ -34,8 +34,8 @@ main (gint argc, gchar *argv [])
 
   g_type_init ();
 
-  internet_interface = flow_ip_addr_get_internet_interface ();
-  interface_list = flow_ip_addr_get_interfaces ();
+  internet_interface = flow_get_internet_interface ();
+  interface_list = flow_get_network_interfaces ();
 
   if (!interface_list)
     g_print ("No interfaces found.\n");

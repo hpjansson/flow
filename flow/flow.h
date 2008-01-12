@@ -47,6 +47,7 @@
 #include <flow/flow-mux-deserializer.h>
 #include <flow/flow-mux-event.h>
 #include <flow/flow-mux-serializer.h>
+#include <flow/flow-network-util.h>
 #include <flow/flow-output-pad.h>
 #include <flow/flow-packet.h>
 #include <flow/flow-packet-queue.h>

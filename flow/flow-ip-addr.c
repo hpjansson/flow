@@ -29,14 +29,6 @@
 #include "flow-gobject-util.h"
 #include "flow-ip-addr.h"
 
-/* --- Implementation prototypes --- */
-
-static FlowIPAddr *flow_ip_addr_impl_get_interface_to (FlowIPAddr *ip_addr);
-static GList      *flow_ip_addr_impl_get_interfaces   (void);
-
-/* Select an implementation */
-#include "flow-ip-addr-impl-unix.c"
-
 /* --- Class properties --- */
 FLOW_GOBJECT_PROPERTIES_BEGIN (flow_ip_addr)
 FLOW_GOBJECT_PROPERTIES_END   ()
@@ -571,32 +563,4 @@ flow_ip_addr_is_internet (FlowIPAddr *ip_addr)
   }
 
   return FALSE;
-}
-
-FlowIPAddr *
-flow_ip_addr_get_internet_interface (void)
-{
-  FlowIPAddr *ip_addr;
-  FlowIPAddr *if_addr;
-
-  /* Try fix.no's address */
-  ip_addr = flow_ip_addr_new ();
-  flow_ip_addr_set_string (ip_addr, "212.71.72.21");
-
-  if_addr = flow_ip_addr_get_interface_to (ip_addr);
-
-  g_object_unref (ip_addr);
-  return if_addr;
-}
-
-FlowIPAddr *
-flow_ip_addr_get_interface_to (FlowIPAddr *ip_addr)
-{
-  return flow_ip_addr_impl_get_interface_to (ip_addr);
-}
-
-GList *
-flow_ip_addr_get_interfaces (void)
-{
-  return flow_ip_addr_impl_get_interfaces ();
 }

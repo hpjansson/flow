@@ -64,6 +64,7 @@ libflow_la_SOURCES = \
 	flow-mux-event.c \
 	flow-mux-serializer.c \
 	flow-mux-deserializer.c \
+	flow-network-util.c \
 	flow-output-pad.c \
 	flow-packet.c \
 	flow-packet-queue.c \
@@ -117,6 +118,7 @@ pkginclude_HEADERS = \
 	flow-mux-event.h \
 	flow-mux-deserializer.h \
 	flow-mux-serializer.h \
+	flow-network-util.h \
 	flow-output-pad.h \
 	flow-packet.h \
 	flow-packet-queue.h \

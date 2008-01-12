@@ -1,8 +1,8 @@
 /* -*- Mode: C; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
 
-/* flow-ip-addr-impl-unix.c - Internet address, Unix-like implementation.
+/* flow-network-util-impl-unix.c - Networking utils, Unix-like implementation.
  *
- * Copyright (C) 2006 Hans Petter Jansson
+ * Copyright (C) 2006-2008 Hans Petter Jansson
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,7 +22,7 @@
  * Authors: Hans Petter Jansson <hpj@copyleft.no>
  */
 
-#include "config.h"
+/* This file is not compiled on its own. It is #included in flow-network-util.c. */
 
 #include <stdlib.h>
 #include <string.h>
@@ -46,57 +46,12 @@
 # include <time.h>
 #endif
 
-#include "flow-gobject-util.h"
-#include "flow-ip-addr.h"
-
 #include "flow-common-impl-unix.h"
-
-static FlowIPAddr *
-flow_ip_addr_impl_get_interface_to (FlowIPAddr *ip_addr)
-{
-  gint          fd = -1;
-  FlowSockaddr  remote_sa;
-  FlowSockaddr  interface_sa;
-  guint         interface_sa_len = sizeof (interface_sa);  /* socklen_t */
-  FlowIPAddr   *interface_addr;
-
-  flow_init_sockets ();
-
-#ifdef HAVE_IPV6
-  fd = socket (ip_addr->family == FLOW_IP_ADDR_IPV4 ? AF_INET : AF_INET6,
-               SOCK_DGRAM, 0);
-#else
-  fd = socket (AF_INET, SOCK_DGRAM, 0);
-#endif
-
-  if (fd < 0)
-    goto error;
-
-  flow_ip_addr_get_sockaddr (ip_addr, &remote_sa, 0);
-
-  if (connect (fd, (struct sockaddr *) &remote_sa, flow_sockaddr_get_len (&remote_sa)) < 0)
-    goto error;
-
-  if (getsockname (fd, (struct sockaddr *) &interface_sa, &interface_sa_len) != 0)
-    goto error;
-
-  interface_addr = flow_ip_addr_new ();
-  flow_ip_addr_set_sockaddr (interface_addr, (FlowSockaddr *) &interface_sa);
-
-  flow_close_socket_fd (fd);
-  return interface_addr;
-
-error:
-  if (fd >= 0)
-    flow_close_socket_fd (fd);
-
-  return NULL;
-}
 
 #ifndef G_PLATFORM_WIN32  /* Unix-specific code follows */
 
 static GList *
-flow_ip_addr_impl_get_interfaces (void)
+flow_impl_get_network_interfaces (void)
 {
   GList         *interface_list = NULL;
   gint           len, lastlen;
@@ -187,7 +142,7 @@ flow_ip_addr_impl_get_interfaces (void)
 #else  /* Win32-specific code follows */
 
 static GList *
-flow_ip_addr_impl_get_interfaces (void)
+flow_impl_get_network_interfaces (void)
 {
   GList                  *interface_list = NULL;
   SOCKET                  s;
@@ -241,3 +196,45 @@ flow_ip_addr_impl_get_interfaces (void)
 }
 
 #endif
+
+static FlowIPAddr *
+flow_impl_get_network_interface_to (FlowIPAddr *ip_addr)
+{
+  gint          fd = -1;
+  FlowSockaddr  remote_sa;
+  FlowSockaddr  interface_sa;
+  guint         interface_sa_len = sizeof (interface_sa);  /* socklen_t */
+  FlowIPAddr   *interface_addr;
+
+  flow_init_sockets ();
+
+#ifdef HAVE_IPV6
+  fd = socket (ip_addr->family == FLOW_IP_ADDR_IPV4 ? AF_INET : AF_INET6,
+               SOCK_DGRAM, 0);
+#else
+  fd = socket (AF_INET, SOCK_DGRAM, 0);
+#endif
+
+  if (fd < 0)
+    goto error;
+
+  flow_ip_addr_get_sockaddr (ip_addr, &remote_sa, 0);
+
+  if (connect (fd, (struct sockaddr *) &remote_sa, flow_sockaddr_get_len (&remote_sa)) < 0)
+    goto error;
+
+  if (getsockname (fd, (struct sockaddr *) &interface_sa, &interface_sa_len) != 0)
+    goto error;
+
+  interface_addr = flow_ip_addr_new ();
+  flow_ip_addr_set_sockaddr (interface_addr, (FlowSockaddr *) &interface_sa);
+
+  flow_close_socket_fd (fd);
+  return interface_addr;
+
+error:
+  if (fd >= 0)
+    flow_close_socket_fd (fd);
+
+  return NULL;
+}
