@@ -33,6 +33,29 @@ static GList      *flow_impl_get_network_interfaces   (void);
 /* Select an implementation */
 #include "flow-network-util-impl-unix.c"
 
+static FlowIPAddrFamily preferred_ip_addr_family       = FLOW_IP_ADDR_IPV4;
+static GStaticMutex     preferred_ip_addr_family_mutex = G_STATIC_MUTEX_INIT;
+
+FlowIPAddrFamily
+flow_get_preferred_ip_addr_family (void)
+{
+  FlowIPAddrFamily family;
+
+  g_static_mutex_lock (&preferred_ip_addr_family_mutex);
+  family = preferred_ip_addr_family;
+  g_static_mutex_unlock (&preferred_ip_addr_family_mutex);
+
+  return family;
+}
+
+void
+flow_set_preferred_ip_addr_family (FlowIPAddrFamily family)
+{
+  g_static_mutex_lock (&preferred_ip_addr_family_mutex);
+  preferred_ip_addr_family = family;
+  g_static_mutex_unlock (&preferred_ip_addr_family_mutex);
+}
+
 GList *
 flow_get_network_interfaces (void)
 {
@@ -47,18 +70,39 @@ flow_get_network_interface_to (FlowIPAddr *ip_addr)
   return flow_impl_get_network_interface_to (ip_addr);
 }
 
+static FlowIPAddr *
+get_internet_interface (FlowIPAddr *scratch_addr, FlowIPAddrFamily family)
+{
+  if (family == FLOW_IP_ADDR_IPV4)
+  {
+    /* Any IPv4 Internet address will do. We use fix.no's address. */
+    flow_ip_addr_set_string (scratch_addr, "212.71.72.21");
+  }
+  else
+  {
+    /* For IPv6, use an example address */
+    flow_ip_addr_set_string (scratch_addr, "2001::");
+  }
+
+  return flow_get_network_interface_to (scratch_addr);
+}
+
 FlowIPAddr *
 flow_get_internet_interface (void)
 {
-  FlowIPAddr *ip_addr;
-  FlowIPAddr *if_addr;
+  FlowIPAddr       *ip_addr;
+  FlowIPAddr       *if_addr;
+  FlowIPAddrFamily  family;
 
-  /* Any Internet address will do. We use fix.no's address. */
-
+  family = flow_get_preferred_ip_addr_family ();
   ip_addr = flow_ip_addr_new ();
-  flow_ip_addr_set_string (ip_addr, "212.71.72.21");
 
-  if_addr = flow_get_network_interface_to (ip_addr);
+  if_addr = get_internet_interface (ip_addr, family);
+  if (!if_addr)
+  {
+    if_addr = get_internet_interface (ip_addr, family == FLOW_IP_ADDR_IPV4 ?
+                                      FLOW_IP_ADDR_IPV6 : FLOW_IP_ADDR_IPV4);
+  }
 
   g_object_unref (ip_addr);
   return if_addr;

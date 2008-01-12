@@ -25,16 +25,45 @@
 #include "config.h"
 #include <flow/flow.h>
 
+static void
+print_internet_interface (FlowIPAddrFamily family)
+{
+  FlowIPAddr *internet_interface;
+
+  flow_set_preferred_ip_addr_family (family);
+
+  internet_interface = flow_get_internet_interface ();
+
+  if (internet_interface)
+  {
+    gchar *name = flow_ip_addr_get_string (internet_interface);
+    g_print ("%s is the Internet interface ", name);
+    g_free (name);
+  }
+  else
+  {
+    g_print ("No Internet interface ");
+  }
+
+  if (family == FLOW_IP_ADDR_IPV4)
+    g_print ("(IPv4 preference).\n");
+  else
+    g_print ("(IPv6 preference).\n");
+
+  if (internet_interface)
+    g_object_unref (internet_interface);
+}
+
 gint
 main (gint argc, gchar *argv [])
 {
-  GList      *interface_list;
-  FlowIPAddr *internet_interface;
-  GList      *l;
+  GList *interface_list;
+  GList *l;
 
   g_type_init ();
 
-  internet_interface = flow_get_internet_interface ();
+  /* List active interfaces */
+
   interface_list = flow_get_network_interfaces ();
 
   if (!interface_list)
@@ -42,8 +71,8 @@ main (gint argc, gchar *argv [])
 
   for (l = interface_list; l; l = g_list_next (l))
   {
-    FlowIPAddr       *this_interface = l->data;
-    gchar            *name;
+    FlowIPAddr *this_interface = l->data;
+    gchar      *name;
 
     name = flow_ip_addr_get_string (this_interface);
 
@@ -53,18 +82,14 @@ main (gint argc, gchar *argv [])
     g_object_unref (this_interface);
   }
 
-  if (internet_interface)
-  {
-    gchar *name = flow_ip_addr_get_string (internet_interface);
-    g_print ("---\n%s is the Internet interface.\n", name);
-    g_free (name);
-  }
-  else
-    g_print ("---\nNo Internet interface.\n");
-
   g_list_free (interface_list);
-  if (internet_interface)
-    g_object_unref (internet_interface);
+
+  /* List Internet interfaces */
+
+  g_print ("---\n");
+
+  print_internet_interface (FLOW_IP_ADDR_IPV4);
+  print_internet_interface (FLOW_IP_ADDR_IPV6);
 
   return 0;
 }

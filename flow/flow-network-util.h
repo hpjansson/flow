@@ -29,9 +29,12 @@
 
 G_BEGIN_DECLS
 
-GList            *flow_get_network_interfaces   (void);
-FlowIPAddr       *flow_get_network_interface_to (FlowIPAddr *ip_addr);
-FlowIPAddr       *flow_get_internet_interface   (void);
+FlowIPAddrFamily  flow_get_preferred_ip_addr_family (void);
+void              flow_set_preferred_ip_addr_family (FlowIPAddrFamily family);
+
+GList            *flow_get_network_interfaces       (void);
+FlowIPAddr       *flow_get_network_interface_to     (FlowIPAddr *ip_addr);
+FlowIPAddr       *flow_get_internet_interface       (void);
 
 G_END_DECLS
 

@@ -158,7 +158,7 @@ flow_impl_get_network_interface_to (FlowIPAddr *ip_addr)
   flow_init_sockets ();
 
 #ifdef HAVE_IPV6
-  fd = socket (ip_addr->family == FLOW_IP_ADDR_IPV4 ? AF_INET : AF_INET6,
+  fd = socket (flow_ip_addr_get_family (ip_addr) == FLOW_IP_ADDR_IPV4 ? AF_INET : AF_INET6,
                SOCK_DGRAM, 0);
 #else
   fd = socket (AF_INET, SOCK_DGRAM, 0);
