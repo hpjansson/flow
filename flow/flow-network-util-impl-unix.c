@@ -38,7 +38,7 @@
 # include <sys/socket.h>
 # include <sys/ioctl.h>
 # include <net/if.h>
-# include <ifaddrs.h>
+# include <ifaddrs.h>  /* Include after net/if.h */
 #else
 # include <io.h>
 # include <winsock2.h>
@@ -53,87 +53,36 @@
 static GList *
 flow_impl_get_network_interfaces (void)
 {
-  GList         *interface_list = NULL;
-  gint           len, lastlen;
-  gchar         *buf, *p0;
-  gint           fd;
-  struct ifconf  ifc;
-  struct ifreq  *ifr;
+  GList          *interface_list = NULL;
+  struct ifaddrs *if_addrs;
+  struct ifaddrs *if_addr_cur;
 
   flow_init_sockets ();
 
-  /* TODO: IPv6 method */
-
-  fd = socket (AF_INET, SOCK_DGRAM, 0);
-  if (fd < 0)
+  if (getifaddrs (&if_addrs) < 0)
     return NULL;
 
-  len     = 16 * sizeof (struct ifreq);
-  lastlen = 0;
-
-  for (;;)
+  for (if_addr_cur = if_addrs; if_addr_cur; if_addr_cur = if_addr_cur->ifa_next)
   {
-    buf = g_new0 (gchar, len);
+    FlowIPAddr *ip_addr;
 
-    ifc.ifc_len = len;
-    ifc.ifc_buf = buf;
-
-    if (ioctl (fd, SIOCGIFCONF, &ifc) < 0)
-    {
-      /* Might have failed because our buffer was too small */
-      if (errno != EINVAL || lastlen != 0)
-      {
-        g_free (buf);
-        return NULL;
-      }
-    }
-    else
-    {
-      /* Break if we got all the interfaces */
-      if (ifc.ifc_len == lastlen)
-        break;
-
-      lastlen = ifc.ifc_len;
-    }
-
-    /* Did not allocate big enough buffer - try again */
-    len += 8 * sizeof (struct ifreq);
-    g_free (buf);
-  }
-
-  for (p0 = buf; p0 < (buf + ifc.ifc_len); p0 += sizeof (struct ifreq))
-  {
-    FlowSockaddr  addr;
-    int           rv;
-    FlowIPAddr   *ip_addr;
-
-    ifr = (struct ifreq*) p0;
-
-    /* Ignore non-AF_INET */
-    if (ifr->ifr_addr.sa_family != AF_INET &&
-        ifr->ifr_addr.sa_family != AF_INET6)
-      continue;
-
-    /* Save the address - the next call will clobber it */
-    memcpy (&addr, &ifr->ifr_addr, sizeof(addr));
-
-    /* Get the flags */
-    rv = ioctl (fd, SIOCGIFFLAGS, ifr);
-    if (rv == -1)
+    /* Ignore non-IP */
+    if (if_addr_cur->ifa_addr->sa_family != AF_INET &&
+        if_addr_cur->ifa_addr->sa_family != AF_INET6)
       continue;
 
     /* Ignore loopback and entries that aren't up */
-    if (!(ifr->ifr_flags & IFF_UP) ||
-        (ifr->ifr_flags & IFF_LOOPBACK))
+    if (!(if_addr_cur->ifa_flags & IFF_UP) ||
+        (if_addr_cur->ifa_flags & IFF_LOOPBACK))
       continue;
 
     /* Create a FlowIPAddr for this one and add it to our list */
     ip_addr = flow_ip_addr_new ();
-    flow_ip_addr_set_sockaddr (ip_addr, &addr);
+    flow_ip_addr_set_sockaddr (ip_addr, (FlowSockaddr *) if_addr_cur->ifa_addr);
     interface_list = g_list_prepend (interface_list, ip_addr);
   }
 
-  g_free (buf);
+  freeifaddrs (if_addrs);
 
   interface_list = g_list_reverse (interface_list);
   return interface_list;
