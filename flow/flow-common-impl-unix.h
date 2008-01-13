@@ -22,7 +22,7 @@
  * Authors: Hans Petter Jansson <hpj@copyleft.no>
  */
 
-/* This header file is internal to the library. */
+/* This header file is internal to the library. It will not be installed. */
 
 #ifndef _FLOW_SOCKET_UTIL_H
 #define _FLOW_SOCKET_UTIL_H

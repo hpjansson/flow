@@ -578,6 +578,8 @@ flow_ip_addr_set_sockaddr (FlowIPAddr *ip_addr, FlowSockaddr *sa)
 
   g_return_val_if_fail (sa != NULL, FALSE);
 
+  /* FIXME: This isn't ideal performance-wise */
+
   addr_str = flow_sockaddr_to_string (sa);
   if (!addr_str)
     return FALSE;
