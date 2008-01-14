@@ -291,25 +291,15 @@ write_to_shunt (FlowShunt *shunt, gpointer data)
 static void
 worker_func (FlowSyncShunt *sync_shunt, gpointer user_data)
 {
-  gboolean running = TRUE;
+  FlowPacket *packet;
 
-  while (running)
+  while (flow_sync_shunt_read (sync_shunt, &packet))
   {
-    FlowPacket *packet;
-
-    packet = flow_sync_shunt_read (sync_shunt);
-
-    if (packet)
-    {
-      test_print ("Child: Processing %d byte packet.\n", flow_packet_get_size (packet));
-      flow_sync_shunt_write (sync_shunt, packet);
-    }
-    else
-    {
-      test_print ("Child: Read failed - exiting.\n");
-      running = FALSE;
-    }
+    test_print ("Child: Processing %d byte packet.\n", flow_packet_get_size (packet));
+    flow_sync_shunt_write (sync_shunt, packet);
   }
+
+  test_print ("Child: Read failed - exiting.\n");
 }
 
 static void

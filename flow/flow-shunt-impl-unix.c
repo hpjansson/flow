@@ -330,6 +330,52 @@ static const gint file_open_fatal_errnos [] =
   0
 };
 
+static const ErrnoMap file_read_errno_map [] =
+{
+  /* Low-level I/O error */
+  { EIO,           { { FLOW_STREAM_DOMAIN, FLOW_STREAM_PHYSICAL_ERROR },
+                     { NULL,               -1 },
+                     { NULL,               -1 } } },
+
+  { 0,             { { NULL,               -1 },
+                     { NULL,               -1 },
+                     { NULL,               -1 } } }
+};
+
+static const gint file_read_fatal_errnos [] =
+{
+  EBADF,
+  EFAULT,
+  EINVAL,
+  EISDIR,
+  0
+};
+
+static const ErrnoMap file_write_errno_map [] =
+{
+  /* Low-level I/O error */
+  { EIO,           { { FLOW_STREAM_DOMAIN, FLOW_STREAM_PHYSICAL_ERROR },
+                     { NULL,               -1 },
+                     { NULL,               -1 } } },
+
+  /* Out of disk space */
+  { ENOSPC,        { { FLOW_FILE_DOMAIN,   FLOW_FILE_NO_SPACE, },
+                     { FLOW_STREAM_DOMAIN, FLOW_STREAM_RESOURCE_ERROR },
+                     { NULL,               -1 } } },
+
+  { 0,             { { NULL,               -1 },
+                     { NULL,               -1 },
+                     { NULL,               -1 } } }
+};
+
+static const gint file_write_fatal_errnos [] =
+{
+  EBADF,
+  EFAULT,
+  EINVAL,
+  0
+};
+
 static const ErrnoMap tcp_bind_errno_map [] =
 {
   /* The address is protected, and the user is not the superuser. */
@@ -519,23 +565,6 @@ static const gint tcp_socket_fatal_errnos [] =
   0
 };
 
-static const gint file_read_fatal_errnos [] =
-{
-  EBADF,
-  EFAULT,
-  EINVAL,
-  EISDIR,
-  0
-};
-
-static const gint file_write_fatal_errnos [] =
-{
-  EBADF,
-  EFAULT,
-  EINVAL,
-  0
-};
-
 static const gint file_seek_fatal_errnos [] =
 {
   EBADF,
@@ -550,6 +579,57 @@ static const gint setsockopt_fatal_errnos [] =
   EINVAL,
   ENOPROTOOPT,
   ENOTSOCK,
+  0
+};
+
+static const ErrnoMap socket_write_errno_map [] =
+{
+  /* (For Unix domain sockets, which are identified by pathname) Write permission
+   * is denied on the destination socket file, or search permission is
+   * denied for one of the directories the path prefix. */
+  { EACCES,        { { FLOW_SOCKET_DOMAIN, FLOW_SOCKET_ADDRESS_PROTECTED },
+                     { FLOW_STREAM_DOMAIN, FLOW_STREAM_APP_ERROR },
+                     { NULL,               -1 } } },
+
+  /* Connection reset. */
+  { ECONNRESET,    { { FLOW_SOCKET_DOMAIN, FLOW_SOCKET_CONNECTION_RESET },
+                     { FLOW_STREAM_DOMAIN, FLOW_STREAM_APP_ERROR },
+                     { NULL,               -1 } } },
+
+  /* Input/output error. */
+  { EIO,           { { NULL,               -1 },
+                     { NULL,               -1 },
+                     { NULL,               -1 } } },
+
+  /* Out of memory. */
+  { ENOMEM,        { { FLOW_STREAM_DOMAIN, FLOW_STREAM_RESOURCE_ERROR },
+                     { NULL,               -1 },
+                     { NULL,               -1 } } },
+
+  { 0,             { { NULL,               -1 },
+                     { NULL,               -1 },
+                     { NULL,               -1 } } }
+};
+
+static const gint socket_write_fatal_errnos [] =
+{
+  EBADF,
+  EDESTADDRREQ,
+  EFAULT,
+  EINVAL,
+  EISCONN,
+  ENOTCONN,
+  ENOTSOCK,
+  EOPNOTSUPP,
+  EPIPE,
+  0
+};
+
+static const gint socket_read_fatal_errnos [] =
+{
+  EBADF,
+  EFAULT,
+  EINVAL,
   0
 };
 
@@ -1242,32 +1322,44 @@ socket_shunt_read (FlowShunt *shunt)
   flow_shunt_read_state_changed (shunt);
 }
 
+static FlowDetailedEvent *
+get_connect_error_from_tcp_shunt (FlowShunt *shunt)
+{
+  SocketShunt       *socket_shunt   = (SocketShunt *) shunt;
+  FlowDetailedEvent *detailed_event = NULL;
+  gint               err            = 0;
+  guint              err_len        = sizeof (err);
+
+  g_assert (shunt->shunt_type == SHUNT_TYPE_TCP);
+
+  /* Was the connection attempt successful? */
+
+#ifdef G_PLATFORM_WIN32
+  getsockopt (socket_shunt->fd, SOL_SOCKET, SO_ERROR, (gchar *) &err, &err_len);
+#else
+  getsockopt (socket_shunt->fd, SOL_SOCKET, SO_ERROR, &err, &err_len);
+#endif
+
+  if (err != 0)
+  {
+    assert_non_fatal_errno (err, tcp_connect_fatal_errnos);
+    detailed_event = generate_errno_event (err, tcp_connect_errno_map);
+  }
+
+  return detailed_event;
+}
+
 static void
 socket_shunt_write (FlowShunt *shunt)
 {
   if G_UNLIKELY (!shunt->dispatched_begin)
   {
-    gint  err;
-    guint err_len = sizeof (err);
+    FlowDetailedEvent *detailed_event = NULL;
 
     if (shunt->shunt_type == SHUNT_TYPE_TCP)
-    {
-      SocketShunt *socket_shunt = (SocketShunt *) shunt;
+      detailed_event = get_connect_error_from_tcp_shunt (shunt);
 
-      /* Was the connection attempt successful? */
-
-#ifdef G_PLATFORM_WIN32
-      getsockopt (socket_shunt->fd, SOL_SOCKET, SO_ERROR, (gchar *) &err, &err_len);
-#else
-      getsockopt (socket_shunt->fd, SOL_SOCKET, SO_ERROR, &err, &err_len);
-#endif
-    }
-    else
-    {
-      err = 0;
-    }
-
-    if (err == 0)
+    if (!detailed_event)
     {
       /* Begin stream */
 
@@ -1284,10 +1376,8 @@ socket_shunt_write (FlowShunt *shunt)
       shunt->dispatched_begin = TRUE;
       shunt->dispatched_end   = TRUE;
 
-      /* TODO: Dispatch something more specific here? Make the errno available to
-       * user? */
-
-      generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_DENIED);
+      flow_detailed_event_add_code (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_DENIED);
+      flow_packet_queue_push_packet (shunt->read_queue, flow_packet_new_take_object (detailed_event, 0));
 
       close_read_fd (shunt);
       close_write_fd (shunt);
@@ -1358,14 +1448,32 @@ socket_shunt_write (FlowShunt *shunt)
 
       if G_UNLIKELY (result < 0)
       {
-        if (saved_errno == EAGAIN || saved_errno == EINTR)
+        FlowDetailedEvent *detailed_event;
+
+        if (saved_errno == EAGAIN || saved_errno == EINTR || saved_errno == ENOBUFS)
           break;
+
+        if (saved_errno == EMSGSIZE)
+        {
+          /* UDP packet too big? */
+
+          detailed_event = generate_errno_event (saved_errno, NULL);
+          flow_detailed_event_add_code (detailed_event, FLOW_SOCKET_DOMAIN, FLOW_SOCKET_OVERSIZED_PACKET);
+          flow_detailed_event_add_code (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_ERROR);
+          flow_packet_queue_push_packet (shunt->read_queue, flow_packet_new_take_object (detailed_event, 0));
+
+          flow_packet_queue_drop_packet (shunt->write_queue);
+          continue;
+        }
 
         /* Broken pipe */
 
-        /* TODO: Dispatch something more specific here? */
+        assert_non_fatal_errno (saved_errno, socket_write_fatal_errnos);
 
-        generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_END_CONVERSE);
+        detailed_event = generate_errno_event (saved_errno, socket_write_errno_map);
+        flow_detailed_event_add_code (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END_CONVERSE);
+        flow_packet_queue_push_packet (shunt->read_queue, flow_packet_new_take_object (detailed_event, 0));
+
         close_write_fd (shunt);
         flow_shunt_read_state_changed (shunt);
         break;
@@ -1444,7 +1552,16 @@ socket_shunt_write (FlowShunt *shunt)
           if (connect (socket_shunt->fd, (struct sockaddr *) &udp_shunt->remote_dest_sa,
                        flow_sockaddr_get_len (&udp_shunt->remote_dest_sa)) != 0)
           {
-            /* FIXME: Some kind of error */
+            FlowDetailedEvent *detailed_event;
+            gint               saved_errno = errno;
+
+            /* This is actually a UDP connect, not TCP, but the difference is minimal */
+
+            assert_non_fatal_errno (saved_errno, tcp_connect_fatal_errnos);
+
+            detailed_event = generate_errno_event (saved_errno, tcp_connect_errno_map);
+            flow_detailed_event_add_code (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_ERROR);
+            flow_packet_queue_push_packet (shunt->read_queue, flow_packet_new_take_object (detailed_event, 0));
           }
         }
       }
@@ -1466,14 +1583,25 @@ socket_shunt_exception (FlowShunt *shunt)
 {
   if (!shunt->dispatched_begin)
   {
+    FlowDetailedEvent *detailed_event = NULL;
+
     /* Failed connect */
 
     shunt->dispatched_begin = TRUE;
     shunt->dispatched_end   = TRUE;
 
-    /* TODO: Dispatch something more specific here? */
+    if (shunt->shunt_type == SHUNT_TYPE_TCP)
+      detailed_event = get_connect_error_from_tcp_shunt (shunt);
 
-    generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_DENIED);
+    if (detailed_event)
+    {
+      flow_detailed_event_add_code (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_DENIED);
+      flow_packet_queue_push_packet (shunt->read_queue, flow_packet_new_take_object (detailed_event, 0));
+    }
+    else
+    {
+      generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_DENIED);
+    }
   }
   else
   {
@@ -1705,44 +1833,60 @@ file_shunt_read (FlowShunt *shunt)
       shunt->need_reads  = FALSE;
       shunt->doing_reads = FALSE;
       generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_SEGMENT_END);
-      flow_shunt_write_state_changed (shunt);  /* Process subsequent writes */
+      flow_shunt_write_state_changed (shunt);  /* Process subsequent writes, if any */
     }
   }
   else if (result == 0)
   {
-    /* End stream */
+    /* EOF: End segment */
 
     file_shunt->read_bytes_remaining = 0;
     shunt->need_reads  = FALSE;
     shunt->doing_reads = FALSE;
+
     generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_SEGMENT_END);
-    flow_shunt_write_state_changed (shunt);  /* Process subsequent writes */
+
+    /* Send EOF event */
+    generate_simple_event (shunt, FLOW_FILE_DOMAIN, FLOW_FILE_REACHED_END);
+
+    flow_shunt_write_state_changed (shunt);  /* Process subsequent writes, if any */
   }
-  else if (saved_errno != EINTR &&
-           saved_errno != EAGAIN)
+  else if (saved_errno != EINTR && saved_errno != EAGAIN)
   {
-    /* Programmer error? */
+    FlowDetailedEvent *detailed_event;
+
+    /* I/O error */
 
     assert_non_fatal_errno (saved_errno, file_read_fatal_errnos);
 
-    /* I/O error of some kind. Probably EIO (media error). */
-
-    {
-      gchar *error_str = flow_strerror (saved_errno);
-      g_print ("READ ERROR: %s (%d)\n", error_str, saved_errno);
-      g_free (error_str);
-    }
-
-    /* FIXME: Need to dispatch an error etc. */
-
     file_shunt->read_bytes_remaining = 0;
     shunt->need_reads  = FALSE;
     shunt->doing_reads = FALSE;
+
+    detailed_event = generate_errno_event (saved_errno, file_read_errno_map);
+    flow_detailed_event_add_code (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_ERROR);
+    flow_packet_queue_push_packet (shunt->read_queue, flow_packet_new_take_object (detailed_event, 0));
+
     generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_SEGMENT_END);
-    flow_shunt_write_state_changed (shunt);  /* Process subsequent writes */
+    flow_shunt_write_state_changed (shunt);  /* Process subsequent writes, if any */
   }
 
   flow_shunt_read_state_changed (shunt);
+}
+
+static void
+file_shunt_handle_stream_end (FlowShunt *shunt)
+{
+  /* User requested end-of-stream */
+
+  if (!shunt->dispatched_end)
+  {
+    generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_END);
+    shunt->dispatched_end = TRUE;
+  }
+
+  close_read_fd (shunt);
+  close_write_fd (shunt);
 }
 
 static void
@@ -1775,6 +1919,35 @@ file_shunt_write (FlowShunt *shunt)
 
     packet_format = flow_packet_get_format (packet);
 
+    /* If we've generated a serious error, the stream must be restarted by the user. Until
+     * we receive a restart event or a request to close the stream, drop all packets. */
+
+    if G_UNLIKELY (shunt->wait_for_restart)
+    {
+      if (packet_format == FLOW_PACKET_FORMAT_OBJECT)
+      {
+        FlowDetailedEvent *detailed_event = flow_packet_get_data (packet);
+
+        if (FLOW_IS_DETAILED_EVENT (detailed_event))
+        {
+          if (flow_detailed_event_matches (detailed_event, FLOW_FILE_DOMAIN, FLOW_FILE_RESTART))
+          {
+            shunt->wait_for_restart = FALSE;
+          }
+          else if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END) ||
+                   flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_DENIED))
+          {
+            file_shunt_handle_stream_end (shunt);
+          }
+        }
+      }
+
+      flow_packet_queue_drop_packet (shunt->write_queue);
+      continue;
+    }
+
+    /* Handle packet */
+
     if G_LIKELY (packet_format == FLOW_PACKET_FORMAT_BUFFER)
     {
       guint8        *buffer;
@@ -1801,6 +1974,8 @@ file_shunt_write (FlowShunt *shunt)
 
       if G_UNLIKELY (result < 0)
       {
+        FlowDetailedEvent *detailed_event;
+
         /* Programmer error? */
 
         assert_non_fatal_errno (saved_errno, file_write_fatal_errnos);
@@ -1810,22 +1985,15 @@ file_shunt_write (FlowShunt *shunt)
         if (saved_errno == EAGAIN || saved_errno == EINTR)
           break;
 
-        /* I/O error of some kind. EIO, ENOSPC likely. */
+        /* Dispatch error and wait for it to be acknowledged */
 
-        {
-          gchar *error_str = flow_strerror (saved_errno);
-          g_print ("WRITE ERROR: %s (%d)\n", error_str, saved_errno);
-          g_free (error_str);
-        }
+        shunt->wait_for_restart = TRUE;
 
-        /* FIXME: Need to dispatch an error etc. */
+        detailed_event = generate_errno_event (saved_errno, file_write_errno_map);
+        flow_detailed_event_add_code (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_ERROR);
+        flow_packet_queue_push_packet (shunt->read_queue, flow_packet_new_take_object (detailed_event, 0));
 
-#if 0
-        /* TODO: Dispatch something more specific here? */
-
-        generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_END);
         flow_shunt_read_state_changed (shunt);
-#endif
         break;
       }
       else if (result < buffer_len)
@@ -1870,12 +2038,9 @@ file_shunt_write (FlowShunt *shunt)
           /* Programmer error? */
           assert_non_fatal_errno (saved_errno, file_seek_fatal_errnos);
 
-          /* TODO: Report errors */
-          {
-            gchar *error_str = flow_strerror (saved_errno);
-            g_print ("SEEK ERROR (1): %s (%d)\n", error_str, saved_errno);
-            g_free (error_str);
-          }
+          /* The Linux man page doesn't mention any would-be application errors, so
+           * it's our fault somehow. */
+          g_assert_not_reached ();
         }
       }
       else if (FLOW_IS_SEGMENT_REQUEST (object))
@@ -1905,12 +2070,9 @@ file_shunt_write (FlowShunt *shunt)
             /* Programmer error? */
             assert_non_fatal_errno (saved_errno, file_seek_fatal_errnos);
 
-            /* TODO: Report errors */
-            {
-              gchar *error_str = flow_strerror (saved_errno);
-              g_print ("SEEK ERROR (2): %s (%d)\n", error_str, saved_errno);
-              g_free (error_str);
-            }
+            /* The Linux man page doesn't mention any would-be application errors, so
+             * it's our fault somehow. */
+            g_assert_not_reached ();
           }
         }
 
@@ -1928,17 +2090,7 @@ file_shunt_write (FlowShunt *shunt)
                (flow_detailed_event_matches (object, FLOW_STREAM_DOMAIN, FLOW_STREAM_END) ||
                 flow_detailed_event_matches (object, FLOW_STREAM_DOMAIN, FLOW_STREAM_DENIED)))
       {
-        /* User requested end-of-stream */
-
-        if (!shunt->dispatched_end)
-        {
-          /* FIXME: End segment? */
-          generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_END);
-          shunt->dispatched_end = TRUE;
-        }
-
-        close_read_fd (shunt);
-        close_write_fd (shunt);
+        file_shunt_handle_stream_end (shunt);
       }
 
       flow_packet_queue_drop_packet (shunt->write_queue);
@@ -2938,13 +3090,12 @@ flow_shunt_impl_open_udp_port (FlowIPService *local_service)
 /* These operations are for process and worker children which get passed a
  * FlowSyncShunt reference. */
 
-static FlowPacket *
-flow_sync_shunt_impl_try_read (FlowSyncShunt *sync_shunt)
+static gboolean
+flow_sync_shunt_impl_try_read (FlowSyncShunt *sync_shunt, FlowPacket **packet_dest)
 {
   FlowShunt  *shunt = (FlowShunt *) sync_shunt;
   FlowPacket *packet;
-
-  g_return_val_if_fail (sync_shunt != NULL, NULL);
+  gboolean    still_open = TRUE;
 
   switch (shunt->shunt_type)
   {
@@ -2953,14 +3104,28 @@ flow_sync_shunt_impl_try_read (FlowSyncShunt *sync_shunt)
         PipeShunt *pipe_shunt = (PipeShunt *) sync_shunt;
         guint8     buf [MAX_BUFFER];
         gint       result;
+        gint       saved_errno;
 
         flow_pipe_set_nonblock (pipe_shunt->read_fd, TRUE);
         result = read (pipe_shunt->read_fd, buf, MAX_BUFFER);
+        saved_errno = errno;
 
         if (result > 0)
+        {
           packet = flow_packet_new (FLOW_PACKET_FORMAT_BUFFER, buf, result);
-        else
+        }
+        else if (result == 0 || saved_errno == EAGAIN || saved_errno == EINTR)
+        {
           packet = NULL;
+        }
+        else
+        {
+          /* Error */
+
+          assert_non_fatal_errno (saved_errno, socket_read_fatal_errnos);
+          packet = NULL;
+          still_open = FALSE;
+        }
       }
       break;
 
@@ -2980,16 +3145,16 @@ flow_sync_shunt_impl_try_read (FlowSyncShunt *sync_shunt)
       break;
   }
 
-  return packet;
+  *packet_dest = packet;
+  return still_open;
 }
 
-static FlowPacket *
-flow_sync_shunt_impl_read (FlowSyncShunt *sync_shunt)
+static gboolean
+flow_sync_shunt_impl_read (FlowSyncShunt *sync_shunt, FlowPacket **packet_dest)
 {
   FlowShunt  *shunt = (FlowShunt *) sync_shunt;
   FlowPacket *packet;
-
-  g_return_val_if_fail (sync_shunt != NULL, NULL);
+  gboolean    still_open = TRUE;
 
   switch (shunt->shunt_type)
   {
@@ -3025,8 +3190,11 @@ flow_sync_shunt_impl_read (FlowSyncShunt *sync_shunt)
         }
         else
         {
-          /* TODO: Check for serious error conditions and create error packet */
+          /* Error */
+
+          assert_non_fatal_errno (errno, socket_read_fatal_errnos);
           packet = NULL;
+          still_open = FALSE;
         }
       }
       break;
@@ -3053,7 +3221,8 @@ flow_sync_shunt_impl_read (FlowSyncShunt *sync_shunt)
       break;
   }
 
-  return packet;
+  *packet_dest = packet;
+  return still_open;
 }
 
 static void

@@ -80,6 +80,7 @@ struct _FlowShunt
   guint               in_worker        : 1;  /* In worker thread; keep alive */
 
   guint               offset_changed   : 1;  /* Files only; wrote data since last position report */
+  guint               wait_for_restart : 1;  /* Files only; sent error, waiting for restart event */
 
   ShuntSource        *shunt_source;
 
@@ -155,8 +156,8 @@ static void        flow_shunt_impl_need_writes        (FlowShunt *shunt);
 
 /* Synchronous shunt functions */
 
-static FlowPacket *flow_sync_shunt_impl_read          (FlowSyncShunt *sync_shunt);
-static FlowPacket *flow_sync_shunt_impl_try_read      (FlowSyncShunt *sync_shunt);
+static gboolean    flow_sync_shunt_impl_read          (FlowSyncShunt *sync_shunt, FlowPacket **packet_dest);
+static gboolean    flow_sync_shunt_impl_try_read      (FlowSyncShunt *sync_shunt, FlowPacket **packet_dest);
 static void        flow_sync_shunt_impl_write         (FlowSyncShunt *sync_shunt, FlowPacket *packet);
 
 /* ----------------- *
@@ -864,20 +865,22 @@ flow_shutdown_shunts (void)
   flow_shunt_impl_unlock ();
 }
 
-FlowPacket *
-flow_sync_shunt_read (FlowSyncShunt *sync_shunt)
+gboolean
+flow_sync_shunt_read (FlowSyncShunt *sync_shunt, FlowPacket **packet_dest)
 {
-  g_return_val_if_fail (sync_shunt != NULL, NULL);
+  g_return_val_if_fail (sync_shunt != NULL, FALSE);
+  g_return_val_if_fail (packet_dest != NULL, FALSE);
 
-  return flow_sync_shunt_impl_read (sync_shunt);
+  return flow_sync_shunt_impl_read (sync_shunt, packet_dest);
 }
 
-FlowPacket *
-flow_sync_shunt_try_read (FlowSyncShunt *sync_shunt)
+gboolean
+flow_sync_shunt_try_read (FlowSyncShunt *sync_shunt, FlowPacket **packet_dest)
 {
-  g_return_val_if_fail (sync_shunt != NULL, NULL);
+  g_return_val_if_fail (sync_shunt != NULL, FALSE);
+  g_return_val_if_fail (packet_dest != NULL, FALSE);
 
-  return flow_sync_shunt_impl_try_read (sync_shunt);
+  return flow_sync_shunt_impl_try_read (sync_shunt, packet_dest);
 }
 
 void

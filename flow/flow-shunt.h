@@ -82,8 +82,8 @@ void        flow_shutdown_shunts        (void);
 
 /* --- For FlowWorkerFunc implementations only --- */
 
-FlowPacket *flow_sync_shunt_read        (FlowSyncShunt *sync_shunt);
-FlowPacket *flow_sync_shunt_try_read    (FlowSyncShunt *sync_shunt);
+gboolean    flow_sync_shunt_read        (FlowSyncShunt *sync_shunt, FlowPacket **packet_dest);
+gboolean    flow_sync_shunt_try_read    (FlowSyncShunt *sync_shunt, FlowPacket **packet_dest);
 void        flow_sync_shunt_write       (FlowSyncShunt *sync_shunt, FlowPacket *packet);
 
 G_END_DECLS
