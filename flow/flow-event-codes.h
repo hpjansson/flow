@@ -50,7 +50,6 @@ typedef enum
   FLOW_STREAM_RESOURCE_ERROR,
 
   FLOW_STREAM_FLUSH,
-  FLOW_STREAM_RESTART
 }
 FlowStreamEventCode;
 
