@@ -650,7 +650,7 @@ flow_insert_simplex_simplex__Iduplex (FlowSimplexElement *downstream_simplex_out
  * @element: A #FlowElement.
  *
  * Disconnects all pads belonging to @element. If @element belonged
- * to a pipeline, this might leave a "hole" in it where neighbors were
+ * to a pipeline, this will leave a "gap" in it where neighbors were
  * previously connected to @element.
  **/
 void
@@ -658,6 +658,8 @@ flow_disconnect_element (FlowElement *element)
 {
   GPtrArray *pads;
   guint      i;
+
+  g_return_if_fail (FLOW_IS_ELEMENT (element));
 
   pads = flow_element_get_input_pads (element);
 
@@ -677,12 +679,73 @@ flow_disconnect_element (FlowElement *element)
 }
 
 /**
+ * flow_extract_simplex_element:
+ * @simplex_element: A #FlowSimplexElement.
+ *
+ * Like #flow_disconnect_element, disconnects all pads belonging to
+ * @simplex_element. If @simplex_element belonged to a pipeline, the resulting "gap"
+ * is closed by connecting @simplex_element's neighbors to each other.
+ **/
+void
+flow_extract_simplex_element (FlowSimplexElement *simplex_element)
+{
+  FlowPad *pads [2];
+  gint     i;
+
+  g_return_if_fail (FLOW_IS_SIMPLEX_ELEMENT (simplex_element));
+
+  pads [0] = FLOW_PAD (flow_simplex_element_get_input_pad (simplex_element));
+  pads [1] = FLOW_PAD (flow_simplex_element_get_output_pad (simplex_element));
+
+  for (i = 0; i < 2; i++)
+    pads [i] = flow_pad_get_connected_pad (pads [i]);
+
+  flow_disconnect_element (FLOW_ELEMENT (simplex_element));
+
+  if (pads [0] && pads [1])
+    flow_pad_connect (pads [0], pads [1]);
+}
+
+/**
+ * flow_extract_duplex_element:
+ * @duplex_element: A #FlowDuplexElement.
+ *
+ * Like #flow_disconnect_element, disconnects all pads belonging to
+ * @duplex_element. If @duplex_element belonged to a pipeline, the resulting "gap"
+ * is closed by connecting @duplex_element's neighbors to each other.
+ **/
+void
+flow_extract_duplex_element (FlowDuplexElement *duplex_element)
+{
+  FlowPad *pads [4];
+  gint     i;
+
+  g_return_if_fail (FLOW_IS_DUPLEX_ELEMENT (duplex_element));
+
+  pads [0] = FLOW_PAD (flow_duplex_element_get_upstream_input_pad (duplex_element));
+  pads [1] = FLOW_PAD (flow_duplex_element_get_upstream_output_pad (duplex_element));
+  pads [2] = FLOW_PAD (flow_duplex_element_get_downstream_input_pad (duplex_element));
+  pads [3] = FLOW_PAD (flow_duplex_element_get_downstream_output_pad (duplex_element));
+
+  for (i = 0; i < 4; i++)
+    pads [i] = flow_pad_get_connected_pad (pads [i]);
+
+  flow_disconnect_element (FLOW_ELEMENT (duplex_element));
+
+  if (pads [0] && pads [3])
+    flow_pad_connect (pads [0], pads [3]);
+
+  if (pads [1] && pads [2])
+    flow_pad_connect (pads [1], pads [2]);
+}
+
+/**
  * flow_replace_element:
  * @original:    A #FlowElement to be replaced.
  * @replacement: A #FlowElement to replace the original with.
  *
  * If @original belongs to a pipeline of connected elements, disconnects
- * it from its neighbors and substitutes @replacement, taking over its
+ * it from its neighbors and substitutes @replacement, which takes over its
  * place in the pipeline.
  *
  * @replacement must have the same number and type of pads as @original.
@@ -695,6 +758,9 @@ flow_replace_element (FlowElement *original, FlowElement *replacement)
   GPtrArray *replacement_input_pads;
   GPtrArray *replacement_output_pads;
   guint      i;
+
+  g_return_if_fail (FLOW_IS_ELEMENT (original));
+  g_return_if_fail (FLOW_IS_ELEMENT (replacement));
 
   if (original == replacement)
     return;

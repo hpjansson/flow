@@ -34,6 +34,9 @@ G_BEGIN_DECLS
 void         flow_disconnect_element               (FlowElement *element);
 void         flow_replace_element                  (FlowElement *original, FlowElement *replacement);
 
+void         flow_extract_simplex_element          (FlowSimplexElement *simplex_element);
+void         flow_extract_duplex_element           (FlowDuplexElement *duplex_element);
+
 void         flow_connect_simplex__simplex         (FlowSimplexElement *output_simplex,
                                                     FlowSimplexElement *input_simplex);
 void         flow_connect_duplex__duplex           (FlowDuplexElement *downstream_duplex,
