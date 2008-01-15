@@ -121,6 +121,16 @@ flow_element_finalize (FlowElement *element)
 
 /* --- FlowElement public API --- */
 
+/**
+ * flow_element_get_input_pads:
+ * @element: A #FlowElement.
+ *
+ * Gets the array of input pads belonging to this element. The array and
+ * its contents belong to the element and should not be modified or freed.
+ * If you need this to be threadsafe, you must do your own locking.
+ *
+ * Return value: A #GPtrArray of pointers to #FlowInputPad.
+ **/
 GPtrArray *
 flow_element_get_input_pads (FlowElement *element)
 {
@@ -129,6 +139,16 @@ flow_element_get_input_pads (FlowElement *element)
   return element->input_pads;
 }
 
+/**
+ * flow_element_get_output_pads:
+ * @element: A #FlowElement.
+ *
+ * Gets the array of output pads belonging to this element. The array and
+ * its contents belong to the element and should not be modified or freed.
+ * If you need this to be threadsafe, you must do your own locking.
+ *
+ * Return value: A #GPtrArray of pointers to #FlowOutputPad.
+ **/
 GPtrArray *
 flow_element_get_output_pads (FlowElement *element)
 {
