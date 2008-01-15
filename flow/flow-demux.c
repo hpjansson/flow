@@ -83,6 +83,13 @@ flow_demux_finalize (FlowDemux *demux)
 
 /* Public API */
 
+/**
+ * flow_demux_new:
+ *
+ * Creates a new #FlowDemux element.
+ *
+ * Return value: A new #FlowDemux element.
+ **/
 FlowDemux *
 flow_demux_new (void)
 {

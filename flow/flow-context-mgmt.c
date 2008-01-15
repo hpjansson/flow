@@ -111,6 +111,16 @@ flow_get_main_context_for_current_thread (void)
   return get_main_context_for_current_thread ();
 }
 
+/**
+ * flow_set_main_context_for_current_thread:
+ * @main_context: A #GMainContext.
+ *
+ * Sets the current thread's main context. This can only be done once
+ * per thread, before any calls to flow_get_main_context_for_current_thread ().
+ * You should do this before invoking any other Flow function in the thread.
+ * 
+ * Return value: A #GMainContext.
+ **/
 void
 flow_set_main_context_for_current_thread (GMainContext *main_context)
 {

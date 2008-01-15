@@ -78,6 +78,13 @@ flow_destructor_finalize (FlowDestructor *destructor)
 
 /* --- FlowDestructor public API --- */
 
+/**
+ * flow_destructor_new:
+ *
+ * Creates a new #FlowDestructor element.
+ *
+ * Return value: A new #FlowDestructor element.
+ **/
 FlowDestructor *
 flow_destructor_new (void)
 {

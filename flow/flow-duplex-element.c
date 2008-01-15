@@ -138,6 +138,15 @@ flow_duplex_element_finalize (FlowDuplexElement *duplex_element)
 
 /* --- FlowDuplexElement public API --- */
 
+/**
+ * flow_duplex_element_get_upstream_input_pad:
+ * @duplex_element: A #FlowDuplexElement.
+ *
+ * Gets the #FlowInputPad taking input from upstream. The pad belongs to the
+ * element, and must not be unreffed unless reffed first.
+ *
+ * Return value: The upstream #FlowInputPad.
+ **/
 FlowInputPad *
 flow_duplex_element_get_upstream_input_pad (FlowDuplexElement *duplex_element)
 {
@@ -148,6 +157,15 @@ flow_duplex_element_get_upstream_input_pad (FlowDuplexElement *duplex_element)
   return g_ptr_array_index (element->input_pads, UPSTREAM_INDEX);
 }
 
+/**
+ * flow_duplex_element_get_upstream_output_pad:
+ * @duplex_element: A #FlowDuplexElement.
+ *
+ * Gets the #FlowOutputPad sending output upstream. The pad belongs to the
+ * element, and must not be unreffed unless reffed first.
+ *
+ * Return value: The upstream #FlowOutputPad.
+ **/
 FlowOutputPad *
 flow_duplex_element_get_upstream_output_pad (FlowDuplexElement *duplex_element)
 {
@@ -158,6 +176,15 @@ flow_duplex_element_get_upstream_output_pad (FlowDuplexElement *duplex_element)
   return g_ptr_array_index (element->output_pads, UPSTREAM_INDEX);
 }
 
+/**
+ * flow_duplex_element_get_downstream_input_pad:
+ * @duplex_element: A #FlowDuplexElement.
+ *
+ * Gets the #FlowInputPad taking input from downstream. The pad belongs to the
+ * element, and must not be unreffed unless reffed first.
+ *
+ * Return value: The downstream #FlowInputPad.
+ **/
 FlowInputPad *
 flow_duplex_element_get_downstream_input_pad (FlowDuplexElement *duplex_element)
 {
@@ -168,6 +195,15 @@ flow_duplex_element_get_downstream_input_pad (FlowDuplexElement *duplex_element)
   return g_ptr_array_index (element->input_pads, DOWNSTREAM_INDEX);
 }
 
+/**
+ * flow_duplex_element_get_downstream_output_pad:
+ * @duplex_element: A #FlowDuplexElement.
+ *
+ * Gets the #FlowOutputPad sending output downstream. The pad belongs to the
+ * element, and must not be unreffed unless reffed first.
+ *
+ * Return value: The downstream #FlowOutputPad.
+ **/
 FlowOutputPad *
 flow_duplex_element_get_downstream_output_pad (FlowDuplexElement *duplex_element)
 {

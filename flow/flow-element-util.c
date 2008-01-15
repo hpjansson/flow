@@ -29,6 +29,17 @@
 #include <string.h>
 #include "flow-element-util.h"
 
+/**
+ * flow_connect_simplex__simplex:
+ * @output_simplex: First #FlowSimplexElement element or %NULL.
+ * @input_simplex:  Second #FlowSimplexElement element or %NULL.
+ *
+ * Connects @output_simplex and @input_simplex so that packets flow from
+ * the former to the latter.
+ *
+ * If %NULL is passed for one of the elements, any element present in
+ * its "slot" will be disconnected.
+ **/
 void
 flow_connect_simplex__simplex (FlowSimplexElement *output_simplex,
                                FlowSimplexElement *input_simplex)
@@ -51,6 +62,19 @@ flow_connect_simplex__simplex (FlowSimplexElement *output_simplex,
   }
 }
 
+/**
+ * flow_connect_duplex__duplex:
+ * @downstream_duplex: First #FlowDuplexElement element or %NULL.
+ * @upstream_duplex:   Second #FlowDuplexElement element or %NULL.
+ *
+ * Connects @downstream_duplex and @upstream_duplex. Packets will flow
+ * both ways, with the former element termed "downstream" and the latter
+ * "upstream". More specifically, @downstream_duplex's upstream pads will
+ * be connected to @upstream_duplex's downstream pads.
+ *
+ * If %NULL is passed for one of the elements, any element present in
+ * its "slot" will be disconnected.
+ **/
 void
 flow_connect_duplex__duplex (FlowDuplexElement *downstream_duplex,
                              FlowDuplexElement *upstream_duplex)
@@ -89,6 +113,21 @@ flow_connect_duplex__duplex (FlowDuplexElement *downstream_duplex,
   }
 }
 
+/**
+ * flow_connect_simplex_simplex__duplex:
+ * @downstream_simplex_output: First #FlowSimplexElement element or %NULL.
+ * @downstream_simplex_input:  Second #FlowSimplexElement element or %NULL.
+ * @upstream_duplex:           A #FlowDuplexElement element or %NULL.
+ *
+ * This function is similar to #flow_connect_duplex__duplex, but instead of
+ * a duplex element, two simplex elements are used for the downstream "slot".
+ * Specifically, @downstream_simplex_output's output pad will be connected
+ * to @upstream_duplex's downstream input pad, and @downstream_simplex_input's
+ * input pad will be connected to @upstream_duplex's downstream output pad.
+ *
+ * If %NULL is passed for one of the elements, any element present in
+ * its "slot" will be disconnected. You can pass %NULL for multiple elements.
+ **/
 void
 flow_connect_simplex_simplex__duplex (FlowSimplexElement *downstream_simplex_output,
                                       FlowSimplexElement *downstream_simplex_input,
@@ -138,6 +177,21 @@ flow_connect_simplex_simplex__duplex (FlowSimplexElement *downstream_simplex_out
   }
 }
 
+/**
+ * flow_connect_duplex__simplex_simplex:
+ * @downstream_duplex:       A #FlowDuplexElement element or %NULL.
+ * @upstream_simplex_output: First #FlowSimplexElement element or %NULL.
+ * @upstream_simplex_input:  Second #FlowSimplexElement element or %NULL.
+ *
+ * This function is similar to #flow_connect_duplex__duplex, but instead of
+ * a duplex element, two simplex elements are used for the upstream "slot".
+ * Specifically, @downstream_duplex' upstream output pad will be connected to
+ * @upstream_simplex_input's input pad, and @downstream_duplex' upstream
+ * input pad will be connected to @upstream_simplex_output's output pad.
+ *
+ * If %NULL is passed for one of the elements, any element present in
+ * its "slot" will be disconnected. You can pass %NULL for multiple elements.
+ **/
 void
 flow_connect_duplex__simplex_simplex (FlowDuplexElement  *downstream_duplex,
                                       FlowSimplexElement *upstream_simplex_output,
@@ -187,6 +241,18 @@ flow_connect_duplex__simplex_simplex (FlowDuplexElement  *downstream_duplex,
   }
 }
 
+/**
+ * flow_insert_Isimplex__simplex:
+ * @output_simplex_inserted: A #FlowSimplexElement to insert.
+ * @input_simplex:           A #FlowSimplexElement.
+ *
+ * Inserts @output_simplex_inserted before @input_simplex in an
+ * established pipeline, so that packets will flow from @output_simplex_inserted
+ * to @input_simplex. If a pad was previously connected to @input_simplex'
+ * input pad, it will be connected to @output_simplex_inserted's input pad
+ * after the operation. Thus, @output_simplex_inserted is "inserted" between
+ * @input_simplex and any preceding element.
+ **/
 void
 flow_insert_Isimplex__simplex (FlowSimplexElement *output_simplex_inserted,
                                FlowSimplexElement *input_simplex)
@@ -210,6 +276,18 @@ flow_insert_Isimplex__simplex (FlowSimplexElement *output_simplex_inserted,
   flow_connect_simplex__simplex (output_simplex_inserted, input_simplex);
 }
 
+/**
+ * flow_insert_simplex__Isimplex:
+ * @output_simplex:         A #FlowSimplexElement.
+ * @input_simplex_inserted: A #FlowSimplexElement to insert.
+ *
+ * Inserts @input_simplex_inserted after @output_simplex in an
+ * established pipeline, so that packets will flow from @output_simplex
+ * to @input_simplex_inserted. If a pad was previously connected to @output_simplex'
+ * output pad, it will be connected to @input_simplex_inserted's output pad
+ * after the operation. Thus, @input_simplex_inserted is "inserted" between
+ * @output_simplex and any subsequent element.
+ **/
 void
 flow_insert_simplex__Isimplex (FlowSimplexElement *output_simplex,
                                FlowSimplexElement *input_simplex_inserted)
@@ -233,6 +311,19 @@ flow_insert_simplex__Isimplex (FlowSimplexElement *output_simplex,
   flow_connect_simplex__simplex (output_simplex, input_simplex_inserted);
 }
 
+/**
+ * flow_insert_Iduplex__duplex:
+ * @downstream_duplex_inserted: A #FlowDuplexElement to insert.
+ * @upstream_duplex:            A #FlowDuplexElement.
+ *
+ * Inserts @downstream_duplex_inserted before @upstream_duplex in an
+ * established pipeline, so that @downstream_duplex_inserted will be
+ * downstream from @upstream_duplex. Pads previously connected
+ * to @upstream_duplex' downstream pads will be connected to
+ * @downstream_duplex_inserted's downstream pads after the operation.
+ * Thus, @downstream_duplex_inserted is "inserted" between
+ * @upstream_duplex and any preceding element(s).
+ **/
 void
 flow_insert_Iduplex__duplex (FlowDuplexElement *downstream_duplex_inserted,
                              FlowDuplexElement *upstream_duplex)
@@ -272,6 +363,19 @@ flow_insert_Iduplex__duplex (FlowDuplexElement *downstream_duplex_inserted,
   flow_connect_duplex__duplex (downstream_duplex_inserted, upstream_duplex);
 }
 
+/**
+ * flow_insert_duplex__Iduplex:
+ * @downstream_duplex:        A #FlowDuplexElement.
+ * @upstream_duplex_inserted: A #FlowDuplexElement to insert.
+ *
+ * Inserts @upstream_duplex_inserted after @downstream_duplex in an
+ * established pipeline, so that @upstream_duplex_inserted will be
+ * upstream from @downstream_duplex. Pads previously connected
+ * to @downstream_duplex' upstream pads will be connected to
+ * @upstream_duplex_inserted's upstream pads after the operation.
+ * Thus, @upstream_duplex_inserted is "inserted" between
+ * @downstream_duplex and any subsequent element(s).
+ **/
 void
 flow_insert_duplex__Iduplex (FlowDuplexElement *downstream_duplex,
                              FlowDuplexElement *upstream_duplex_inserted)
@@ -311,6 +415,20 @@ flow_insert_duplex__Iduplex (FlowDuplexElement *downstream_duplex,
   flow_connect_duplex__duplex (downstream_duplex, upstream_duplex_inserted);
 }
 
+/**
+ * flow_insert_Isimplex_Isimplex__duplex:
+ * @downstream_simplex_output_inserted: A #FlowSimplexElement to insert.
+ * @downstream_simplex_input_inserted:  A #FlowSimplexElement to insert.
+ * @upstream_duplex:                    A #FlowDuplexElement.
+ *
+ * Like #flow_insert_Iduplex__duplex, except a pair of #FlowSimplexElement
+ * elements is inserted instead of a #FlowDuplexElement.
+ *
+ * The simplex elements will be connected to the downstream pads of
+ * @upstream_duplex. Packets will flow from @downstream_simplex_output_inserted
+ * to @upstream_duplex, and from @upstream_duplex to
+ * @downstream_simplex_input_inserted. 
+ **/
 void
 flow_insert_Isimplex_Isimplex__duplex (FlowSimplexElement *downstream_simplex_output_inserted,
                                        FlowSimplexElement *downstream_simplex_input_inserted,
@@ -354,6 +472,20 @@ flow_insert_Isimplex_Isimplex__duplex (FlowSimplexElement *downstream_simplex_ou
                                         upstream_duplex);
 }
 
+/**
+ * flow_insert_duplex__Isimplex_Isimplex:
+ * @downstream_duplex:                A #FlowDuplexElement.
+ * @upstream_simplex_output_inserted: A #FlowSimplexElement to insert.
+ * @upstream_simplex_input_inserted:  A #FlowSimplexElement to insert.
+ *
+ * Like #flow_insert_duplex__Iduplex, except a pair of #FlowSimplexElement
+ * elements is inserted instead of a #FlowDuplexElement.
+ *
+ * The simplex elements will be connected to the upstream pads of
+ * @downstream_duplex. Packets will flow from @downstream_duplex to
+ * @upstream_simplex_input_inserted, and from @upstream_simplex_output_inserted
+ * to @downstream_duplex.
+ **/
 void
 flow_insert_duplex__Isimplex_Isimplex (FlowDuplexElement *downstream_duplex,
                                        FlowSimplexElement *upstream_simplex_output_inserted,
@@ -397,6 +529,21 @@ flow_insert_duplex__Isimplex_Isimplex (FlowDuplexElement *downstream_duplex,
                                         upstream_simplex_input_inserted);
 }
 
+/**
+ * flow_insert_Iduplex__simplex_simplex:
+ * @downstream_duplex_inserted: A #FlowDuplexElement to insert.
+ * @upstream_simplex_output:    A #FlowSimplexElement.
+ * @upstream_simplex_input:     A #FlowSimplexElement.
+ *
+ * Like #flow_insert_Iduplex__duplex, except the #FlowDuplexElement is
+ * inserted before a pair of #FlowSimplexElement elements instead of
+ * another #FlowDuplexElement.
+ *
+ * The simplex elements will be connected to the upstream pads of
+ * @downstream_duplex_inserted. Packets will flow from @downstream_duplex_inserted
+ * to @upstream_simplex_input, and from @upstream_simplex_output to
+ * @downstream_duplex_inserted.
+ **/
 void
 flow_insert_Iduplex__simplex_simplex (FlowDuplexElement *downstream_duplex_inserted,
                                       FlowSimplexElement *upstream_simplex_output,
@@ -440,6 +587,21 @@ flow_insert_Iduplex__simplex_simplex (FlowDuplexElement *downstream_duplex_inser
                                         upstream_simplex_input);
 }
 
+/**
+ * flow_insert_simplex_simplex__Iduplex:
+ * @downstream_simplex_output: A #FlowSimplexElement.
+ * @downstream_simplex_input:  A #FlowSimplexElement.
+ * @upstream_duplex_inserted:  A #FlowDuplexElement to insert.
+ *
+ * Like #flow_insert_duplex__Iduplex, except the #FlowDuplexElement is
+ * inserted after a pair of #FlowSimplexElement elements instead of
+ * another #FlowDuplexElement.
+ *
+ * The simplex elements will be connected to the downstream pads of
+ * @upstream_duplex_inserted. Packets will flow from
+ * @downstream_simplex_output to @upstream_duplex_inserted, and from
+ * @upstream_duplex_inserted to @downstream_simplex_input. 
+ **/
 void
 flow_insert_simplex_simplex__Iduplex (FlowSimplexElement *downstream_simplex_output,
                                       FlowSimplexElement *downstream_simplex_input,
@@ -483,6 +645,14 @@ flow_insert_simplex_simplex__Iduplex (FlowSimplexElement *downstream_simplex_out
                                         upstream_duplex_inserted);
 }
 
+/**
+ * flow_disconnect_element:
+ * @element: A #FlowElement.
+ *
+ * Disconnects all pads belonging to @element. If @element belonged
+ * to a pipeline, this might leave a "hole" in it where neighbors were
+ * previously connected to @element.
+ **/
 void
 flow_disconnect_element (FlowElement *element)
 {
@@ -506,6 +676,17 @@ flow_disconnect_element (FlowElement *element)
   }
 }
 
+/**
+ * flow_replace_element:
+ * @original:    A #FlowElement to be replaced.
+ * @replacement: A #FlowElement to replace the original with.
+ *
+ * If @original belongs to a pipeline of connected elements, disconnects
+ * it from its neighbors and substitutes @replacement, taking over its
+ * place in the pipeline.
+ *
+ * @replacement must have the same number and type of pads as @original.
+ **/
 void
 flow_replace_element (FlowElement *original, FlowElement *replacement)
 {
