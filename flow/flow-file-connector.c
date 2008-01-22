@@ -370,12 +370,29 @@ flow_file_connector_finalize (FlowFileConnector *file_connector)
 
 /* --- FlowFileConnector public API --- */
 
+/**
+ * flow_file_connector_new:
+ *
+ * Creates a new #FlowFileConnector.
+ *
+ * Return value: A new #FlowFileConnector.
+ **/
 FlowFileConnector *
 flow_file_connector_new (void)
 {
   return g_object_new (FLOW_TYPE_FILE_CONNECTOR, NULL);
 }
 
+/**
+ * flow_file_connector_get_path:
+ * @file_connector: A #FlowFileConnector.
+ *
+ * Returns the current local file system path that @file_connector is
+ * connected to, or %NULL if not connected to anything. If non-null, the
+ * path was copied, and must be freed by the caller.
+ *
+ * Return value: A newly allocated path, or %NULL if none was set.
+ **/
 gchar *
 flow_file_connector_get_path (FlowFileConnector *file_connector)
 {
