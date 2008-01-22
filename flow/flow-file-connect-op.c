@@ -300,6 +300,20 @@ flow_file_connect_op_finalize (FlowFileConnectOp *file_connect_op)
 
 /* --- FlowFileConnectOp public API --- */
 
+/**
+ * flow_file_connect_op_new:
+ * @path:               The local file system path to open or create.
+ * @access_mode:        An inclusive-or of flags indicating if the file will be read and/or written.
+ * @do_create:          %TRUE if the file should be created if it doesn't exist, %FALSE otherwise.
+ * @do_replace:         %TRUE if the file should be truncated if it already exists, %FALSE otherwise.
+ * @create_mode_user:   If the file is created, indicates the access the creating user will have to it.
+ * @create_mode_group:  If the file is created, indicates the access the creating group will have to it.
+ * @create_mode_others: If the file is created, indicates the access everyone else will have to it.
+ *
+ * Creates a new #FlowFileConnectOp.
+ *
+ * Return value: A new #FlowFileConnectOp.
+ **/
 FlowFileConnectOp *
 flow_file_connect_op_new (const gchar *path, FlowAccessMode access_mode,
                           gboolean do_create, gboolean do_replace,
@@ -321,6 +335,15 @@ flow_file_connect_op_new (const gchar *path, FlowAccessMode access_mode,
                        NULL);
 }
 
+/**
+ * flow_file_connect_op_get_path:
+ * @file_connect_op: A #FlowFileConnectOp.
+ *
+ * Returns the local file system path to open or create. The string
+ * belongs to @file_connect_op, and should not be freed.
+ *
+ * Return value: The local path to open or create.
+ **/
 const gchar *
 flow_file_connect_op_get_path (FlowFileConnectOp *file_connect_op)
 {
@@ -332,6 +355,15 @@ flow_file_connect_op_get_path (FlowFileConnectOp *file_connect_op)
   return priv->path;
 }
 
+/**
+ * flow_file_connect_op_get_access_mode:
+ * @file_connect_op: A #FlowFileConnectOp.
+ *
+ * Returns an inclusive-or of flags indicating how the file should be
+ * accessed - FLOW_ACCESS_READ or FLOW_ACCESS_WRITE or both.
+ *
+ * Return value: Flags indicating how the file should be accessed - i.e. read and/or write.
+ **/
 FlowAccessMode
 flow_file_connect_op_get_access_mode (FlowFileConnectOp *file_connect_op)
 {
@@ -343,6 +375,15 @@ flow_file_connect_op_get_access_mode (FlowFileConnectOp *file_connect_op)
   return priv->access_mode;
 }
 
+/**
+ * flow_file_connect_op_get_create:
+ * @file_connect_op: A #FlowFileConnectOp.
+ *
+ * Returns a boolean indicating whether the file should be created if it
+ * does not exist.
+ *
+ * Return value: %TRUE if file should be created, %FALSE otherwise.
+ **/
 gboolean
 flow_file_connect_op_get_create (FlowFileConnectOp *file_connect_op)
 {
@@ -354,6 +395,15 @@ flow_file_connect_op_get_create (FlowFileConnectOp *file_connect_op)
   return priv->do_create;
 }
 
+/**
+ * flow_file_connect_op_get_replace:
+ * @file_connect_op: A #FlowFileConnectOp.
+ *
+ * Returns a boolean indicating whether the file should be truncated if it
+ * already exists.
+ *
+ * Return value: %TRUE if file should be replaced, %FALSE otherwise.
+ **/
 gboolean
 flow_file_connect_op_get_replace (FlowFileConnectOp *file_connect_op)
 {
@@ -365,6 +415,16 @@ flow_file_connect_op_get_replace (FlowFileConnectOp *file_connect_op)
   return priv->do_replace;
 }
 
+/**
+ * flow_file_connect_op_get_create_modes:
+ * @file_connect_op:    A #FlowFileConnectOp.
+ * @create_mode_user:   Location to store user's permissions or %NULL.
+ * @create_mode_group:  Location to store group's permissions or %NULL.
+ * @create_mode_others: Location to store others' permissions or %NULL.
+ *
+ * Gets the permissions to be used if the file is created and stores
+ * them in the provided locations.
+ **/
 void
 flow_file_connect_op_get_create_modes (FlowFileConnectOp *file_connect_op,
                                        FlowAccessMode *create_mode_user,

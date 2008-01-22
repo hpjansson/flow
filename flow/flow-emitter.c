@@ -79,6 +79,14 @@ flow_emitter_finalize (FlowEmitter *emitter)
 
 /* --- FlowEmitter public API --- */
 
+/**
+ * flow_emitter_get_output_pad:
+ * @emitter: A #FlowEmitter.
+ *
+ * Returns @emitter's only #FlowOutputPad.
+ *
+ * Return value: A #FlowOutputPad.
+ **/
 FlowOutputPad *
 flow_emitter_get_output_pad (FlowEmitter *emitter)
 {

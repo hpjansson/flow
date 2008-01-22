@@ -109,6 +109,16 @@ flow_event_finalize (FlowEvent *event)
 
 /* --- FlowEvent public API --- */
 
+/**
+ * flow_event_get_source_element:
+ * @event: A #FlowEvent.
+ *
+ * Returns a pointer to the #FlowElement that generated this event. The source
+ * element may be unset, in which case %NULL will be returned. The source
+ * element may be set multiple times.
+ *
+ * Return value: The #FlowElement that generated the event, or %NULL if unset.
+ **/
 FlowElement *
 flow_event_get_source_element (FlowEvent *event)
 {
@@ -117,6 +127,15 @@ flow_event_get_source_element (FlowEvent *event)
   return event->source_element;
 }
 
+/**
+ * flow_event_get_description:
+ * @event: A #FlowEvent.
+ *
+ * Causes @event to generate a human-readable description of itself and return
+ * a pointer to it. The string belongs to @event and must not be freed.
+ *
+ * Return value: A pointer to a human-readable description of the event.
+ **/
 const gchar *
 flow_event_get_description (FlowEvent *event)
 {
