@@ -76,13 +76,15 @@ void                flow_file_io_close                 (FlowFileIO *file_io);
 void                flow_file_io_seek                  (FlowFileIO *file_io, FlowOffsetAnchor anchor, goffset offset);
 void                flow_file_io_seek_to               (FlowFileIO *file_io, goffset offset);
 
-gboolean            flow_file_io_sync_open             (FlowFileIO *file_io, const gchar *path, FlowAccessMode access_mode);
+gboolean            flow_file_io_sync_open             (FlowFileIO *file_io, const gchar *path,
+                                                        FlowAccessMode access_mode, GError **error);
 gboolean            flow_file_io_sync_create           (FlowFileIO *file_io, const gchar *path, FlowAccessMode access_mode,
                                                         gboolean replace_existing,
                                                         FlowAccessMode create_mode_user,
                                                         FlowAccessMode create_mode_group,
-                                                        FlowAccessMode create_mode_others);
-void                flow_file_io_sync_close            (FlowFileIO *file_io);
+                                                        FlowAccessMode create_mode_others,
+                                                        GError **error);
+gboolean            flow_file_io_sync_close            (FlowFileIO *file_io, GError **error);
 
 gchar              *flow_file_io_get_path              (FlowFileIO *file_io);
 FlowConnectivity    flow_file_io_get_connectivity      (FlowFileIO *file_io);

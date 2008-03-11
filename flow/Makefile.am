@@ -50,7 +50,7 @@ libflow_la_SOURCES = \
 	flow-event.c \
 	flow-file-connect-op.c \
 	flow-file-connector.c \
-	flow-file-io.c \
+##	flow-file-io.c \
 	flow-gobject-util.c \
 	flow-input-pad.c \
 	flow-io.c \

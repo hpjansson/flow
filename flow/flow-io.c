@@ -59,6 +59,21 @@
     } \
   } G_STMT_END
 
+#define on_error_propagate_and_assert(x) \
+  G_STMT_START { \
+    if (io->error) \
+    { \
+      g_assert (x); \
+\
+      if (error) \
+        *error = io->error; \
+      else \
+        g_error_free (io->error); \
+\
+      io->error = NULL; \
+    } \
+  } G_STMT_END
+
 /* --- FlowIO private data --- */
 
 typedef struct
@@ -758,7 +773,7 @@ flow_io_unblock_writes (FlowIO *io)
 }
 
 gint
-flow_io_sync_read (FlowIO *io, gpointer dest_buffer, gint max_len)
+flow_io_sync_read (FlowIO *io, gpointer dest_buffer, gint max_len, GError **error)
 {
   FlowIOPrivate   *priv;
   FlowPacketQueue *packet_queue;
@@ -774,21 +789,26 @@ flow_io_sync_read (FlowIO *io, gpointer dest_buffer, gint max_len)
 
   priv = io->priv;
 
+  g_assert (io->error == NULL);
+
   set_minimum_read_buffer (io, 1);
   prepare_read (io, max_len);
 
   packet_queue = flow_user_adapter_get_input_queue (priv->user_adapter);
 
-  while (!(result = try_read_data (io, dest_buffer, max_len)) && io->read_stream_is_open)
+  while (!(result = try_read_data (io, dest_buffer, max_len)) &&
+         io->read_stream_is_open && !io->error)
   {
     flow_user_adapter_wait_for_input (priv->user_adapter);
   }
 
+  g_assert (result > 0 || !io->read_stream_is_open || io->error);
+  on_error_propagate_and_assert (result == 0);
   return result;
 }
 
 gboolean
-flow_io_sync_read_exact (FlowIO *io, gpointer dest_buffer, gint exact_len)
+flow_io_sync_read_exact (FlowIO *io, gpointer dest_buffer, gint exact_len, GError **error)
 {
   FlowIOPrivate   *priv;
   FlowPacketQueue *packet_queue;
@@ -803,6 +823,8 @@ flow_io_sync_read_exact (FlowIO *io, gpointer dest_buffer, gint exact_len)
   g_return_val_if_fail (io->read_stream_is_open == TRUE, FALSE);
 
   priv = io->priv;
+
+  g_assert (io->error == NULL);
 
   set_minimum_read_buffer (io, exact_len);
   prepare_read (io, exact_len);
@@ -821,7 +843,7 @@ flow_io_sync_read_exact (FlowIO *io, gpointer dest_buffer, gint exact_len)
       continue;
     }
 
-    if (!io->read_stream_is_open)
+    if (!io->read_stream_is_open || io->error)
       break;
 
     flow_user_adapter_wait_for_input (priv->user_adapter);
@@ -830,11 +852,13 @@ flow_io_sync_read_exact (FlowIO *io, gpointer dest_buffer, gint exact_len)
   if (result)
     successful_read (io, exact_len);
 
+  g_assert (result || !io->read_stream_is_open || io->error);
+  on_error_propagate_and_assert (!result);
   return result;
 }
 
 gpointer
-flow_io_sync_read_object (FlowIO *io)
+flow_io_sync_read_object (FlowIO *io, GError **error)
 {
   FlowIOPrivate   *priv;
   gpointer         object;
@@ -844,32 +868,39 @@ flow_io_sync_read_object (FlowIO *io)
 
   priv = io->priv;
 
+  g_assert (io->error == NULL);
+
   set_minimum_read_buffer (io, 1);
   prepare_read (io, 0);
 
-  while (!try_read_object (io, &object) && io->read_stream_is_open)
+  while (!try_read_object (io, &object) && io->read_stream_is_open && !io->error)
   {
     flow_user_adapter_wait_for_input (priv->user_adapter);
   }
 
+  g_assert (object || !io->read_stream_is_open || io->error);
+  on_error_propagate_and_assert (!object);
   return object;
 }
 
-void
-flow_io_sync_write (FlowIO *io, gpointer src_buffer, gint exact_len)
+gboolean
+flow_io_sync_write (FlowIO *io, gpointer src_buffer, gint exact_len, GError **error)
 {
   FlowIOPrivate   *priv;
   FlowPacketQueue *packet_queue;
+  gboolean         result = FALSE;
 
-  g_return_if_fail (FLOW_IS_IO (io));
-  g_return_if_fail (src_buffer != NULL);
-  g_return_if_fail (exact_len >= 0);
-  return_if_invalid_bin (io);
+  g_return_val_if_fail (FLOW_IS_IO (io), FALSE);
+  g_return_val_if_fail (src_buffer != NULL, FALSE);
+  g_return_val_if_fail (exact_len >= 0, FALSE);
+  return_val_if_invalid_bin (io, FALSE);
 
   /* Must check after invalid_bin test */
-  g_return_if_fail (io->write_stream_is_open == TRUE);
+  g_return_val_if_fail (io->write_stream_is_open == TRUE, FALSE);
 
   priv = io->priv;
+
+  g_assert (io->error == NULL);
 
   ensure_downstream_open (io);
   prepare_write (io, exact_len);
@@ -879,24 +910,37 @@ flow_io_sync_write (FlowIO *io, gpointer src_buffer, gint exact_len)
   flow_packet_queue_push_bytes (packet_queue, src_buffer, exact_len);
   flow_user_adapter_push (priv->user_adapter);
 
-  while (io->write_stream_is_open && flow_packet_queue_get_length_packets (packet_queue))
+  while (io->write_stream_is_open && !io->error)
   {
+    if (!flow_packet_queue_get_length_packets (packet_queue))
+    {
+      result = TRUE;
+      break;
+    }
+
     flow_user_adapter_wait_for_output (priv->user_adapter);
   }
+
+  g_assert (result || !io->write_stream_is_open || io->error);
+  on_error_propagate_and_assert (!result);
+  return result;
 }
 
-void
-flow_io_sync_write_object (FlowIO *io, gpointer object)
+gboolean
+flow_io_sync_write_object (FlowIO *io, gpointer object, GError **error)
 {
   FlowIOPrivate   *priv;
   FlowPacketQueue *packet_queue;
   FlowPacket      *packet;
+  gboolean         result = FALSE;
 
-  g_return_if_fail (FLOW_IS_IO (io));
-  g_return_if_fail (object != NULL);
-  return_if_invalid_bin (io);
+  g_return_val_if_fail (FLOW_IS_IO (io), FALSE);
+  g_return_val_if_fail (object != NULL, FALSE);
+  return_val_if_invalid_bin (io, FALSE);
 
   priv = io->priv;
+
+  g_assert (io->error == NULL);
 
   check_downstream_state_change (io, object);
   prepare_write (io, 0);
@@ -908,26 +952,39 @@ flow_io_sync_write_object (FlowIO *io, gpointer object)
 
   flow_user_adapter_push (priv->user_adapter);
 
-  while (io->write_stream_is_open && flow_packet_queue_get_length_packets (packet_queue))
+  while (io->write_stream_is_open && !io->error)
   {
+    if (!flow_packet_queue_get_length_packets (packet_queue))
+    {
+      result = TRUE;
+      break;
+    }
+
     flow_user_adapter_wait_for_output (priv->user_adapter);
   }
+
+  g_assert (result || !io->write_stream_is_open || io->error);
+  on_error_propagate_and_assert (!result);
+  return result;
 }
 
-void
-flow_io_sync_flush (FlowIO *io)
+gboolean
+flow_io_sync_flush (FlowIO *io, GError **error)
 {
   FlowIOPrivate   *priv;
   FlowPacketQueue *packet_queue;
   FlowPacket      *packet;
+  gboolean         result = FALSE;
 
-  g_return_if_fail (FLOW_IS_IO (io));
-  return_if_invalid_bin (io);
+  g_return_val_if_fail (FLOW_IS_IO (io), FALSE);
+  return_val_if_invalid_bin (io, FALSE);
 
   /* Must check after invalid_bin test */
-  g_return_if_fail (io->write_stream_is_open == TRUE);
+  g_return_val_if_fail (io->write_stream_is_open == TRUE, FALSE);
 
   priv = io->priv;
+
+  g_assert (io->error == NULL);
 
   ensure_downstream_open (io);
   prepare_write (io, 0);
@@ -939,10 +996,20 @@ flow_io_sync_flush (FlowIO *io)
 
   flow_user_adapter_push (priv->user_adapter);
 
-  while (io->write_stream_is_open && flow_packet_queue_get_length_packets (packet_queue))
+  while (io->write_stream_is_open && !io->error)
   {
+    if (!flow_packet_queue_get_length_packets (packet_queue))
+    {
+      result = TRUE;
+      break;
+    }
+
     flow_user_adapter_wait_for_output (priv->user_adapter);
   }
+
+  g_assert (result || !io->write_stream_is_open || io->error);
+  on_error_propagate_and_assert (!result);
+  return result;
 }
 
 void

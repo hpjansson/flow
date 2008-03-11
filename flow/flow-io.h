@@ -52,6 +52,8 @@ struct _FlowIO
   guint            need_to_check_bin       : 1;
   guint            drop_read_data          : 1;
 
+  GError          *error;
+
   /* --- Private --- */
 
   gpointer         priv;
@@ -82,7 +84,7 @@ FlowIO          *flow_io_new               (void);
 gint             flow_io_read              (FlowIO *io, gpointer dest_buffer, gint max_len);
 gboolean         flow_io_read_exact        (FlowIO *io, gpointer dest_buffer, gint exact_len);
 gpointer         flow_io_read_object       (FlowIO *io);
-void             flow_io_write             (FlowIO *io, gpointer src_buffer,  gint exact_len);
+void             flow_io_write             (FlowIO *io, gpointer src_buffer, gint exact_len);
 void             flow_io_write_object      (FlowIO *io, gpointer object);
 void             flow_io_flush             (FlowIO *io);
 
@@ -95,12 +97,15 @@ void             flow_io_unblock_reads     (FlowIO *io);
 void             flow_io_block_writes      (FlowIO *io);
 void             flow_io_unblock_writes    (FlowIO *io);
 
-gint             flow_io_sync_read         (FlowIO *io, gpointer dest_buffer, gint max_len);
-gboolean         flow_io_sync_read_exact   (FlowIO *io, gpointer dest_buffer, gint exact_len);
-gpointer         flow_io_sync_read_object  (FlowIO *io);
-void             flow_io_sync_write        (FlowIO *io, gpointer src_buffer,  gint exact_len);
-void             flow_io_sync_write_object (FlowIO *io, gpointer object);
-void             flow_io_sync_flush        (FlowIO *io);
+gint             flow_io_sync_read         (FlowIO *io, gpointer dest_buffer, gint max_len,
+                                            GError **error);
+gboolean         flow_io_sync_read_exact   (FlowIO *io, gpointer dest_buffer, gint exact_len,
+                                            GError **error);
+gpointer         flow_io_sync_read_object  (FlowIO *io, GError **error);
+gboolean         flow_io_sync_write        (FlowIO *io, gpointer src_buffer, gint exact_len,
+                                            GError **error);
+gboolean         flow_io_sync_write_object (FlowIO *io, gpointer object, GError **error);
+gboolean         flow_io_sync_flush        (FlowIO *io, GError **error);
 
 FlowUserAdapter *flow_io_get_user_adapter  (FlowIO *io);
 void             flow_io_set_user_adapter  (FlowIO *io, FlowUserAdapter *user_adapter);

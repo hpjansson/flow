@@ -70,9 +70,11 @@ void              flow_tcp_io_connect               (FlowTcpIO *tcp_io, FlowIPSe
 void              flow_tcp_io_connect_by_name       (FlowTcpIO *tcp_io, const gchar *name, gint port);
 void              flow_tcp_io_disconnect            (FlowTcpIO *tcp_io, gboolean close_both_directions);
 
-gboolean          flow_tcp_io_sync_connect          (FlowTcpIO *tcp_io, FlowIPService *ip_service);
-gboolean          flow_tcp_io_sync_connect_by_name  (FlowTcpIO *tcp_io, const gchar *name, gint port);
-void              flow_tcp_io_sync_disconnect       (FlowTcpIO *tcp_io);
+gboolean          flow_tcp_io_sync_connect          (FlowTcpIO *tcp_io, FlowIPService *ip_service,
+                                                     GError **error);
+gboolean          flow_tcp_io_sync_connect_by_name  (FlowTcpIO *tcp_io, const gchar *name, gint port,
+                                                     GError **error);
+gboolean          flow_tcp_io_sync_disconnect       (FlowTcpIO *tcp_io, GError **error);
 
 FlowIPService    *flow_tcp_io_get_remote_service    (FlowTcpIO *tcp_io);
 FlowConnectivity  flow_tcp_io_get_connectivity      (FlowTcpIO *tcp_io);
