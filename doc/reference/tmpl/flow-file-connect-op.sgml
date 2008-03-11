@@ -91,3 +91,32 @@ FlowFileConnectOp
 @Returns: 
 
 
+<!-- ##### FUNCTION flow_file_connect_op_get_create ##### -->
+<para>
+
+</para>
+
+@file_connect_op: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_file_connect_op_get_replace ##### -->
+<para>
+
+</para>
+
+@file_connect_op: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_file_connect_op_get_create_modes ##### -->
+<para>
+
+</para>
+
+@file_connect_op: 
+@create_mode_user: 
+@create_mode_group: 
+@create_mode_others: 
+
+

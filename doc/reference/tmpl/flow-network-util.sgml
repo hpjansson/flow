@@ -1,5 +1,5 @@
 <!-- ##### SECTION Title ##### -->
-flow-enum-types
+flow-network-util
 
 <!-- ##### SECTION Short_Description ##### -->
 
@@ -17,7 +17,7 @@ flow-enum-types
 <!-- ##### SECTION Stability_Level ##### -->
 
 
-<!-- ##### FUNCTION flow_offset_anchor_get_type ##### -->
+<!-- ##### FUNCTION flow_get_preferred_ip_addr_family ##### -->
 <para>
 
 </para>
@@ -25,29 +25,15 @@ flow-enum-types
 @Returns: 
 
 
-<!-- ##### MACRO FLOW_TYPE_OFFSET_ANCHOR ##### -->
+<!-- ##### FUNCTION flow_set_preferred_ip_addr_family ##### -->
 <para>
 
 </para>
 
+@family: 
 
 
-<!-- ##### FUNCTION flow_access_mode_get_type ##### -->
-<para>
-
-</para>
-
-@Returns: 
-
-
-<!-- ##### MACRO FLOW_TYPE_ACCESS_MODE ##### -->
-<para>
-
-</para>
-
-
-
-<!-- ##### FUNCTION flow_agent_role_get_type ##### -->
+<!-- ##### FUNCTION flow_get_network_interfaces ##### -->
 <para>
 
 </para>
@@ -55,10 +41,20 @@ flow-enum-types
 @Returns: 
 
 
-<!-- ##### MACRO FLOW_TYPE_AGENT_ROLE ##### -->
+<!-- ##### FUNCTION flow_get_network_interface_to ##### -->
 <para>
 
 </para>
 
+@ip_addr: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_get_internet_interface ##### -->
+<para>
+
+</para>
+
+@Returns: 
 
 

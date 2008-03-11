@@ -48,6 +48,20 @@ FlowFileIO
 @access_mode: 
 
 
+<!-- ##### FUNCTION flow_file_io_create ##### -->
+<para>
+
+</para>
+
+@file_io: 
+@path: 
+@access_mode: 
+@replace_existing: 
+@create_mode_user: 
+@create_mode_group: 
+@create_mode_others: 
+
+
 <!-- ##### FUNCTION flow_file_io_close ##### -->
 <para>
 
@@ -86,22 +100,27 @@ FlowFileIO
 @Returns: 
 
 
+<!-- ##### FUNCTION flow_file_io_sync_create ##### -->
+<para>
+
+</para>
+
+@file_io: 
+@path: 
+@access_mode: 
+@replace_existing: 
+@create_mode_user: 
+@create_mode_group: 
+@create_mode_others: 
+@Returns: 
+
+
 <!-- ##### FUNCTION flow_file_io_sync_close ##### -->
 <para>
 
 </para>
 
 @file_io: 
-
-
-<!-- ##### FUNCTION flow_file_io_sync_seek_to ##### -->
-<para>
-
-</para>
-
-@file_io: 
-@offset: 
-@Returns: 
 
 
 <!-- ##### FUNCTION flow_file_io_get_path ##### -->

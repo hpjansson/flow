@@ -154,28 +154,3 @@ IP address
 @Returns: 
 
 
-<!-- ##### FUNCTION flow_ip_addr_get_internet_interface ##### -->
-<para>
-
-</para>
-
-@Returns: 
-
-
-<!-- ##### FUNCTION flow_ip_addr_get_interfaces ##### -->
-<para>
-
-</para>
-
-@Returns: 
-
-
-<!-- ##### FUNCTION flow_ip_addr_get_interface_to ##### -->
-<para>
-
-</para>
-
-@ip_addr: 
-@Returns: 
-
-

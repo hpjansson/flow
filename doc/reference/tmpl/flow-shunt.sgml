@@ -223,6 +223,7 @@ Asynchronous low-level I/O wrappers
 </para>
 
 @sync_shunt: 
+@packet_dest: 
 @Returns: 
 
 
@@ -232,6 +233,7 @@ Asynchronous low-level I/O wrappers
 </para>
 
 @sync_shunt: 
+@packet_dest: 
 @Returns: 
 
 

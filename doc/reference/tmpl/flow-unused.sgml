@@ -49,12 +49,43 @@
 @input_pad: 
 @output_pad: 
 
+<!-- ##### FUNCTION flow_file_io_sync_seek_to ##### -->
+<para>
+
+</para>
+
+@file_io: 
+@offset: 
+@Returns: 
+
 <!-- ##### FUNCTION flow_get_main_context_for_thread ##### -->
 <para>
 
 </para>
 
 @thread: 
+@Returns: 
+
+<!-- ##### FUNCTION flow_ip_addr_get_interface_to ##### -->
+<para>
+
+</para>
+
+@ip_addr: 
+@Returns: 
+
+<!-- ##### FUNCTION flow_ip_addr_get_interfaces ##### -->
+<para>
+
+</para>
+
+@Returns: 
+
+<!-- ##### FUNCTION flow_ip_addr_get_internet_interface ##### -->
+<para>
+
+</para>
+
 @Returns: 
 
 <!-- ##### FUNCTION flow_mux_add_input_pad ##### -->
