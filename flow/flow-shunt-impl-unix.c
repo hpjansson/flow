@@ -1223,6 +1223,16 @@ socket_shunt_read (FlowShunt *shunt)
   gint         result;
   gint         saved_errno;
 
+#if 1
+
+  /* socket_shunt_write() does proper error handling for connection-established,
+   * so wait until that has run. */
+
+  if G_UNLIKELY (!shunt->dispatched_begin)
+    return;
+
+#else
+
   if G_UNLIKELY (!shunt->dispatched_begin)
   {
     /* Begin stream */
@@ -1231,6 +1241,8 @@ socket_shunt_read (FlowShunt *shunt)
     generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_BEGIN);
     generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_SEGMENT_BEGIN);
   }
+
+#endif
 
   errno = 0;
 

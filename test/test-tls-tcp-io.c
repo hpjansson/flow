@@ -106,7 +106,7 @@ subthread_main (void)
   test_print ("Subthread connecting to main thread\n");
 
   tls_tcp_io = flow_tls_tcp_io_new ();
-  flow_tcp_io_sync_connect (FLOW_TCP_IO (tls_tcp_io), loopback_service);
+  flow_tcp_io_sync_connect (FLOW_TCP_IO (tls_tcp_io), loopback_service, NULL);
 
   test_print ("Subthread connected to main thread\n");
 
@@ -125,7 +125,7 @@ subthread_main (void)
 
       id = flow_timeout_add_to_current_thread (5000, (GSourceFunc) subthread_stalled_in_write, &transfer_info);
 
-      flow_io_sync_write (FLOW_IO (tls_tcp_io), buffer + transfer_info.write_offset, len);
+      flow_io_sync_write (FLOW_IO (tls_tcp_io), buffer + transfer_info.write_offset, len, NULL);
       test_print ("Subthread wrote %d bytes\n", len);
 
       flow_source_remove_from_current_thread (id);
@@ -142,7 +142,7 @@ subthread_main (void)
 
       id = flow_timeout_add_to_current_thread (5000, (GSourceFunc) subthread_stalled_in_read, &transfer_info);
 
-      if (!flow_io_sync_read_exact (FLOW_IO (tls_tcp_io), temp_buffer, len))
+      if (!flow_io_sync_read_exact (FLOW_IO (tls_tcp_io), temp_buffer, len, NULL))
         test_end (TEST_RESULT_FAILED, "subthread short read");
 
       flow_source_remove_from_current_thread (id);
@@ -157,7 +157,7 @@ subthread_main (void)
   }
 
   test_print ("Subthread disconnecting\n");
-  flow_tcp_io_sync_disconnect (FLOW_TCP_IO (tls_tcp_io));
+  flow_tcp_io_sync_disconnect (FLOW_TCP_IO (tls_tcp_io), NULL);
   test_print ("Subthread disconnected\n");
 
   g_object_unref (tls_tcp_io);
@@ -329,13 +329,13 @@ short_tests (void)
   tls_tcp_writer = flow_tls_tcp_io_new ();
 
 #if 0
-  if (flow_tcp_io_sync_connect (FLOW_TCP_IO (tls_tcp_writer), bad_loopback_service))
+  if (flow_tcp_io_sync_connect (FLOW_TCP_IO (tls_tcp_writer), bad_loopback_service, NULL))
     test_end (TEST_RESULT_FAILED, "bad connect did not fail as expected");
 
   test_print ("Bad connect failed as expected\n");
 #endif
 
-  if (!flow_tcp_io_sync_connect (FLOW_TCP_IO (tls_tcp_writer), loopback_service))
+  if (!flow_tcp_io_sync_connect (FLOW_TCP_IO (tls_tcp_writer), loopback_service, NULL))
     test_end (TEST_RESULT_FAILED, "could not connect to short-test listener");
 
   test_print ("Client connect ok\n");
@@ -355,7 +355,7 @@ short_tests (void)
 
   /* Partial read */
 
-  flow_io_sync_read_exact (FLOW_IO (tls_tcp_reader), read_buffer, 2000);
+  flow_io_sync_read_exact (FLOW_IO (tls_tcp_reader), read_buffer, 2000, NULL);
 
   /* Check read */
 
@@ -364,7 +364,7 @@ short_tests (void)
 
   /* Read remaining bytes with an oversized request */
 
-  if (flow_io_sync_read (FLOW_IO (tls_tcp_reader), read_buffer, 100) != 48)
+  if (flow_io_sync_read (FLOW_IO (tls_tcp_reader), read_buffer, 100, NULL) != 48)
     test_end (TEST_RESULT_FAILED, "oversized read request returned wrong count");
 
   /* Make sure remaining bytes match */
@@ -379,8 +379,8 @@ short_tests (void)
 
   /* Disconnect */
 
-  flow_tcp_io_sync_disconnect (FLOW_TCP_IO (tls_tcp_reader));
-  flow_tcp_io_sync_disconnect (FLOW_TCP_IO (tls_tcp_writer));
+  flow_tcp_io_sync_disconnect (FLOW_TCP_IO (tls_tcp_reader), NULL);
+  flow_tcp_io_sync_disconnect (FLOW_TCP_IO (tls_tcp_writer), NULL);
 
   g_object_unref (tls_tcp_reader);
   g_object_unref (tls_tcp_writer);

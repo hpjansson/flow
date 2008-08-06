@@ -26,6 +26,7 @@
 #include "config.h"
 #include "flow-element-util.h"
 #include "flow-gobject-util.h"
+#include "flow-gerror-util.h"
 #include "flow-event-codes.h"
 #include "flow-tcp-connect-op.h"
 #include "flow-tcp-io.h"
@@ -58,6 +59,34 @@
     { \
       g_warning (G_STRLOC ": Misconfigured bin! Need a FlowUserAdapter and a FlowTcpConnector."); \
       return val; \
+    } \
+  } G_STMT_END
+
+#define on_error_propagate(x) \
+  G_STMT_START { \
+    if (io->error) \
+    { \
+      if (error) \
+        *error = io->error; \
+      else \
+        g_error_free (io->error); \
+\
+      io->error = NULL; \
+    } \
+  } G_STMT_END
+
+#define on_error_propagate_and_assert(x) \
+  G_STMT_START { \
+    if (io->error) \
+    { \
+      g_assert (x); \
+\
+      if (error) \
+        *error = io->error; \
+      else \
+        g_error_free (io->error); \
+\
+      io->error = NULL; \
     } \
   } G_STMT_END
 
@@ -224,6 +253,33 @@ set_connectivity (FlowTcpIO *tcp_io, FlowConnectivity new_connectivity)
 }
 
 static gboolean
+check_for_errors (FlowTcpIO *tcp_io, FlowDetailedEvent *detailed_event)
+{
+  FlowIO *io = FLOW_IO (tcp_io);
+  GError *error;
+
+  error = flow_gerror_from_detailed_event (detailed_event, FLOW_SOCKET_DOMAIN,
+                                           FLOW_SOCKET_ADDRESS_PROTECTED,
+                                           FLOW_SOCKET_ADDRESS_IN_USE,
+                                           FLOW_SOCKET_ADDRESS_DOES_NOT_EXIST,
+                                           FLOW_SOCKET_CONNECTION_REFUSED,
+                                           FLOW_SOCKET_CONNECTION_RESET,
+                                           FLOW_SOCKET_NETWORK_UNREACHABLE,
+                                           FLOW_SOCKET_ACCEPT_ERROR,
+                                           FLOW_SOCKET_OVERSIZED_PACKET,
+                                           -1);
+
+  if (error)
+  {
+    g_clear_error (&io->error);
+    io->error = error;
+    return TRUE;
+  }
+
+  return FALSE;
+}
+
+static gboolean
 flow_tcp_io_handle_input_object (FlowTcpIO *tcp_io, gpointer object)
 {
   FlowTcpIOPrivate *priv   = tcp_io->priv;
@@ -232,6 +288,8 @@ flow_tcp_io_handle_input_object (FlowTcpIO *tcp_io, gpointer object)
   if (FLOW_IS_DETAILED_EVENT (object))
   {
     FlowDetailedEvent *detailed_event = object;
+
+    result = check_for_errors (tcp_io, detailed_event);
 
     if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_BEGIN))
     {
@@ -425,7 +483,7 @@ flow_tcp_io_disconnect (FlowTcpIO *tcp_io, gboolean close_both_directions)
 }
 
 gboolean
-flow_tcp_io_sync_connect (FlowTcpIO *tcp_io, FlowIPService *ip_service)
+flow_tcp_io_sync_connect (FlowTcpIO *tcp_io, FlowIPService *ip_service, GError **error)
 {
   FlowTcpIOPrivate *priv;
   FlowTcpConnectOp *op;
@@ -441,6 +499,8 @@ flow_tcp_io_sync_connect (FlowTcpIO *tcp_io, FlowIPService *ip_service)
 
   io = FLOW_IO (tcp_io);
 
+  g_assert (io->error == NULL);
+
   op = flow_tcp_connect_op_new (ip_service, -1);
   flow_io_write_object (io, op);
   g_object_unref (op);
@@ -454,11 +514,20 @@ flow_tcp_io_sync_connect (FlowTcpIO *tcp_io, FlowIPService *ip_service)
     flow_io_check_events (io);
   }
 
-  return priv->connectivity == FLOW_CONNECTIVITY_CONNECTED ? TRUE : FALSE;
+  if (priv->connectivity == FLOW_CONNECTIVITY_CONNECTED)
+  {
+    g_assert (io->error == NULL);
+    return TRUE;
+  }
+
+  g_assert (priv->connectivity == FLOW_CONNECTIVITY_DISCONNECTED);
+  g_assert (io->error != NULL);
+  on_error_propagate ();
+  return FALSE;
 }
 
 gboolean
-flow_tcp_io_sync_connect_by_name (FlowTcpIO *tcp_io, const gchar *name, gint port)
+flow_tcp_io_sync_connect_by_name (FlowTcpIO *tcp_io, const gchar *name, gint port, GError **error)
 {
   FlowTcpIOPrivate *priv;
   FlowIPService    *ip_service;
@@ -477,25 +546,26 @@ flow_tcp_io_sync_connect_by_name (FlowTcpIO *tcp_io, const gchar *name, gint por
   flow_ip_service_set_name (ip_service, name);
   flow_ip_service_set_port (ip_service, port);
 
-  result = flow_tcp_io_sync_connect (tcp_io, ip_service);
+  result = flow_tcp_io_sync_connect (tcp_io, ip_service, error);
 
   g_object_unref (ip_service);
   return result;
 }
 
-void
-flow_tcp_io_sync_disconnect (FlowTcpIO *tcp_io)
+gboolean
+flow_tcp_io_sync_disconnect (FlowTcpIO *tcp_io, GError **error)
 {
   FlowTcpIOPrivate *priv;
   FlowIO           *io;
+  gboolean          result;
 
-  g_return_if_fail (FLOW_IS_TCP_IO (tcp_io));
-  return_if_invalid_bin (tcp_io);
+  g_return_val_if_fail (FLOW_IS_TCP_IO (tcp_io), FALSE);
+  return_val_if_invalid_bin (tcp_io, FALSE);
 
   priv = tcp_io->priv;
 
   if (priv->connectivity == FLOW_CONNECTIVITY_DISCONNECTED)
-    return;
+    return TRUE;
 
   if (priv->connectivity != FLOW_CONNECTIVITY_DISCONNECTING)
   {
@@ -511,7 +581,23 @@ flow_tcp_io_sync_disconnect (FlowTcpIO *tcp_io)
     flow_io_check_events (io);
   }
 
-  g_assert (priv->connectivity == FLOW_CONNECTIVITY_DISCONNECTED);
+  result = io->error ? FALSE : TRUE;
+
+  /* We may have to report an error even though we got disconnected, if
+   * the disconnect was unclean. */
+
+  if (io->error)
+  {
+    result = FALSE;
+  }
+  else
+  {
+    g_assert (priv->connectivity == FLOW_CONNECTIVITY_DISCONNECTED);
+    result = TRUE;
+  }
+
+  on_error_propagate ();
+  return result;
 }
 
 FlowIPService *

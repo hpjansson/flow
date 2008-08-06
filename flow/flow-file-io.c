@@ -26,6 +26,7 @@
 #include "config.h"
 #include "flow-element-util.h"
 #include "flow-gobject-util.h"
+#include "flow-gerror-util.h"
 #include "flow-event-codes.h"
 #include "flow-position.h"
 #include "flow-file-connect-op.h"
@@ -59,6 +60,19 @@
     { \
       g_warning (G_STRLOC ": Misconfigured bin! Need a FlowUserAdapter and a FlowTcpConnector."); \
       return val; \
+    } \
+  } G_STMT_END
+
+#define on_error_propagate(x) \
+  G_STMT_START { \
+    if (io->error) \
+    { \
+      if (error) \
+        *error = io->error; \
+      else \
+        g_error_free (io->error); \
+\
+      io->error = NULL; \
     } \
   } G_STMT_END
 
@@ -224,6 +238,35 @@ set_connectivity (FlowFileIO *file_io, FlowConnectivity new_connectivity)
 }
 
 static gboolean
+check_for_errors (FlowFileIO *file_io, FlowDetailedEvent *detailed_event)
+{
+  FlowIO *io = FLOW_IO (file_io);
+  GError *error;
+
+  error = flow_gerror_from_detailed_event (detailed_event, FLOW_FILE_DOMAIN,
+                                           FLOW_FILE_REACHED_END,
+                                           FLOW_FILE_PERMISSION_DENIED,
+                                           FLOW_FILE_IS_NOT_A_FILE,
+                                           FLOW_FILE_TOO_MANY_LINKS,
+                                           FLOW_FILE_OUT_OF_HANDLES,
+                                           FLOW_FILE_PATH_TOO_LONG,
+                                           FLOW_FILE_NO_SPACE,
+                                           FLOW_FILE_IS_READ_ONLY,
+                                           FLOW_FILE_IS_LOCKED,
+                                           FLOW_FILE_DOES_NOT_EXIST
+                                           -1);
+
+  if (error)
+  {
+    g_clear_error (&io->error);
+    io->error = error;
+    return TRUE;
+  }
+
+  return FALSE;
+}
+
+static gboolean
 flow_file_io_handle_input_object (FlowFileIO *file_io, gpointer object)
 {
   FlowFileIOPrivate *priv   = file_io->priv;
@@ -232,6 +275,8 @@ flow_file_io_handle_input_object (FlowFileIO *file_io, gpointer object)
   if (FLOW_IS_DETAILED_EVENT (object))
   {
     FlowDetailedEvent *detailed_event = object;
+
+    result = check_for_errors (file_io, detailed_event);
 
     if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_BEGIN))
     {
@@ -577,11 +622,12 @@ flow_file_io_seek_to (FlowFileIO *file_io, goffset offset)
 }
 
 gboolean
-flow_file_io_sync_open (FlowFileIO *file_io, const gchar *path, FlowAccessMode access_mode)
+flow_file_io_sync_open (FlowFileIO *file_io, const gchar *path, FlowAccessMode access_mode, GError **error)
 {
   FlowFileIOPrivate *priv;
   FlowIO            *io;
   FlowFileConnectOp *file_connect_op;
+  gboolean           result;
 
   g_return_val_if_fail (FLOW_IS_FILE_IO (file_io), FALSE);
   return_val_if_invalid_bin (file_io, FALSE);
@@ -590,6 +636,7 @@ flow_file_io_sync_open (FlowFileIO *file_io, const gchar *path, FlowAccessMode a
   io = FLOW_IO (file_io);
 
   g_return_val_if_fail (priv->connectivity == FLOW_CONNECTIVITY_DISCONNECTED, FALSE);
+  g_assert (io->error == NULL);
 
   file_connect_op = flow_file_connect_op_new (path, access_mode, FALSE, FALSE,
                                               FLOW_NO_ACCESS, FLOW_NO_ACCESS, FLOW_NO_ACCESS);
@@ -606,17 +653,31 @@ flow_file_io_sync_open (FlowFileIO *file_io, const gchar *path, FlowAccessMode a
     flow_io_check_events (io);
   }
 
-  return priv->connectivity == FLOW_CONNECTIVITY_CONNECTED ? TRUE : FALSE;
+  if (priv->connectivity == FLOW_CONNECTIVITY_CONNECTED)
+  {
+    g_assert (io->error == NULL);
+    result = TRUE;
+  }
+  else
+  {
+    g_assert (io->error != NULL);
+    result = FALSE;
+  }
+
+  on_error_propagate ();
+  return result;
 }
 
 gboolean
 flow_file_io_sync_create (FlowFileIO *file_io, const gchar *path, FlowAccessMode access_mode,
                           gboolean replace_existing, FlowAccessMode create_mode_user,
-                          FlowAccessMode create_mode_group, FlowAccessMode create_mode_others)
+                          FlowAccessMode create_mode_group, FlowAccessMode create_mode_others,
+                          GError **error)
 {
   FlowFileIOPrivate *priv;
   FlowIO            *io;
   FlowFileConnectOp *file_connect_op;
+  gboolean           result;
 
   g_return_val_if_fail (FLOW_IS_FILE_IO (file_io), FALSE);
   return_val_if_invalid_bin (file_io, FALSE);
@@ -642,23 +703,36 @@ flow_file_io_sync_create (FlowFileIO *file_io, const gchar *path, FlowAccessMode
     flow_io_check_events (io);
   }
 
-  return priv->connectivity == FLOW_CONNECTIVITY_CONNECTED ? TRUE : FALSE;
+  if (priv->connectivity == FLOW_CONNECTIVITY_CONNECTED)
+  {
+    g_assert (io->error == NULL);
+    result = TRUE;
+  }
+  else
+  {
+    g_assert (io->error != NULL);
+    result = FALSE;
+  }
+
+  on_error_propagate ();
+  return result;
 }
 
-void
-flow_file_io_sync_close (FlowFileIO *file_io)
+gboolean
+flow_file_io_sync_close (FlowFileIO *file_io, GError **error)
 {
   FlowFileIOPrivate *priv;
   FlowIO            *io;
+  gboolean           result;
 
-  g_return_if_fail (FLOW_IS_FILE_IO (file_io));
-  return_if_invalid_bin (file_io);
+  g_return_val_if_fail (FLOW_IS_FILE_IO (file_io), FALSE);
+  return_val_if_invalid_bin (file_io, FALSE);
 
   priv = file_io->priv;
   io = FLOW_IO (file_io);
 
   if (priv->connectivity == FLOW_CONNECTIVITY_DISCONNECTED)
-    return;
+    return TRUE;
 
   if (priv->connectivity != FLOW_CONNECTIVITY_DISCONNECTING)
   {
@@ -672,7 +746,23 @@ flow_file_io_sync_close (FlowFileIO *file_io)
     flow_io_check_events (io);
   }
 
-  g_assert (priv->connectivity == FLOW_CONNECTIVITY_DISCONNECTED);
+  result = io->error ? FALSE : TRUE;
+
+  /* We may have to report an error even though we got disconnected, if
+   * the disconnect was unclean (error flushing data? NFS timeout?). */
+
+  if (io->error)
+  {
+    result = FALSE;
+  }
+  else
+  {
+    g_assert (priv->connectivity == FLOW_CONNECTIVITY_DISCONNECTED);
+    result = TRUE;
+  }
+
+  on_error_propagate ();
+  return result;
 }
 
 gchar *

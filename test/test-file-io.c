@@ -74,6 +74,7 @@ subthread_main (void)
   gchar         *file_name;
   guchar         temp_buffer [PACKET_MAX_SIZE];
   gboolean       result;
+  GError        *error = NULL;
 
   test_print ("Subthread opening file\n");
 
@@ -82,11 +83,13 @@ subthread_main (void)
   result = flow_file_io_sync_create (file_io, file_name, FLOW_READ_ACCESS | FLOW_WRITE_ACCESS, TRUE,
                                      FLOW_READ_ACCESS | FLOW_WRITE_ACCESS,
                                      FLOW_NO_ACCESS,
-                                     FLOW_NO_ACCESS);
+                                     FLOW_NO_ACCESS,
+                                     &error);
 
   if (!result)
   {
     test_end (TEST_RESULT_FAILED, "failed to create scratch file");
+    g_error_free (error);
     g_free (file_name);
     return;
   }
@@ -118,7 +121,7 @@ subthread_main (void)
 
       test_print ("Append: Appending %d bytes\n", len);
 
-      flow_io_sync_write (FLOW_IO (file_io), buffer + transfer_info.len, len);
+      flow_io_sync_write (FLOW_IO (file_io), buffer + transfer_info.len, len, NULL);
 
       transfer_info.len += len;
       transfer_info.offset = transfer_info.len;
@@ -144,7 +147,7 @@ subthread_main (void)
       test_print ("Read: Reading %d bytes\n", len);
 
       /* TODO: Verify return value? */
-      flow_io_sync_read_exact (FLOW_IO (file_io), temp_buffer, len);
+      flow_io_sync_read_exact (FLOW_IO (file_io), temp_buffer, len, NULL);
 
       if (memcmp (temp_buffer, buffer + transfer_info.offset, len))
         test_end (TEST_RESULT_FAILED, "Data verification error");
@@ -167,7 +170,7 @@ subthread_main (void)
   }
 
   test_print ("Subthread disconnecting\n");
-  flow_file_io_sync_close (file_io);
+  flow_file_io_sync_close (file_io, NULL);
   test_print ("Subthread disconnected\n");
 
   g_object_unref (file_io);

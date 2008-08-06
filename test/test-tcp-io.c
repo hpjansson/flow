@@ -94,11 +94,12 @@ subthread_main (void)
 
   if (g_random_boolean ())
   {
-    flow_tcp_io_sync_connect (tcp_io, loopback_service);
+    if (!flow_tcp_io_sync_connect (tcp_io, loopback_service, NULL))
+      test_end (TEST_RESULT_FAILED, "loopback connect failed");
   }
   else
   {
-    if (!flow_tcp_io_sync_connect_by_name (tcp_io, "localhost", LOCAL_PORT))
+    if (!flow_tcp_io_sync_connect_by_name (tcp_io, "localhost", LOCAL_PORT, NULL))
       test_end (TEST_RESULT_FAILED, "loopback connect by name failed");
   }
 
@@ -118,7 +119,7 @@ subthread_main (void)
       len = MIN (len, BUFFER_SIZE - transfer_info.write_offset);
 
       if (g_random_int_range (0, 2) == 0)
-        flow_io_sync_write (FLOW_IO (tcp_io), buffer + transfer_info.write_offset, len);
+        flow_io_sync_write (FLOW_IO (tcp_io), buffer + transfer_info.write_offset, len, NULL);
       else
         flow_io_write (FLOW_IO (tcp_io), buffer + transfer_info.write_offset, len);
 
@@ -134,7 +135,7 @@ subthread_main (void)
       len = g_random_int_range (PACKET_MIN_SIZE, PACKET_MAX_SIZE);
       len = MIN (len, BUFFER_SIZE - transfer_info.read_offset);
 
-      if (!flow_io_sync_read_exact (FLOW_IO (tcp_io), temp_buffer, len))
+      if (!flow_io_sync_read_exact (FLOW_IO (tcp_io), temp_buffer, len, NULL))
         test_end (TEST_RESULT_FAILED, "subthread short read");
 
       test_print ("Subthread read %d bytes\n", len);
@@ -147,7 +148,7 @@ subthread_main (void)
   }
 
   test_print ("Subthread disconnecting\n");
-  flow_tcp_io_sync_disconnect (tcp_io);
+  flow_tcp_io_sync_disconnect (tcp_io, NULL);
   test_print ("Subthread disconnected\n");
 
   g_object_unref (tcp_io);
@@ -313,10 +314,10 @@ short_tests (void)
 
   tcp_writer = flow_tcp_io_new ();
 
-  if (flow_tcp_io_sync_connect (tcp_writer, bad_loopback_service))
+  if (flow_tcp_io_sync_connect (tcp_writer, bad_loopback_service, NULL))
     test_end (TEST_RESULT_FAILED, "bad connect did not fail as expected");
 
-  if (!flow_tcp_io_sync_connect (tcp_writer, loopback_service))
+  if (!flow_tcp_io_sync_connect (tcp_writer, loopback_service, NULL))
     test_end (TEST_RESULT_FAILED, "could not connect to short-test listener");
 
   tcp_reader = flow_tcp_io_listener_sync_pop_connection (tcp_listener);
@@ -330,7 +331,7 @@ short_tests (void)
 
   /* Partial read */
 
-  flow_io_sync_read_exact (FLOW_IO (tcp_reader), read_buffer, 2000);
+  flow_io_sync_read_exact (FLOW_IO (tcp_reader), read_buffer, 2000, NULL);
 
   /* Check read */
 
@@ -339,7 +340,7 @@ short_tests (void)
 
   /* Read remaining bytes with an oversized request */
 
-  if (flow_io_sync_read (FLOW_IO (tcp_reader), read_buffer, 100) != 48)
+  if (flow_io_sync_read (FLOW_IO (tcp_reader), read_buffer, 100, NULL) != 48)
     test_end (TEST_RESULT_FAILED, "oversized read request returned wrong count");
 
   /* Make sure remaining bytes match */
@@ -354,8 +355,8 @@ short_tests (void)
 
   /* Disconnect */
 
-  flow_tcp_io_sync_disconnect (tcp_reader);
-  flow_tcp_io_sync_disconnect (tcp_writer);
+  flow_tcp_io_sync_disconnect (tcp_reader, NULL);
+  flow_tcp_io_sync_disconnect (tcp_writer, NULL);
 
   g_object_unref (tcp_reader);
   g_object_unref (tcp_writer);

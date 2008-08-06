@@ -50,7 +50,8 @@ libflow_la_SOURCES = \
 	flow-event.c \
 	flow-file-connect-op.c \
 	flow-file-connector.c \
-##	flow-file-io.c \
+	flow-file-io.c \
+	flow-gerror-util.c \
 	flow-gobject-util.c \
 	flow-input-pad.c \
 	flow-io.c \
@@ -106,6 +107,7 @@ pkginclude_HEADERS = \
 	flow-file-connect-op.h \
 	flow-file-connector.h \
 	flow-file-io.h \
+	flow-gerror-util.h \
 	flow-input-pad.h \
 	flow-io.h \
 	flow-ip-addr.h \
