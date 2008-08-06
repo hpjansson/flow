@@ -33,6 +33,7 @@ G_BEGIN_DECLS
 #define FLOW_FILE_DOMAIN   "flow-file"
 #define FLOW_EXEC_DOMAIN   "flow-exec"
 #define FLOW_SOCKET_DOMAIN "flow-socket"
+#define FLOW_LOOKUP_DOMAIN "flow-lookup"
 
 typedef enum
 {
@@ -91,6 +92,14 @@ typedef enum
   FLOW_SOCKET_OVERSIZED_PACKET
 }
 FlowSocketEventCode;
+
+typedef enum
+{
+  FLOW_RESOLUTION_TEMPORARY_SERVER_FAILURE,
+  FLOW_RESOLUTION_PERMANENT_SERVER_FAILURE,
+  FLOW_RESOLUTION_NO_NAMES
+}
+FlowLookupEventCode;
 
 G_END_DECLS
 
