@@ -16,7 +16,7 @@ let m=0
 
 echo -n "Preparing... "
 
-for i in $(cat tests.list); do
+for i in $(grep "^[ \t]*[^#]" tests.list); do
   ./$i >/dev/null 2>&1;
 done
 
@@ -25,7 +25,7 @@ echo "done"
 while true; do
   echo -n -e "\rIterations: $m"
 
-  for i in $(cat tests.list); do
+  for i in $(grep "^[ \t]*[^#]" tests.list); do
     nice -10 valgrind -q --trace-children=yes --track-fds=yes --time-stamp=yes --num-callers=32 .libs/lt-$i -n >out 2>&1
 
     if grep -L 'Thread' out >/dev/null 2>&1; then

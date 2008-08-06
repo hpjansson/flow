@@ -26,7 +26,7 @@ done
 
 echo -n "Preparing... "
 
-for i in $(cat tests.list); do
+for i in $(grep "^[ \t]*[^#]" tests.list); do
   ./$i >/dev/null 2>&1;
 done
 
@@ -35,7 +35,7 @@ echo "done"
 while true; do
   echo -n -e "\rIterations: $m"
 
-  for i in $(cat tests.list); do
+  for i in $(grep "^[ \t]*[^#]" tests.list); do
     cat <<EOF >.expect-commands
 proc send {ignore arg} {
   sleep .1

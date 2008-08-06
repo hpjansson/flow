@@ -15,7 +15,7 @@ check-local:
 	@echo '*** Running tests'
 	@echo '*** '
 	@echo
-	@for i in `cat $(top_srcdir)/test/tests.list`; \
+	@for i in `grep "^[^#]" $(top_srcdir)/test/tests.list`; \
   do \
     if ! $(top_builddir)/test/$$i; then \
       exit 1; \

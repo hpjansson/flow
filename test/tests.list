@@ -1,11 +1,11 @@
 test-packet
 test-packet-queue
-test-ip-resolver
+# test-ip-resolver
 test-shunt-process
 test-shunt-simple-file
 test-shunt-complex-file
 test-shunt-simple-tcp
-test-shunt-simple-udp
+# test-shunt-simple-udp
 test-mux
 test-demux
 test-mux-serializer
