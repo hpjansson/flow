@@ -27,7 +27,7 @@
 
 /* Test variables; adjustable */
 
-#define BUFFER_SIZE            50000000  /* Amount of data to transfer */
+#define BUFFER_SIZE            10000000  /* Amount of data to transfer */
 #define PACKET_MAX_SIZE        1024      /* Max transfer unit */
 #define PACKET_MIN_SIZE        1         /* Min transfer unit */
 #define IN_OUT_DELTA_MAX       32768     /* Max bytes "in flight" before sender pauses */
