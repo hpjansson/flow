@@ -6,8 +6,6 @@ List of things that remain to be done for 1.0 and future milestones.
 Version 1.0
 -----------
 
-- Add error propagation to FlowIPResolver and FlowIPService.
-
 - Implement UDP connector and convenience bin. This depends on the
   name-looker-upper above to be able to lookup and set the remote IP
   service between packets.
