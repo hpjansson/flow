@@ -65,6 +65,7 @@ typedef struct
 
   gpointer          arg;                   /* (gchar *), or (FlowIPAddr *) on reverse lookup */
   GList            *results;
+  GError           *error;
 
   GMainContext     *dispatch_context;      /* Main context to dispatch result in */
   FlowIPLookupFunc *user_func;             /* Callback */
@@ -74,8 +75,8 @@ Lookup;
 
 /* --- Implementation prototypes --- */
 
-static GList *flow_ip_resolver_impl_lookup_by_name (const gchar *name);
-static GList *flow_ip_resolver_impl_lookup_by_addr (FlowIPAddr *ip_addr);
+static GList *flow_ip_resolver_impl_lookup_by_name (const gchar *name, GError **error);
+static GList *flow_ip_resolver_impl_lookup_by_addr (FlowIPAddr *ip_addr, GError **error);
 
 /* Select an implementation */
 #include "flow-ip-resolver-impl-unix.c"
@@ -128,6 +129,7 @@ destroy_lookup (Lookup *lookup)
     free_object_list (lookup->results);
   }
 
+  g_clear_error (&lookup->error);
   g_free (lookup);
 }
 
@@ -165,9 +167,12 @@ dispatch_lookup (Lookup *lookup)
     g_mutex_unlock (priv->mutex);
 
     if (is_reverse)
-      lookup->user_func (arg_list, result_list, lookup->user_data);
+      lookup->user_func (arg_list, result_list, lookup->error, lookup->user_data);
     else
-      lookup->user_func (result_list, arg_list, lookup->user_data);
+      lookup->user_func (result_list, arg_list, lookup->error, lookup->user_data);
+
+    /* This belongs to the user now */
+    lookup->error = NULL;
 
     g_mutex_lock (priv->mutex);
 
@@ -214,12 +219,12 @@ do_lookup (Lookup *lookup, FlowIPResolver *resolver)
     if (is_reverse)
     {
       /* Address in, names out */
-      lookup->results = flow_ip_resolver_impl_lookup_by_addr (lookup->arg);
+      lookup->results = flow_ip_resolver_impl_lookup_by_addr (lookup->arg, &lookup->error);
     }
     else
     {
       /* Name in, addresses out */
-      lookup->results = flow_ip_resolver_impl_lookup_by_name (lookup->arg);
+      lookup->results = flow_ip_resolver_impl_lookup_by_name (lookup->arg, &lookup->error);
 
       /* Put IPv4 addresses first */
       lookup->results = g_list_sort (lookup->results, (GCompareFunc) compare_ipv4_before_ipv6);

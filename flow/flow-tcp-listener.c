@@ -236,7 +236,7 @@ flow_tcp_listener_set_local_service (FlowTcpListener *tcp_listener, FlowIPServic
        * that for the main thread, this is not the default GLib main context, so
        * e.g. GUI callbacks won't fire. */
 
-      flow_ip_service_sync_resolve (ip_service);
+      flow_ip_service_sync_resolve (ip_service, NULL);
     }
 
     priv->shunt = flow_open_tcp_listener (ip_service);

@@ -48,6 +48,7 @@ libflow_la_SOURCES = \
 	flow-element-util.c \
 	flow-emitter.c \
 	flow-event.c \
+	flow-event-codes.c \
 	flow-file-connect-op.c \
 	flow-file-connector.c \
 	flow-file-io.c \

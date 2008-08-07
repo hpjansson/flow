@@ -90,6 +90,8 @@ void                 flow_ip_service_add_address      (FlowIPService *ip_service
 void                 flow_ip_service_remove_address   (FlowIPService *ip_service, FlowIPAddr *ip_addr);
 
 void                 flow_ip_service_resolve          (FlowIPService *ip_service);
-gboolean             flow_ip_service_sync_resolve     (FlowIPService *ip_service);
+gboolean             flow_ip_service_sync_resolve     (FlowIPService *ip_service, GError **error);
+
+GError              *flow_ip_service_get_last_error   (FlowIPService *ip_service);
 
 #endif /* _FLOW_IP_SERVICE_H */

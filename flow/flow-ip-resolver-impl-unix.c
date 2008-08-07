@@ -35,12 +35,41 @@
 # include <winsock2.h>
 #endif
 
+#include "flow-event-codes.h"
 #include "flow-common-impl-unix.h"
 
 #ifdef HAVE_GETADDRINFO
 
+static GError *
+eai_to_gerror (gint eai)
+{
+  gint event_code = FLOW_LOOKUP_NO_RECORDS;
+
+  switch (eai)
+  {
+    case EAI_AGAIN:
+      event_code = FLOW_LOOKUP_TEMPORARY_SERVER_FAILURE;
+      break;
+
+    case EAI_FAIL:
+      event_code = FLOW_LOOKUP_PERMANENT_SERVER_FAILURE;
+      break;
+
+    case EAI_BADFLAGS:
+    case EAI_FAMILY:
+    case EAI_SOCKTYPE:
+      g_assert_not_reached ();
+      break;
+
+    default:
+      break;
+  }
+
+  return g_error_new_literal (FLOW_LOOKUP_DOMAIN_QUARK, event_code, gai_strerror (eai));
+}
+
 static GList *
-flow_ip_resolver_impl_lookup_by_name (const gchar *name)
+flow_ip_resolver_impl_lookup_by_name (const gchar *name, GError **error)
 {
   struct addrinfo  hints;
   struct addrinfo *res       = NULL;
@@ -92,6 +121,9 @@ flow_ip_resolver_impl_lookup_by_name (const gchar *name)
   }
   else
   {
+    if (error)
+      *error = eai_to_gerror (rv);
+
     DEBUG (g_print (G_STRLOC ": [%s] Lookup returned error %d - %s.\n", name, rv, gai_strerror (rv)));
   }
 
@@ -102,7 +134,7 @@ flow_ip_resolver_impl_lookup_by_name (const gchar *name)
 }
 
 static GList *
-flow_ip_resolver_impl_lookup_by_addr (FlowIPAddr *ip_addr)
+flow_ip_resolver_impl_lookup_by_addr (FlowIPAddr *ip_addr, GError **error)
 {
   FlowSockaddr     sa;
   gchar            name [NI_MAXHOST];
@@ -123,6 +155,9 @@ flow_ip_resolver_impl_lookup_by_addr (FlowIPAddr *ip_addr)
 
   if (rv != 0)
   {
+    if (error)
+      *error = eai_to_gerror (rv);
+
     DEBUG (g_print (G_STRLOC ": [%s] Lookup returned error %d - %s.\n",
                     flow_ip_addr_get_string (ip_addr), rv, gai_strerror (rv)));
   }
@@ -134,6 +169,28 @@ flow_ip_resolver_impl_lookup_by_addr (FlowIPAddr *ip_addr)
 }
 
 #else
+
+static GError *
+h_errno_to_gerror (gint h_errcode)
+{
+  gint event_code = FLOW_LOOKUP_NO_RECORDS;
+
+  switch (h_errcode)
+  {
+    case TRY_AGAIN:
+      event_code = FLOW_LOOKUP_TEMPORARY_SERVER_FAILURE;
+      break;
+
+    case NO_RECOVERY:
+      event_code = FLOW_LOOKUP_PERMANENT_SERVER_FAILURE;
+      break;
+
+    default:
+      break;
+  }
+
+  return g_error_new_literal (FLOW_LOOKUP_DOMAIN_QUARK, event_code, hstrerror (h_errcode));
+}
 
 static GList *
 flow_ip_resolver_impl_lookup_by_name (const gchar *name)
@@ -216,9 +273,15 @@ flow_ip_resolver_impl_lookup_by_addr (FlowIPAddr *ip_addr)
   g_free (sa);
 
   if (he && he->h_name)
+  {
     name_list = g_list_prepend (name_list, g_strdup (he->h_name));
+  }
   else
+  {
     DEBUG (g_print ("No he.\n"));
+
+    
+  }
 
   g_static_mutex_unlock (&mutex);
 

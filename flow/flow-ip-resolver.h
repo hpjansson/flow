@@ -27,7 +27,7 @@
 
 #include <flow/flow-ip-addr.h>
 
-typedef void (FlowIPLookupFunc) (GList *addr_list, GList *name_list, gpointer data);
+typedef void (FlowIPLookupFunc) (GList *addr_list, GList *name_list, GError *error, gpointer data);
 
 #define FLOW_TYPE_IP_RESOLVER            (flow_ip_resolver_get_type ())
 #define FLOW_IP_RESOLVER(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), FLOW_TYPE_IP_RESOLVER, FlowIPResolver))
