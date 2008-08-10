@@ -85,6 +85,7 @@ libflow_la_SOURCES = \
 	flow-tls-protocol.c \
 	flow-tls-tcp-io.c \
 	flow-tls-tcp-io-listener.c \
+	flow-udp-connect-op.c \
 	flow-user-adapter.c \
 	flow-util.c \
 	$(flow_built_sources)
@@ -140,6 +141,7 @@ pkginclude_HEADERS = \
 	flow-tls-protocol.h \
 	flow-tls-tcp-io.h \
 	flow-tls-tcp-io-listener.h \
+	flow-udp-connect-op.h \
 	flow-user-adapter.h \
 	flow-util.h
 
