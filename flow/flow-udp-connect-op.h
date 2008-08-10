@@ -59,9 +59,9 @@ struct _FlowUdpConnectOpClass
   void (*_pad_4) (void);
 };
 
-FlowUdpConnectOp *flow_udp_connect_op_new                (FlowIPService *remote_ip_service, gint local_port);
+FlowUdpConnectOp *flow_udp_connect_op_new                (FlowIPService *local_ip_service, FlowIPService *remote_ip_service);
 
+FlowIPService    *flow_udp_connect_op_get_local_service  (FlowUdpConnectOp *udp_connect_op);
 FlowIPService    *flow_udp_connect_op_get_remote_service (FlowUdpConnectOp *udp_connect_op);
-gint              flow_udp_connect_op_get_local_port     (FlowUdpConnectOp *udp_connect_op);
 
 #endif /* _FLOW_UDP_CONNECT_OP_H */

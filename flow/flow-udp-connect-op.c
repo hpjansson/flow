@@ -35,12 +35,34 @@
 
 typedef struct
 {
+  FlowIPService *local_ip_service;
   FlowIPService *remote_ip_service;
-  gint           local_port;
 }
 FlowUdpConnectOpPrivate;
 
 /* --- FlowUdpConnectOp properties --- */
+
+static FlowIPService *
+flow_udp_connect_op_get_local_ip_service_internal (FlowUdpConnectOp *udp_connect_op)
+{
+  FlowUdpConnectOpPrivate *priv = udp_connect_op->priv;
+
+  return priv->local_ip_service;
+}
+
+static void
+flow_udp_connect_op_set_local_ip_service_internal (FlowUdpConnectOp *udp_connect_op, FlowIPService *local_ip_service)
+{
+  FlowUdpConnectOpPrivate *priv = udp_connect_op->priv;
+
+  if (local_ip_service)
+    g_object_ref (local_ip_service);
+
+  if (priv->local_ip_service)
+    g_object_unref (priv->local_ip_service);
+
+  priv->local_ip_service = local_ip_service;
+}
 
 static FlowIPService *
 flow_udp_connect_op_get_remote_ip_service_internal (FlowUdpConnectOp *udp_connect_op)
@@ -64,34 +86,19 @@ flow_udp_connect_op_set_remote_ip_service_internal (FlowUdpConnectOp *udp_connec
   priv->remote_ip_service = remote_ip_service;
 }
 
-static gint
-flow_udp_connect_op_get_local_port_internal (FlowUdpConnectOp *udp_connect_op)
-{
-  FlowUdpConnectOpPrivate *priv = udp_connect_op->priv;
-
-  return priv->local_port;
-}
-
-static void
-flow_udp_connect_op_set_local_port_internal (FlowUdpConnectOp *udp_connect_op, gint local_port)
-{
-  FlowUdpConnectOpPrivate *priv = udp_connect_op->priv;
-
-  priv->local_port = local_port;
-}
-
 FLOW_GOBJECT_PROPERTIES_BEGIN (flow_udp_connect_op)
+FLOW_GOBJECT_PROPERTY         (G_TYPE_OBJECT,
+                               "local-ip-service", "Local IP Service", "Local IP service to send from",
+                               G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY,
+                               flow_udp_connect_op_get_local_ip_service_internal,
+                               flow_udp_connect_op_set_local_ip_service_internal,
+                               flow_ip_service_get_type)
 FLOW_GOBJECT_PROPERTY         (G_TYPE_OBJECT,
                                "remote-ip-service", "Remote IP Service", "Remote IP service to send to",
                                G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY,
                                flow_udp_connect_op_get_remote_ip_service_internal,
                                flow_udp_connect_op_set_remote_ip_service_internal,
                                flow_ip_service_get_type)
-FLOW_GOBJECT_PROPERTY_INT     (G_TYPE_INT, "local-port", "Local Port", "Local port to send from",
-                               G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY,
-                               flow_udp_connect_op_get_local_port_internal,
-                               flow_udp_connect_op_set_local_port_internal,
-                               -1, G_MAXINT, -1)
 FLOW_GOBJECT_PROPERTIES_END   ()
 
 /* --- FlowUdpConnectOp definition --- */
@@ -118,35 +125,18 @@ append_ip_str (gchar *orig, FlowIPAddr *addr)
   return new;
 }
 
-static void
-flow_udp_connect_op_update_description (FlowUdpConnectOp *udp_connect_op)
+static gchar *
+print_ip_service_description (FlowIPService *ip_service)
 {
-  FlowUdpConnectOpPrivate *priv                     = udp_connect_op->priv;
-  FlowEvent               *event                    = FLOW_EVENT (udp_connect_op);
-  gboolean                 must_free_local_port_str = FALSE;
-  gchar                   *ip_list_str              = NULL;
-  gchar                   *local_port_str;
+  gchar                   *ip_list_str = NULL;
+  gchar                   *desc;
   GList                   *address_list;
   GList                   *l;
 
-  if (event->description)
-    return;
+  if (!ip_service)
+    return g_strdup ("any address");
 
-  /* Source port */
-
-  if (priv->local_port >= 0)
-  {
-    local_port_str = g_strdup_printf ("from local port %d", priv->local_port);
-    must_free_local_port_str = TRUE;
-  }
-  else
-  {
-    local_port_str = "from any local port";
-  }
-
-  /* Target address list */
-
-  address_list = flow_ip_service_list_addresses (priv->remote_ip_service);
+  address_list = flow_ip_service_list_addresses (ip_service);
 
   for (l = address_list; l; l = g_list_next (l))
   {
@@ -156,16 +146,36 @@ flow_udp_connect_op_update_description (FlowUdpConnectOp *udp_connect_op)
 
   flow_unref_and_free_object_list (address_list);
 
+  if (ip_list_str)
+    desc = g_strdup_printf ("IP %s port %d", ip_list_str, flow_ip_service_get_port (ip_service));
+  else
+    desc = g_strdup_printf ("any IP port %d", flow_ip_service_get_port (ip_service));
+
+  return desc;
+}
+
+static void
+flow_udp_connect_op_update_description (FlowUdpConnectOp *udp_connect_op)
+{
+  FlowUdpConnectOpPrivate *priv                     = udp_connect_op->priv;
+  FlowEvent               *event                    = FLOW_EVENT (udp_connect_op);
+  gchar                   *local_desc;
+  gchar                   *remote_desc;
+
+  if (event->description)
+    return;
+
+  local_desc  = print_ip_service_description (priv->local_ip_service);
+  remote_desc = print_ip_service_description (priv->remote_ip_service);
+
   /* Bring it all together */
 
-  event->description = g_strdup_printf ("Send to IP %s port %d %s",
-                                        ip_list_str,
-                                        flow_ip_service_get_port (priv->remote_ip_service),
-                                        local_port_str);
+  event->description = g_strdup_printf ("Send to %s from %s",
+                                        remote_desc,
+                                        local_desc);
 
-  g_free (ip_list_str);
-  if (must_free_local_port_str)
-    g_free (local_port_str);
+  g_free (local_desc);
+  g_free (remote_desc);
 }
 
 static void
@@ -201,20 +211,30 @@ flow_udp_connect_op_finalize (FlowUdpConnectOp *udp_connect_op)
 {
   FlowUdpConnectOpPrivate *priv = udp_connect_op->priv;
 
+  flow_gobject_unref_clear (priv->local_ip_service);
   flow_gobject_unref_clear (priv->remote_ip_service);
 }
 
 /* --- FlowUdpConnectOp public API --- */
 
 FlowUdpConnectOp *
-flow_udp_connect_op_new (FlowIPService *remote_ip_service, gint local_port)
+flow_udp_connect_op_new (FlowIPService *local_ip_service, FlowIPService *remote_ip_service)
 {
-  g_return_val_if_fail (FLOW_IS_IP_SERVICE (remote_ip_service), NULL);
-
   return g_object_new (FLOW_TYPE_UDP_CONNECT_OP,
+                       "local-ip-service", local_ip_service,
                        "remote-ip-service", remote_ip_service,
-                       "local-port", local_port,
                        NULL);
+}
+
+FlowIPService *
+flow_udp_connect_op_get_local_service (FlowUdpConnectOp *udp_connect_op)
+{
+  FlowUdpConnectOpPrivate *priv;
+
+  g_return_val_if_fail (FLOW_IS_UDP_CONNECT_OP (udp_connect_op), NULL);
+
+  priv = udp_connect_op->priv;
+  return priv->local_ip_service;
 }
 
 FlowIPService *
@@ -226,15 +246,4 @@ flow_udp_connect_op_get_remote_service (FlowUdpConnectOp *udp_connect_op)
 
   priv = udp_connect_op->priv;
   return priv->remote_ip_service;
-}
-
-gint
-flow_udp_connect_op_get_local_port (FlowUdpConnectOp *udp_connect_op)
-{
-  FlowUdpConnectOpPrivate *priv;
-
-  g_return_val_if_fail (FLOW_IS_UDP_CONNECT_OP (udp_connect_op), -1);
-
-  priv = udp_connect_op->priv;
-  return priv->local_port;
 }
