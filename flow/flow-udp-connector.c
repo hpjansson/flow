@@ -43,6 +43,8 @@ typedef struct
   FlowUdpConnectOp *op;
   FlowUdpConnectOp *next_op;
 
+  FlowIPService    *remote_service;
+
   FlowShunt        *shunt;
 }
 FlowUdpConnectorPrivate;
@@ -76,7 +78,21 @@ setup_shunt (FlowUdpConnector *udp_connector)
 }
 
 static void
-connect_to_remote_service (FlowUdpConnector *udp_connector)
+set_remote_service (FlowUdpConnector *udp_connector, FlowIPService *remote_service)
+{
+  FlowUdpConnectorPrivate *priv = udp_connector->priv;
+
+  if (remote_service)
+    g_object_ref (remote_service);
+
+  if (priv->remote_service)
+    g_object_unref (priv->remote_service);
+
+  priv->remote_service = remote_service;
+}
+
+static void
+setup_local_service (FlowUdpConnector *udp_connector)
 {
   FlowUdpConnectorPrivate *priv = udp_connector->priv;
 
@@ -101,10 +117,24 @@ connect_to_remote_service (FlowUdpConnector *udp_connector)
     return;
   }
 
+  set_remote_service (udp_connector, flow_udp_connect_op_get_remote_service (priv->op));
+
   priv->shunt = flow_open_udp_port (flow_udp_connect_op_get_local_service (priv->op));
 
   setup_shunt (udp_connector);
   flow_connector_set_state_internal (FLOW_CONNECTOR (udp_connector), FLOW_CONNECTIVITY_CONNECTING);
+
+  /* If a remote service was specified by the connect op, pass it along to the shunt right
+   * after the STREAM_BEGIN event. */
+
+  if (priv->remote_service)
+  {
+    FlowInputPad    *input_pad    = flow_simplex_element_get_input_pad (FLOW_SIMPLEX_ELEMENT (udp_connector));
+    FlowPacketQueue *packet_queue = flow_pad_get_packet_queue (FLOW_PAD (input_pad));
+    FlowPacket      *packet       = flow_packet_new (FLOW_PACKET_FORMAT_OBJECT, priv->remote_service, 0);
+
+    flow_packet_queue_push_packet_to_head (packet_queue, packet);
+  }
 }
 
 static void
@@ -140,12 +170,20 @@ handle_outbound_packet (FlowUdpConnector *udp_connector, FlowPacket *packet)
 
       if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_BEGIN))
       {
-        connect_to_remote_service (udp_connector);
+        setup_local_service (udp_connector);
       }
       else if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END))
       {
         flow_connector_set_state_internal (FLOW_CONNECTOR (udp_connector), FLOW_CONNECTIVITY_DISCONNECTING);
       }
+    }
+    else if (FLOW_IS_IP_SERVICE (packet_data))
+    {
+      set_remote_service (udp_connector, packet_data);
+    }
+    else if (FLOW_IS_IP_ADDR (packet_data))
+    {
+      /* TODO: Create an IP service to store */
     }
     else
     {
@@ -335,6 +373,7 @@ flow_udp_connector_dispose (FlowUdpConnector *udp_connector)
 
   flow_gobject_unref_clear (priv->op);
   flow_gobject_unref_clear (priv->next_op);
+  flow_gobject_unref_clear (priv->remote_service);
 
   if (priv->shunt)
   {
@@ -376,14 +415,10 @@ FlowIPService *
 flow_udp_connector_get_remote_service (FlowUdpConnector *udp_connector)
 {
   FlowUdpConnectorPrivate *priv;
-  FlowIPService           *remote_service = NULL;
 
   g_return_val_if_fail (FLOW_IS_UDP_CONNECTOR (udp_connector), NULL);
 
   priv = udp_connector->priv;
 
-  if (priv->op)
-    remote_service = flow_udp_connect_op_get_remote_service (priv->op);
-
-  return remote_service;
+  return priv->remote_service;
 }
