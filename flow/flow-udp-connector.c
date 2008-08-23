@@ -82,9 +82,7 @@ connect_to_remote_service (FlowUdpConnector *udp_connector)
 
   if (priv->shunt)
   {
-    /* We already have an active shunt. This can happen when a shunt has
-     * been installed using _flow_udp_connector_install_connected_shunt (). */
-
+    g_warning ("FlowUdpConnector got FLOW_STREAM_BEGIN, but stream already open.");
     return;
   }
 
