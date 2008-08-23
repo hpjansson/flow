@@ -102,7 +102,6 @@ typedef struct
   FlowIPProcessor  *ip_processor;
 
   guint             wrote_stream_begin : 1;
-  guint             name_resolution_id;
 }
 FlowTcpIOPrivate;
 
