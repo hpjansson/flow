@@ -1567,7 +1567,8 @@ socket_shunt_write (FlowShunt *shunt)
             FlowDetailedEvent *detailed_event;
             gint               saved_errno = errno;
 
-            /* This is actually a UDP connect, not TCP, but the difference is minimal */
+            /* This is actually a UDP connect, not TCP, but the difference is minimal -
+             * presumably, we can use the same error maps. */
 
             assert_non_fatal_errno (saved_errno, tcp_connect_fatal_errnos);
 
