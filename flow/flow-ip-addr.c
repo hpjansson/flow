@@ -564,3 +564,38 @@ flow_ip_addr_is_internet (FlowIPAddr *ip_addr)
 
   return FALSE;
 }
+
+gboolean
+flow_ip_addr_is_equal (FlowIPAddr *ip_addr_a, FlowIPAddr *ip_addr_b)
+{
+  /* Also handles the case where both are NULL */
+  if (ip_addr_a == ip_addr_b)
+    return TRUE;
+
+  if (ip_addr_a)
+  {
+    if (!ip_addr_b)
+      return FALSE;
+  }
+  else if (ip_addr_b)
+  {
+    /* ip_addr_a == NULL */
+    return FALSE;
+  }
+
+  if (ip_addr_a->family != ip_addr_b->family)
+    return FALSE;
+
+  if (ip_addr_a->family == FLOW_IP_ADDR_IPV4)
+  {
+    if (memcmp (ip_addr_a->addr, ip_addr_b->addr, 4))
+      return FALSE;
+  }
+  else
+  {
+    if (memcmp (ip_addr_a->addr, ip_addr_b->addr, 16))
+      return FALSE;
+  }
+
+  return TRUE;
+}

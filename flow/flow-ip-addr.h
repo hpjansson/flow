@@ -94,6 +94,8 @@ gboolean          flow_ip_addr_is_reserved             (FlowIPAddr *ip_addr);
 gboolean          flow_ip_addr_is_private              (FlowIPAddr *ip_addr);
 gboolean          flow_ip_addr_is_internet             (FlowIPAddr *ip_addr);
 
+gboolean          flow_ip_addr_is_equal                (FlowIPAddr *ip_addr_a, FlowIPAddr *ip_addr_b);
+
 G_END_DECLS
 
 #endif /* _FLOW_IP_ADDR_H */
