@@ -75,6 +75,7 @@ void              flow_packet_queue_clear                  (FlowPacketQueue *pac
 
 void              flow_packet_queue_push_packet            (FlowPacketQueue *packet_queue, FlowPacket *packet);
 void              flow_packet_queue_push_bytes             (FlowPacketQueue *packet_queue, gconstpointer src, gint n);
+void              flow_packet_queue_push_packet_to_head    (FlowPacketQueue *packet_queue, FlowPacket *packet);
 
 FlowPacket       *flow_packet_queue_pop_packet             (FlowPacketQueue *packet_queue);
 gint              flow_packet_queue_pop_bytes              (FlowPacketQueue *packet_queue, gpointer dest, gint n_max);

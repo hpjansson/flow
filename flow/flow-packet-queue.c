@@ -90,6 +90,18 @@ push_packet (FlowPacketQueue *packet_queue, FlowPacket *packet)
   g_queue_push_tail (packet_queue->queue, packet);
 }
 
+static inline void
+push_packet_to_head (FlowPacketQueue *packet_queue, FlowPacket *packet)
+{
+  if (!packet_queue->queue->head && !packet_queue->first_packet)
+  {
+    packet_queue->first_packet = packet;
+    return;
+  }
+
+  g_queue_push_head (packet_queue->queue, packet);
+}
+
 static gint
 pop_bytes (FlowPacketQueue *packet_queue, gpointer dest, gint max)
 {
@@ -322,6 +334,39 @@ flow_packet_queue_push_bytes (FlowPacketQueue *packet_queue, gconstpointer src, 
 
   packet_queue->bytes_in_queue      += n;
   packet_queue->data_bytes_in_queue += n;
+}
+
+/**
+ * flow_packet_queue_push_packet_to_head:
+ * @packet_queue: A packet queue.
+ * @packet:       A packet.
+ * 
+ * Pushes @packet onto head of @packet_queue. This packet effectively skips
+ * the queue, and will be the next packet popped.
+ **/
+void
+flow_packet_queue_push_packet_to_head (FlowPacketQueue *packet_queue, FlowPacket *packet)
+{
+  gint packet_size;
+
+  g_return_if_fail (FLOW_IS_PACKET_QUEUE (packet_queue));
+  g_return_if_fail (packet != NULL);
+
+  if (flow_packet_get_format (packet) == FLOW_PACKET_FORMAT_BUFFER &&
+      flow_packet_get_size (packet) == 0)
+  {
+    flow_packet_free (packet);
+    return;
+  }
+
+  consolidate_partial_packet (packet_queue);
+  push_packet_to_head (packet_queue, packet);
+
+  packet_size = flow_packet_get_size (packet);
+  packet_queue->bytes_in_queue += packet_size;
+
+  if (flow_packet_get_format (packet) == FLOW_PACKET_FORMAT_BUFFER)
+    packet_queue->data_bytes_in_queue += packet_size;
 }
 
 /**
