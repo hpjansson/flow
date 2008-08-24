@@ -397,6 +397,21 @@ flow_ip_service_sync_resolve (FlowIPService *ip_service, GError **error)
   return result;
 }
 
+gboolean
+flow_ip_service_have_addresses (FlowIPService *ip_service)
+{
+  FlowIPServicePrivate *priv;
+  gboolean              have_addresses;
+
+  g_return_val_if_fail (FLOW_IS_IP_SERVICE (ip_service), 0);
+
+  g_mutex_lock (priv->mutex);
+  have_addresses = priv->addresses ? TRUE : FALSE;
+  g_mutex_unlock (priv->mutex);
+
+  return have_addresses;
+}
+
 gint
 flow_ip_service_get_n_addresses (FlowIPService *ip_service)
 {

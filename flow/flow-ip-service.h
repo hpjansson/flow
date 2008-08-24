@@ -82,6 +82,7 @@ void                 flow_ip_service_set_port         (FlowIPService *ip_service
 FlowQuality          flow_ip_service_get_quality      (FlowIPService *ip_service);
 void                 flow_ip_service_set_quality      (FlowIPService *ip_service, FlowQuality quality);
 
+gboolean             flow_ip_service_have_addresses   (FlowIPService *ip_service);
 gint                 flow_ip_service_get_n_addresses  (FlowIPService *ip_service);
 FlowIPAddr          *flow_ip_service_get_nth_address  (FlowIPService *ip_service, gint n);
 FlowIPAddr          *flow_ip_service_find_address     (FlowIPService *ip_service, FlowIPAddrFamily family);
