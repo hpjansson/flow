@@ -289,6 +289,7 @@ flow_io_dispose (FlowIO *io)
   FlowIOPrivate *priv = io->priv;
 
   flow_gobject_unref_clear (priv->user_adapter);
+  g_clear_error (&io->error);
 }
 
 static void
@@ -1103,4 +1104,17 @@ flow_io_set_user_adapter (FlowIO *io, FlowUserAdapter *user_adapter)
   }
 
   flow_bin_add_element (bin, FLOW_ELEMENT (user_adapter), USER_ADAPTER_NAME);
+}
+
+GError *
+flow_io_get_last_error (FlowIO *io)
+{
+  GError *error = NULL;
+
+  g_return_val_if_fail (FLOW_IS_IO (io), NULL);
+
+  if (io->error)
+    error = g_error_copy (io->error);
+
+  return error;
 }

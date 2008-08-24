@@ -52,6 +52,7 @@ struct _FlowIO
   guint            need_to_check_bin       : 1;
   guint            drop_read_data          : 1;
 
+  /* Return copies only, not the error itself */
   GError          *error;
 
   /* --- Private --- */
@@ -106,6 +107,8 @@ gboolean         flow_io_sync_write        (FlowIO *io, gpointer src_buffer, gin
                                             GError **error);
 gboolean         flow_io_sync_write_object (FlowIO *io, gpointer object, GError **error);
 gboolean         flow_io_sync_flush        (FlowIO *io, GError **error);
+
+GError          *flow_io_get_last_error    (FlowIO *io);
 
 FlowUserAdapter *flow_io_get_user_adapter  (FlowIO *io);
 void             flow_io_set_user_adapter  (FlowIO *io, FlowUserAdapter *user_adapter);
