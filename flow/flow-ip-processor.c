@@ -126,6 +126,8 @@ flow_ip_processor_process_input (FlowIPProcessor *ip_processor, FlowPad *input_p
   FlowPacket             *packet;
   FlowPad                *output_pad;
 
+  /* If we're doing a lookup, wait for it to complete before processing further
+   * packets. This preserves stream order. */
   if (priv->current_packet)
     return;
 
