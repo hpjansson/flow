@@ -38,6 +38,7 @@ typedef struct
   guint       require_addrs     : 1;
   guint       require_names     : 1;
   guint       drop_invalid_data : 1;
+  guint       drop_invalid_objs : 1;
   guint       valid_state       : 1;
 }
 FlowIPProcessorPrivate;
@@ -125,6 +126,22 @@ flow_ip_processor_set_drop_invalid_data_internal (FlowIPProcessor *ip_processor,
 }
 
 static gboolean
+flow_ip_processor_get_drop_invalid_objs_internal (FlowIPProcessor *ip_processor)
+{
+  FlowIPProcessorPrivate *priv = ip_processor->priv;
+
+  return priv->drop_invalid_objs ? TRUE : FALSE;
+}
+
+static void
+flow_ip_processor_set_drop_invalid_objs_internal (FlowIPProcessor *ip_processor, gboolean drop_invalid_objs)
+{
+  FlowIPProcessorPrivate *priv = ip_processor->priv;
+
+  priv->drop_invalid_objs = drop_invalid_objs;
+}
+
+static gboolean
 flow_ip_processor_get_valid_state_internal (FlowIPProcessor *ip_processor)
 {
   FlowIPProcessorPrivate *priv = ip_processor->priv;
@@ -170,6 +187,12 @@ FLOW_GOBJECT_PROPERTY_BOOLEAN ("drop-invalid-data", "Drop Invalid Data",
                                G_PARAM_READWRITE,
                                flow_ip_processor_get_drop_invalid_data_internal,
                                flow_ip_processor_set_drop_invalid_data_internal,
+                               FALSE)
+FLOW_GOBJECT_PROPERTY_BOOLEAN ("drop-invalid-objs", "Drop Invalid Objects",
+                               "If we should drop objects when in the invalid state",
+                               G_PARAM_READWRITE,
+                               flow_ip_processor_get_drop_invalid_objs_internal,
+                               flow_ip_processor_set_drop_invalid_objs_internal,
                                FALSE)
 FLOW_GOBJECT_PROPERTY_BOOLEAN ("valid-state", "Valid State",
                                "If we are currently in the valid state",
@@ -415,6 +438,22 @@ flow_ip_processor_set_drop_invalid_data (FlowIPProcessor *ip_processor, gboolean
   g_return_if_fail (FLOW_IS_IP_PROCESSOR (ip_processor));
 
   g_object_set (ip_processor, "drop-invalid-data", drop_invalid_data, NULL);
+}
+
+gboolean
+flow_ip_processor_get_drop_invalid_objs (FlowIPProcessor *ip_processor)
+{
+  g_return_val_if_fail (FLOW_IS_IP_PROCESSOR (ip_processor), FALSE);
+
+  return flow_ip_processor_get_drop_invalid_objs_internal (ip_processor);
+}
+
+void
+flow_ip_processor_set_drop_invalid_objs (FlowIPProcessor *ip_processor, gboolean drop_invalid_objs)
+{
+  g_return_if_fail (FLOW_IS_IP_PROCESSOR (ip_processor));
+
+  g_object_set (ip_processor, "drop-invalid-objs", drop_invalid_objs, NULL);
 }
 
 gboolean

@@ -77,6 +77,9 @@ void             flow_ip_processor_set_require_names     (FlowIPProcessor *ip_pr
 gboolean         flow_ip_processor_get_drop_invalid_data (FlowIPProcessor *ip_processor);
 void             flow_ip_processor_set_drop_invalid_data (FlowIPProcessor *ip_processor, gboolean drop_invalid_data);
 
+gboolean         flow_ip_processor_get_drop_invalid_objs (FlowIPProcessor *ip_processor);
+void             flow_ip_processor_set_drop_invalid_objs (FlowIPProcessor *ip_processor, gboolean drop_invalid_objs);
+
 gboolean         flow_ip_processor_get_valid_state       (FlowIPProcessor *ip_processor);
 void             flow_ip_processor_set_valid_state       (FlowIPProcessor *ip_processor, gboolean valid_state);
 
