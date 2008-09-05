@@ -33,8 +33,12 @@
 typedef struct
 {
   FlowPacket *current_packet;
-  guint       resolve_to_addrs : 1;
-  guint       resolve_to_names : 1;
+  guint       resolve_to_addrs  : 1;
+  guint       resolve_to_names  : 1;
+  guint       require_addrs     : 1;
+  guint       require_names     : 1;
+  guint       drop_invalid_data : 1;
+  guint       valid_state       : 1;
 }
 FlowIPProcessorPrivate;
 
@@ -72,17 +76,107 @@ flow_ip_processor_set_resolve_to_names_internal (FlowIPProcessor *ip_processor, 
   priv->resolve_to_names = resolve_to_names;
 }
 
+static gboolean
+flow_ip_processor_get_require_addrs_internal (FlowIPProcessor *ip_processor)
+{
+  FlowIPProcessorPrivate *priv = ip_processor->priv;
+
+  return priv->require_addrs ? TRUE : FALSE;
+}
+
+static void
+flow_ip_processor_set_require_addrs_internal (FlowIPProcessor *ip_processor, gboolean require_addrs)
+{
+  FlowIPProcessorPrivate *priv = ip_processor->priv;
+
+  priv->require_addrs = require_addrs;
+}
+
+static gboolean
+flow_ip_processor_get_require_names_internal (FlowIPProcessor *ip_processor)
+{
+  FlowIPProcessorPrivate *priv = ip_processor->priv;
+
+  return priv->require_names ? TRUE : FALSE;
+}
+
+static void
+flow_ip_processor_set_require_names_internal (FlowIPProcessor *ip_processor, gboolean require_names)
+{
+  FlowIPProcessorPrivate *priv = ip_processor->priv;
+
+  priv->require_names = require_names;
+}
+
+static gboolean
+flow_ip_processor_get_drop_invalid_data_internal (FlowIPProcessor *ip_processor)
+{
+  FlowIPProcessorPrivate *priv = ip_processor->priv;
+
+  return priv->drop_invalid_data ? TRUE : FALSE;
+}
+
+static void
+flow_ip_processor_set_drop_invalid_data_internal (FlowIPProcessor *ip_processor, gboolean drop_invalid_data)
+{
+  FlowIPProcessorPrivate *priv = ip_processor->priv;
+
+  priv->drop_invalid_data = drop_invalid_data;
+}
+
+static gboolean
+flow_ip_processor_get_valid_state_internal (FlowIPProcessor *ip_processor)
+{
+  FlowIPProcessorPrivate *priv = ip_processor->priv;
+
+  return priv->valid_state ? TRUE : FALSE;
+}
+
+static void
+flow_ip_processor_set_valid_state_internal (FlowIPProcessor *ip_processor, gboolean valid_state)
+{
+  FlowIPProcessorPrivate *priv = ip_processor->priv;
+
+  priv->valid_state = valid_state;
+}
+
 FLOW_GOBJECT_PROPERTIES_BEGIN (flow_ip_processor)
-FLOW_GOBJECT_PROPERTY_BOOLEAN ("resolve-to-addresses", "Resolve to Addresses", "If we should resolve to IP addresses",
+FLOW_GOBJECT_PROPERTY_BOOLEAN ("resolve-to-addrs", "Resolve to Addresses",
+                               "If we should resolve to IP addresses",
                                G_PARAM_READWRITE,
                                flow_ip_processor_get_resolve_to_addrs_internal,
                                flow_ip_processor_set_resolve_to_addrs_internal,
                                TRUE)
-FLOW_GOBJECT_PROPERTY_BOOLEAN ("resolve-to-names", "Resolve to Names", "If we should resolve to DNS names",
+FLOW_GOBJECT_PROPERTY_BOOLEAN ("resolve-to-names", "Resolve to Names",
+                               "If we should resolve to DNS names",
                                G_PARAM_READWRITE,
                                flow_ip_processor_get_resolve_to_names_internal,
                                flow_ip_processor_set_resolve_to_names_internal,
                                FALSE)
+FLOW_GOBJECT_PROPERTY_BOOLEAN ("require-addrs", "Require Addresses",
+                               "If we should require resolved IP addresses to preface stream",
+                               G_PARAM_READWRITE,
+                               flow_ip_processor_get_require_addrs_internal,
+                               flow_ip_processor_set_require_addrs_internal,
+                               FALSE)
+FLOW_GOBJECT_PROPERTY_BOOLEAN ("require-names", "Require Names",
+                               "If we should require resolved DNS names to preface stream",
+                               G_PARAM_READWRITE,
+                               flow_ip_processor_get_require_names_internal,
+                               flow_ip_processor_set_require_names_internal,
+                               FALSE)
+FLOW_GOBJECT_PROPERTY_BOOLEAN ("drop-invalid-data", "Drop Invalid Data",
+                               "If we should drop data when in the invalid state",
+                               G_PARAM_READWRITE,
+                               flow_ip_processor_get_drop_invalid_data_internal,
+                               flow_ip_processor_set_drop_invalid_data_internal,
+                               FALSE)
+FLOW_GOBJECT_PROPERTY_BOOLEAN ("valid-state", "Valid State",
+                               "If we are currently in the valid state",
+                               G_PARAM_READWRITE,
+                               flow_ip_processor_get_valid_state_internal,
+                               flow_ip_processor_set_valid_state_internal,
+                               TRUE)
 FLOW_GOBJECT_PROPERTIES_END   ()
 
 /* --- FlowIPProcessor definition --- */
@@ -201,8 +295,12 @@ flow_ip_processor_init (FlowIPProcessor *ip_processor)
 {
   FlowIPProcessorPrivate *priv = ip_processor->priv;
 
-  priv->resolve_to_addrs = TRUE;
-  priv->resolve_to_names = FALSE;
+  priv->resolve_to_addrs  = TRUE;
+  priv->resolve_to_names  = FALSE;
+  priv->require_addrs     = FALSE;
+  priv->require_names     = FALSE;
+  priv->drop_invalid_data = FALSE;
+  priv->valid_state       = TRUE;
 }
 
 static void
@@ -242,12 +340,9 @@ flow_ip_processor_new (void)
 gboolean
 flow_ip_processor_get_resolve_to_addrs (FlowIPProcessor *ip_processor)
 {
-  FlowIPProcessorPrivate *priv;
-
   g_return_val_if_fail (FLOW_IS_IP_PROCESSOR (ip_processor), FALSE);
 
-  priv = ip_processor->priv;
-  return priv->resolve_to_addrs;
+  return flow_ip_processor_get_resolve_to_addrs_internal (ip_processor);
 }
 
 void
@@ -261,12 +356,9 @@ flow_ip_processor_set_resolve_to_addrs (FlowIPProcessor *ip_processor, gboolean 
 gboolean
 flow_ip_processor_get_resolve_to_names (FlowIPProcessor *ip_processor)
 {
-  FlowIPProcessorPrivate *priv;
-
   g_return_val_if_fail (FLOW_IS_IP_PROCESSOR (ip_processor), FALSE);
 
-  priv = ip_processor->priv;
-  return priv->resolve_to_names;
+  return flow_ip_processor_get_resolve_to_names_internal (ip_processor);
 }
 
 void
@@ -276,3 +368,68 @@ flow_ip_processor_set_resolve_to_names (FlowIPProcessor *ip_processor, gboolean 
 
   g_object_set (ip_processor, "resolve-to-names", resolve_to_names, NULL);
 }
+
+gboolean
+flow_ip_processor_get_require_addrs (FlowIPProcessor *ip_processor)
+{
+  g_return_val_if_fail (FLOW_IS_IP_PROCESSOR (ip_processor), FALSE);
+
+  return flow_ip_processor_get_require_addrs_internal (ip_processor);
+}
+
+void
+flow_ip_processor_set_require_addrs (FlowIPProcessor *ip_processor, gboolean require_addrs)
+{
+  g_return_if_fail (FLOW_IS_IP_PROCESSOR (ip_processor));
+
+  g_object_set (ip_processor, "require-addrs", require_addrs, NULL);
+}
+
+gboolean
+flow_ip_processor_get_require_names (FlowIPProcessor *ip_processor)
+{
+  g_return_val_if_fail (FLOW_IS_IP_PROCESSOR (ip_processor), FALSE);
+
+  return flow_ip_processor_get_require_names_internal (ip_processor);
+}
+
+void
+flow_ip_processor_set_require_names (FlowIPProcessor *ip_processor, gboolean require_names)
+{
+  g_return_if_fail (FLOW_IS_IP_PROCESSOR (ip_processor));
+
+  g_object_set (ip_processor, "require-names", require_names, NULL);
+}
+
+gboolean
+flow_ip_processor_get_drop_invalid_data (FlowIPProcessor *ip_processor)
+{
+  g_return_val_if_fail (FLOW_IS_IP_PROCESSOR (ip_processor), FALSE);
+
+  return flow_ip_processor_get_drop_invalid_data_internal (ip_processor);
+}
+
+void
+flow_ip_processor_set_drop_invalid_data (FlowIPProcessor *ip_processor, gboolean drop_invalid_data)
+{
+  g_return_if_fail (FLOW_IS_IP_PROCESSOR (ip_processor));
+
+  g_object_set (ip_processor, "drop-invalid-data", drop_invalid_data, NULL);
+}
+
+gboolean
+flow_ip_processor_get_valid_state (FlowIPProcessor *ip_processor)
+{
+  g_return_val_if_fail (FLOW_IS_IP_PROCESSOR (ip_processor), FALSE);
+
+  return flow_ip_processor_get_valid_state_internal (ip_processor);
+}
+
+void
+flow_ip_processor_set_valid_state (FlowIPProcessor *ip_processor, gboolean valid_state)
+{
+  g_return_if_fail (FLOW_IS_IP_PROCESSOR (ip_processor));
+
+  g_object_set (ip_processor, "valid-state", valid_state, NULL);
+}
+

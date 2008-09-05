@@ -60,12 +60,25 @@ struct _FlowIPProcessorClass
   void (*_pad_4) (void);
 };
 
-FlowIPProcessor *flow_ip_processor_new                  (void);
+FlowIPProcessor *flow_ip_processor_new                   (void);
 
-gboolean         flow_ip_processor_get_resolve_to_addrs (FlowIPProcessor *ip_processor);
-void             flow_ip_processor_set_resolve_to_addrs (FlowIPProcessor *ip_processor, gboolean resolve_to_addrs);
-gboolean         flow_ip_processor_get_resolve_to_names (FlowIPProcessor *ip_processor);
-void             flow_ip_processor_set_resolve_to_names (FlowIPProcessor *ip_processor, gboolean resolve_to_names);
+gboolean         flow_ip_processor_get_resolve_to_addrs  (FlowIPProcessor *ip_processor);
+void             flow_ip_processor_set_resolve_to_addrs  (FlowIPProcessor *ip_processor, gboolean resolve_to_addrs);
+
+gboolean         flow_ip_processor_get_resolve_to_names  (FlowIPProcessor *ip_processor);
+void             flow_ip_processor_set_resolve_to_names  (FlowIPProcessor *ip_processor, gboolean resolve_to_names);
+
+gboolean         flow_ip_processor_get_require_addrs     (FlowIPProcessor *ip_processor);
+void             flow_ip_processor_set_require_addrs     (FlowIPProcessor *ip_processor, gboolean require_addrs);
+
+gboolean         flow_ip_processor_get_require_names     (FlowIPProcessor *ip_processor);
+void             flow_ip_processor_set_require_names     (FlowIPProcessor *ip_processor, gboolean require_names);
+
+gboolean         flow_ip_processor_get_drop_invalid_data (FlowIPProcessor *ip_processor);
+void             flow_ip_processor_set_drop_invalid_data (FlowIPProcessor *ip_processor, gboolean drop_invalid_data);
+
+gboolean         flow_ip_processor_get_valid_state       (FlowIPProcessor *ip_processor);
+void             flow_ip_processor_set_valid_state       (FlowIPProcessor *ip_processor, gboolean valid_state);
 
 G_END_DECLS
 
