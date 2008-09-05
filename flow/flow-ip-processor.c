@@ -26,6 +26,7 @@
 #include "flow-util.h"
 #include "flow-gobject-util.h"
 #include "flow-tcp-connect-op.h"
+#include "flow-udp-connect-op.h"
 #include "flow-ip-processor.h"
 
 /* --- FlowIPProcessor private data --- */
@@ -232,24 +233,93 @@ FLOW_GOBJECT_MAKE_IMPL        (flow_ip_processor, FlowIPProcessor, FLOW_TYPE_SIM
 /* --- FlowIPProcessor implementation --- */
 
 static void flow_ip_processor_process_input (FlowIPProcessor *ip_processor, FlowPad *input_pad);
+static void current_ip_resolved             (FlowIPProcessor *ip_processor, FlowIPService *ip_service);
+
+static gboolean
+ip_service_is_valid (FlowIPProcessor *ip_processor, FlowIPService *ip_service)
+{
+  FlowIPProcessorPrivate *priv = ip_processor->priv;
+
+  if (!ip_service)
+    return TRUE;
+
+  if (!(priv->require_addrs && flow_ip_service_get_n_addresses (ip_service) == 0) &&
+      !(priv->require_names && !flow_ip_service_have_name (ip_service)))
+    return TRUE;
+
+  return FALSE;
+}
 
 static void
 validate_ip_service (FlowIPProcessor *ip_processor, FlowIPService *ip_service)
 {
-  FlowIPProcessorPrivate *priv           = ip_processor->priv;
+  FlowIPProcessorPrivate *priv            = ip_processor->priv;
   gboolean                new_valid_state = FALSE;
 
-  if ((!(priv->require_addrs && flow_ip_service_get_n_addresses (ip_service) == 0) &&
-       !(priv->require_names && !flow_ip_service_have_name (ip_service))))
-  {
-    new_valid_state = TRUE;
-  }
+  new_valid_state = ip_service_is_valid (ip_processor, ip_service);
 
   if (priv->valid_state != new_valid_state)
   {
     /* Must use property setter, so property change listeners get called */
     flow_ip_processor_set_valid_state (ip_processor, new_valid_state);
   }
+}
+
+static void
+validate_two_ip_services (FlowIPProcessor *ip_processor, FlowIPService *ip_service_a, FlowIPService *ip_service_b)
+{
+  FlowIPProcessorPrivate *priv            = ip_processor->priv;
+  gboolean                new_valid_state = FALSE;
+
+  /* If one of the IP services is bad, the whole thing goes down the drain */
+  new_valid_state = ip_service_is_valid (ip_processor, ip_service_a);
+  if (new_valid_state)
+    new_valid_state = ip_service_is_valid (ip_processor, ip_service_b);
+
+  if (priv->valid_state != new_valid_state)
+  {
+    /* Must use property setter, so property change listeners get called */
+    flow_ip_processor_set_valid_state (ip_processor, new_valid_state);
+  }
+}
+
+static gboolean
+start_lookup_ip_service (FlowIPProcessor *ip_processor, FlowIPService *ip_service, FlowPacket *packet)
+{
+  FlowIPProcessorPrivate *priv = ip_processor->priv;
+
+  g_assert (priv->current_packet == NULL);
+
+  if (((priv->resolve_to_addrs && flow_ip_service_get_n_addresses (ip_service) == 0) ||
+       (priv->resolve_to_names && !flow_ip_service_have_name (ip_service))))
+  {
+    /* Need to do a lookup */
+    priv->current_packet = packet;
+
+    g_signal_connect_swapped (ip_service, "resolved", (GCallback) current_ip_resolved, ip_processor);
+    flow_ip_service_resolve (ip_service);
+    return TRUE;
+  }
+
+  return FALSE;
+}
+
+static FlowIPService *
+get_udp_connect_op_local_service_if_applicable (FlowUdpConnectOp *udp_connect_op)
+{
+  FlowIPService *ip_service;
+
+  ip_service = flow_udp_connect_op_get_local_service (udp_connect_op);
+
+  if (ip_service &&
+      !flow_ip_service_get_n_addresses (ip_service) &&
+      !flow_ip_service_have_name (ip_service))
+  {
+    /* A port-only local bind address is always valid */
+    ip_service = NULL;
+  }
+
+  return ip_service;
 }
 
 static void
@@ -260,6 +330,7 @@ current_ip_resolved (FlowIPProcessor *ip_processor, FlowIPService *ip_service)
   FlowPad                *input_pad  = g_ptr_array_index (element->input_pads, 0);
   FlowPad                *output_pad = g_ptr_array_index (element->output_pads, 0);
   FlowPacket             *packet;
+  gpointer                packet_data;
 
   packet = priv->current_packet;
   priv->current_packet = NULL;
@@ -268,7 +339,24 @@ current_ip_resolved (FlowIPProcessor *ip_processor, FlowIPService *ip_service)
 
   g_signal_handlers_disconnect_by_func (ip_service, current_ip_resolved, ip_processor);
 
-  validate_ip_service (ip_processor, ip_service);
+  packet_data = flow_packet_get_data (packet);
+
+  if (FLOW_IS_UDP_CONNECT_OP (packet_data))
+  {
+    FlowIPService *udp_remote_service = flow_udp_connect_op_get_remote_service (packet_data);
+    FlowIPService *udp_local_service  = get_udp_connect_op_local_service_if_applicable (packet_data);
+
+    /* If necessary, start second step of UDP remote/local service lookup */
+    if (udp_local_service && ip_service != udp_local_service &&
+        start_lookup_ip_service (ip_processor, udp_local_service, packet))
+      return;
+
+    validate_two_ip_services (ip_processor, udp_remote_service, udp_local_service); 
+  }
+  else
+  {
+    validate_ip_service (ip_processor, ip_service);
+  }
 
   if (priv->valid_state || !priv->drop_invalid_ip_services)
     flow_pad_push (output_pad, packet);
@@ -316,19 +404,18 @@ flow_ip_processor_process_input (FlowIPProcessor *ip_processor, FlowPad *input_p
         ip_service = packet_data;
       else if (FLOW_IS_TCP_CONNECT_OP (packet_data))
         ip_service = flow_tcp_connect_op_get_remote_service (packet_data);
+      else if (FLOW_IS_UDP_CONNECT_OP (packet_data))
+      {
+        /* We'll look up the local service later */
+        ip_service = flow_udp_connect_op_get_remote_service (packet_data);
+        if (!ip_service)
+          ip_service = get_udp_connect_op_local_service_if_applicable (packet_data);
+      }
 
       if (ip_service)
       {
-        if (((priv->resolve_to_addrs && flow_ip_service_get_n_addresses (ip_service) == 0) ||
-             (priv->resolve_to_names && !flow_ip_service_have_name (ip_service))))
-        {
-          /* Need to do a lookup */
-          priv->current_packet = packet;
-
-          g_signal_connect_swapped (ip_service, "resolved", (GCallback) current_ip_resolved, ip_processor);
-          flow_ip_service_resolve (ip_service);
+        if (start_lookup_ip_service (ip_processor, ip_service, packet))
           break;
-        }
 
         /* No lookup needed; see if the IP service is valid according to our criteria */
         validate_ip_service (ip_processor, ip_service);
