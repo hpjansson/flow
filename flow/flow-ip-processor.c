@@ -331,22 +331,16 @@ flow_ip_processor_process_input (FlowIPProcessor *ip_processor, FlowPad *input_p
         }
 
         /* No lookup needed; see if the IP service is valid according to our criteria */
-
         validate_ip_service (ip_processor, ip_service);
 
         if (priv->valid_state || !priv->drop_invalid_ip_services)
-          should_push_packet = TRUE;
+          should_push_packet = TRUE;  /* IP service, don't drop */
       }
       else if (priv->valid_state || !priv->drop_invalid_objs)
-        should_push_packet = TRUE;
+        should_push_packet = TRUE;  /* Object packet, don't drop */
     }
-    else
-    {
-      /* It's a data packet */
-
-      if (priv->valid_state || !priv->drop_invalid_data)
-        should_push_packet = TRUE;
-    }
+    else if (priv->valid_state || !priv->drop_invalid_data)
+      should_push_packet = TRUE;  /* Data packet, don't drop */
 
     if (should_push_packet)
       flow_pad_push (output_pad, packet);
