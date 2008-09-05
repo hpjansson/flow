@@ -184,7 +184,7 @@ global_ref_gnutls (void)
 
   /* Increase global init count by 1 */
   result = gnutls_global_init ();
-  if (result)
+  if (result != GNUTLS_E_SUCCESS)
     g_error (G_STRLOC ": Failed to initialize GNU TLS: %s", gnutls_strerror (result));
 
   /* Run the GCrypt randomizer so it'll do its non-threadsafe initialization
