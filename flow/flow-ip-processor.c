@@ -33,13 +33,14 @@
 typedef struct
 {
   FlowPacket *current_packet;
-  guint       resolve_to_addrs  : 1;
-  guint       resolve_to_names  : 1;
-  guint       require_addrs     : 1;
-  guint       require_names     : 1;
-  guint       drop_invalid_data : 1;
-  guint       drop_invalid_objs : 1;
-  guint       valid_state       : 1;
+  guint       resolve_to_addrs         : 1;
+  guint       resolve_to_names         : 1;
+  guint       require_addrs            : 1;
+  guint       require_names            : 1;
+  guint       drop_invalid_data        : 1;
+  guint       drop_invalid_objs        : 1;
+  guint       drop_invalid_ip_services : 1;
+  guint       valid_state              : 1;
 }
 FlowIPProcessorPrivate;
 
@@ -142,6 +143,22 @@ flow_ip_processor_set_drop_invalid_objs_internal (FlowIPProcessor *ip_processor,
 }
 
 static gboolean
+flow_ip_processor_get_drop_invalid_ip_services_internal (FlowIPProcessor *ip_processor)
+{
+  FlowIPProcessorPrivate *priv = ip_processor->priv;
+
+  return priv->drop_invalid_ip_services ? TRUE : FALSE;
+}
+
+static void
+flow_ip_processor_set_drop_invalid_ip_services_internal (FlowIPProcessor *ip_processor, gboolean drop_invalid_ip_services)
+{
+  FlowIPProcessorPrivate *priv = ip_processor->priv;
+
+  priv->drop_invalid_ip_services = drop_invalid_ip_services;
+}
+
+static gboolean
 flow_ip_processor_get_valid_state_internal (FlowIPProcessor *ip_processor)
 {
   FlowIPProcessorPrivate *priv = ip_processor->priv;
@@ -194,6 +211,12 @@ FLOW_GOBJECT_PROPERTY_BOOLEAN ("drop-invalid-objs", "Drop Invalid Objects",
                                flow_ip_processor_get_drop_invalid_objs_internal,
                                flow_ip_processor_set_drop_invalid_objs_internal,
                                FALSE)
+FLOW_GOBJECT_PROPERTY_BOOLEAN ("drop-invalid-ip-services", "Drop Invalid IP Services",
+                               "If we should drop IP service objects that do not match our requirements",
+                               G_PARAM_READWRITE,
+                               flow_ip_processor_get_drop_invalid_ip_services_internal,
+                               flow_ip_processor_set_drop_invalid_ip_services_internal,
+                               FALSE)
 FLOW_GOBJECT_PROPERTY_BOOLEAN ("valid-state", "Valid State",
                                "If we are currently in the valid state",
                                G_PARAM_READWRITE,
@@ -211,6 +234,25 @@ FLOW_GOBJECT_MAKE_IMPL        (flow_ip_processor, FlowIPProcessor, FLOW_TYPE_SIM
 static void flow_ip_processor_process_input (FlowIPProcessor *ip_processor, FlowPad *input_pad);
 
 static void
+validate_ip_service (FlowIPProcessor *ip_processor, FlowIPService *ip_service)
+{
+  FlowIPProcessorPrivate *priv           = ip_processor->priv;
+  gboolean                new_valid_state = FALSE;
+
+  if ((!(priv->require_addrs && flow_ip_service_get_n_addresses (ip_service) == 0) &&
+       !(priv->require_names && !flow_ip_service_have_name (ip_service))))
+  {
+    new_valid_state = TRUE;
+  }
+
+  if (priv->valid_state != new_valid_state)
+  {
+    /* Must use property setter, so property change listeners get called */
+    flow_ip_processor_set_valid_state (ip_processor, new_valid_state);
+  }
+}
+
+static void
 current_ip_resolved (FlowIPProcessor *ip_processor, FlowIPService *ip_service)
 {
   FlowIPProcessorPrivate *priv       = ip_processor->priv;
@@ -226,7 +268,12 @@ current_ip_resolved (FlowIPProcessor *ip_processor, FlowIPService *ip_service)
 
   g_signal_handlers_disconnect_by_func (ip_service, current_ip_resolved, ip_processor);
 
-  flow_pad_push (output_pad, packet);
+  validate_ip_service (ip_processor, ip_service);
+
+  if (priv->valid_state || !priv->drop_invalid_ip_services)
+    flow_pad_push (output_pad, packet);
+  else
+    flow_packet_free (packet);
 
   if (!flow_pad_is_blocked (output_pad))
     flow_pad_unblock (input_pad);
@@ -256,33 +303,55 @@ flow_ip_processor_process_input (FlowIPProcessor *ip_processor, FlowPad *input_p
 
   for ( ; (packet = flow_packet_queue_pop_packet (packet_queue)); )
   {
+    gboolean should_push_packet = FALSE;
+
     flow_handle_universal_events (element, packet);
 
     if (flow_packet_get_format (packet) == FLOW_PACKET_FORMAT_OBJECT)
     {
-      gpointer       packet_data = flow_packet_get_data (packet);
-      FlowIPService *ip_service  = NULL;
+      gpointer       packet_data     = flow_packet_get_data (packet);
+      FlowIPService *ip_service      = NULL;
 
       if (FLOW_IS_IP_SERVICE (packet_data))
         ip_service = packet_data;
       else if (FLOW_IS_TCP_CONNECT_OP (packet_data))
         ip_service = flow_tcp_connect_op_get_remote_service (packet_data);
 
-      if (ip_service &&
-          ((priv->resolve_to_addrs && flow_ip_service_get_n_addresses (ip_service) == 0) ||
-           (priv->resolve_to_names && !flow_ip_service_have_name (ip_service))))
+      if (ip_service)
       {
-        /* Need to do a lookup */
-        priv->current_packet = packet;
+        if (((priv->resolve_to_addrs && flow_ip_service_get_n_addresses (ip_service) == 0) ||
+             (priv->resolve_to_names && !flow_ip_service_have_name (ip_service))))
+        {
+          /* Need to do a lookup */
+          priv->current_packet = packet;
 
-        g_signal_connect_swapped (ip_service, "resolved", (GCallback) current_ip_resolved, ip_processor);
-        flow_ip_service_resolve (ip_service);
-        break;
+          g_signal_connect_swapped (ip_service, "resolved", (GCallback) current_ip_resolved, ip_processor);
+          flow_ip_service_resolve (ip_service);
+          break;
+        }
+
+        /* No lookup needed; see if the IP service is valid according to our criteria */
+
+        validate_ip_service (ip_processor, ip_service);
+
+        if (priv->valid_state || !priv->drop_invalid_ip_services)
+          should_push_packet = TRUE;
       }
+      else if (priv->valid_state || !priv->drop_invalid_objs)
+        should_push_packet = TRUE;
+    }
+    else
+    {
+      /* It's a data packet */
+
+      if (priv->valid_state || !priv->drop_invalid_data)
+        should_push_packet = TRUE;
     }
 
-    /* No lookup necessary; just pass it on */
-    flow_pad_push (output_pad, packet);
+    if (should_push_packet)
+      flow_pad_push (output_pad, packet);
+    else
+      flow_packet_free (packet);
   }
 }
 
@@ -318,12 +387,14 @@ flow_ip_processor_init (FlowIPProcessor *ip_processor)
 {
   FlowIPProcessorPrivate *priv = ip_processor->priv;
 
-  priv->resolve_to_addrs  = TRUE;
-  priv->resolve_to_names  = FALSE;
-  priv->require_addrs     = FALSE;
-  priv->require_names     = FALSE;
-  priv->drop_invalid_data = FALSE;
-  priv->valid_state       = TRUE;
+  priv->resolve_to_addrs         = TRUE;
+  priv->resolve_to_names         = FALSE;
+  priv->require_addrs            = FALSE;
+  priv->require_names            = FALSE;
+  priv->drop_invalid_data        = FALSE;
+  priv->drop_invalid_objs        = FALSE;
+  priv->drop_invalid_ip_services = FALSE;
+  priv->valid_state              = TRUE;
 }
 
 static void
@@ -454,6 +525,22 @@ flow_ip_processor_set_drop_invalid_objs (FlowIPProcessor *ip_processor, gboolean
   g_return_if_fail (FLOW_IS_IP_PROCESSOR (ip_processor));
 
   g_object_set (ip_processor, "drop-invalid-objs", drop_invalid_objs, NULL);
+}
+
+gboolean
+flow_ip_processor_get_drop_invalid_ip_services (FlowIPProcessor *ip_processor)
+{
+  g_return_val_if_fail (FLOW_IS_IP_PROCESSOR (ip_processor), FALSE);
+
+  return flow_ip_processor_get_drop_invalid_ip_services_internal (ip_processor);
+}
+
+void
+flow_ip_processor_set_drop_invalid_ip_services (FlowIPProcessor *ip_processor, gboolean drop_invalid_ip_services)
+{
+  g_return_if_fail (FLOW_IS_IP_PROCESSOR (ip_processor));
+
+  g_object_set (ip_processor, "drop-invalid-ip-services", drop_invalid_ip_services, NULL);
 }
 
 gboolean
