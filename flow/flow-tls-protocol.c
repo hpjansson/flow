@@ -148,6 +148,7 @@ static void
 global_ref_gnutls (void)
 {
   guchar buf [1];
+  gint   result;
   static struct gcry_thread_cbs gcrypt_thread_callbacks =
   {
     GCRY_THREAD_OPTION_USER,
@@ -182,9 +183,9 @@ global_ref_gnutls (void)
   }
 
   /* Increase global init count by 1 */
-
-  if (gnutls_global_init ())
-    g_error (G_STRLOC ": Failed to initialize GNU TLS.");
+  result = gnutls_global_init ();
+  if (result)
+    g_error (G_STRLOC ": Failed to initialize GNU TLS: %s", gnutls_strerror (result));
 
   /* Run the GCrypt randomizer so it'll do its non-threadsafe initialization
    * while we hold a lock. This is a workaround for a bug in GCrypt 1.2.3. If
