@@ -495,10 +495,31 @@ flow_ip_processor_finalize (FlowIPProcessor *ip_processor)
 
   if (priv->current_packet)
   {
-    FlowIPService *ip_service = flow_packet_get_data (priv->current_packet);
+    gpointer packet_data = flow_packet_get_data (priv->current_packet);
 
-    g_assert (FLOW_IS_IP_SERVICE (ip_service));
-    g_signal_handlers_disconnect_by_func (ip_service, current_ip_resolved, ip_processor);
+    if (FLOW_IS_IP_SERVICE (packet_data))
+    {
+      g_signal_handlers_disconnect_by_func (packet_data, current_ip_resolved, ip_processor);
+    }
+    else if (FLOW_IS_TCP_CONNECT_OP (packet_data))
+    {
+      FlowIPService *ip_service = flow_tcp_connect_op_get_remote_service (packet_data);
+
+      if (ip_service)
+        g_signal_handlers_disconnect_by_func (ip_service, current_ip_resolved, ip_processor);
+    }
+    else if (FLOW_IS_UDP_CONNECT_OP (packet_data))
+    {
+      FlowIPService *ip_service = flow_udp_connect_op_get_remote_service (packet_data);
+
+      if (ip_service)
+        g_signal_handlers_disconnect_by_func (ip_service, current_ip_resolved, ip_processor);
+
+      ip_service = flow_udp_connect_op_get_local_service (packet_data);
+      if (ip_service)
+        g_signal_handlers_disconnect_by_func (ip_service, current_ip_resolved, ip_processor);
+    }
+
     flow_packet_free (priv->current_packet);
     priv->current_packet = NULL;
   }
