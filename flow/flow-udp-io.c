@@ -521,32 +521,6 @@ flow_udp_io_sync_connect (FlowUdpIO *udp_io, FlowIPService *ip_service, GError *
 }
 
 gboolean
-flow_udp_io_set_remote_by_name (FlowUdpIO *udp_io, const gchar *name, gint port, GError **error)
-{
-  FlowUdpIOPrivate *priv;
-  FlowIPService    *ip_service;
-  gboolean          result;
-
-  g_return_val_if_fail (FLOW_IS_UDP_IO (udp_io), FALSE);
-  g_return_val_if_fail (name != NULL, FALSE);
-  g_return_val_if_fail (port > 0, FALSE);
-  return_val_if_invalid_bin (udp_io, FALSE);
-
-  priv = udp_io->priv;
-
-  g_return_val_if_fail (priv->connectivity == FLOW_CONNECTIVITY_DISCONNECTED, FALSE);
-
-  ip_service = flow_ip_service_new ();
-  flow_ip_service_set_name (ip_service, name);
-  flow_ip_service_set_port (ip_service, port);
-
-  result = flow_udp_io_sync_connect (udp_io, ip_service, error);
-
-  g_object_unref (ip_service);
-  return result;
-}
-
-gboolean
 flow_udp_io_sync_disconnect (FlowUdpIO *udp_io, GError **error)
 {
   FlowUdpIOPrivate *priv;
@@ -633,6 +607,30 @@ flow_udp_io_set_remote_service (FlowUdpIO *udp_io, FlowIPService *ip_service, GE
   priv->remote_service = g_object_ref (ip_service);
   flow_io_write_object (FLOW_IO (udp_io), ip_service);
   return TRUE;
+}
+
+gboolean
+flow_udp_io_sync_set_remote_by_name (FlowUdpIO *udp_io, const gchar *name, gint port, GError **error)
+{
+  FlowUdpIOPrivate *priv;
+  FlowIPService    *ip_service;
+  gboolean          result;
+
+  g_return_val_if_fail (FLOW_IS_UDP_IO (udp_io), FALSE);
+  g_return_val_if_fail (name != NULL, FALSE);
+  g_return_val_if_fail (port > 0, FALSE);
+  return_val_if_invalid_bin (udp_io, FALSE);
+
+  priv = udp_io->priv;
+
+  ip_service = flow_ip_service_new ();
+  flow_ip_service_set_name (ip_service, name);
+  flow_ip_service_set_port (ip_service, port);
+
+  result = flow_udp_io_sync_connect (udp_io, ip_service, error);
+
+  g_object_unref (ip_service);
+  return result;
 }
 
 FlowUdpConnector *
