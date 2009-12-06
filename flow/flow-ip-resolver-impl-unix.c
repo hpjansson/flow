@@ -193,7 +193,7 @@ h_errno_to_gerror (gint h_errcode)
 }
 
 static GList *
-flow_ip_resolver_impl_lookup_by_name (const gchar *name)
+flow_ip_resolver_impl_lookup_by_name (const gchar *name, GError **error)
 {
   static GStaticMutex  mutex = G_STATIC_MUTEX_INIT;
   GList               *addr_list = NULL;
@@ -208,10 +208,14 @@ flow_ip_resolver_impl_lookup_by_name (const gchar *name)
 
   DEBUG (g_print ("Looked up '%s'\n", name));
 
-  if (!he || !flow_addr_family_is_ipv4 (he->h_addrtype))
+  if (!he || flow_addr_family_from_af (he->h_addrtype) != FLOW_ADDR_FAMILY_IPV4)
   {
     g_static_mutex_unlock (&mutex);
     DEBUG (g_print ("No IPv4 hostent!\n"));
+
+    if (error)
+      *error = h_errno_to_gerror (0);
+
     return NULL;
   }
 
@@ -244,33 +248,40 @@ flow_ip_resolver_impl_lookup_by_name (const gchar *name)
 }
 
 static GList *
-flow_ip_resolver_impl_lookup_by_addr (FlowIPAddr *ip_addr)
+flow_ip_resolver_impl_lookup_by_addr (FlowIPAddr *ip_addr, GError **error)
 {
   static GStaticMutex  mutex     = G_STATIC_MUTEX_INIT;
   GList               *name_list = NULL;
   struct hostent      *he;
-  struct sockaddr_in  *sa;
+  FlowSockaddr         sa;
+  gint                 rv;
 
   if (flow_ip_addr_get_family (ip_addr) != FLOW_IP_ADDR_IPV4)
   {
     DEBUG (g_print ("Supporting IPv4 only.\n"));
+
+    if (error)
+      *error = h_errno_to_gerror (0);
+
     return NULL;
   }
 
-  sa = (struct sockaddr_in *) flow_ip_addr_get_sockaddr (ip_addr, 0);
-  if (!sa)
+  rv = flow_ip_addr_get_sockaddr (ip_addr, &sa, 0);
+  if (rv != 0)
   {
     DEBUG (g_print ("No SA.\n"));
+
+    if (error)
+      *error = h_errno_to_gerror (rv);
+
     return NULL;
   }
 
   g_static_mutex_lock (&mutex);
 
-  he = gethostbyaddr (flow_sockaddr_get_addr ((struct sockaddr *) sa),
-                      flow_sockaddr_get_addr_len ((struct sockaddr *) sa),
-                      flow_sockaddr_get_family ((struct sockaddr *) sa));
-
-  g_free (sa);
+  he = gethostbyaddr (flow_sockaddr_get_addr ((struct sockaddr *) &sa),
+                      flow_sockaddr_get_addr_len ((struct sockaddr *) &sa),
+                      flow_sockaddr_get_family ((struct sockaddr *) &sa));
 
   if (he && he->h_name)
   {
@@ -280,7 +291,8 @@ flow_ip_resolver_impl_lookup_by_addr (FlowIPAddr *ip_addr)
   {
     DEBUG (g_print ("No he.\n"));
 
-    
+    if (error)
+      *error = h_errno_to_gerror (0);
   }
 
   g_static_mutex_unlock (&mutex);
