@@ -69,6 +69,13 @@
 
 #include <time.h>
 
+#ifndef MSG_NOSIGNAL
+# define MSG_NOSIGNAL 0
+# ifdef SO_NOSIGPIPE
+#  define USE_SO_NOSIGPIPE 1
+# endif
+#endif
+
 #include "flow-anonymous-event.h"
 #include "flow-common-impl-unix.h"
 
@@ -1188,6 +1195,11 @@ tcp_listener_shunt_read (FlowShunt *shunt)
 
     if (setsockopt (new_fd, SOL_SOCKET, SO_OOBINLINE, &on, sizeof (on)) < 0)
       assert_non_fatal_errno (errno, setsockopt_fatal_errnos);
+
+#ifdef USE_SO_NOSIGPIPE
+    /* For MacOS X, BSD */
+    setsockopt (new_fd, SOL_SOCKET, SO_NOSIGPIPE, &on, sizeof (on));
+#endif
 
     new_tcp_shunt->socket_shunt.fd = new_fd;
 
@@ -2812,6 +2824,11 @@ flow_shunt_impl_open_tcp_listener (FlowIPService *local_service)
 #endif
       assert_non_fatal_errno (errno, setsockopt_fatal_errnos);
 
+#ifdef USE_SO_NOSIGPIPE
+    /* For MacOS X, BSD */
+    setsockopt (fd, SOL_SOCKET, SO_NOSIGPIPE, &on, sizeof (on));
+#endif
+
     if (bind (fd, (struct sockaddr *) &sa, flow_sockaddr_get_len (&sa)) != 0)
     {
       FlowDetailedEvent *detailed_event;
@@ -2966,6 +2983,11 @@ flow_shunt_impl_connect_to_tcp (FlowIPService *remote_service, gint local_port)
     if (setsockopt (fd, SOL_SOCKET, SO_OOBINLINE, &on, sizeof (on)) < 0)
       assert_non_fatal_errno (errno, setsockopt_fatal_errnos);
 
+#ifdef USE_SO_NOSIGPIPE
+    /* For MacOS X, BSD */
+    setsockopt (fd, SOL_SOCKET, SO_NOSIGPIPE, &on, sizeof (on));
+#endif
+
     shunt->can_read  = TRUE;
     shunt->can_write = TRUE;
   }
@@ -3068,6 +3090,15 @@ flow_shunt_impl_open_udp_port (FlowIPService *local_service)
   else
   {
     /* Success */
+
+#ifdef USE_SO_NOSIGPIPE
+    {
+      gint on = 1;
+
+      /* For MacOS X, BSD */
+      setsockopt (fd, SOL_SOCKET, SO_NOSIGPIPE, &on, sizeof (on));
+    }
+#endif
 
     ip_socket_set_quality (fd, flow_ip_service_get_quality (local_service));
 
