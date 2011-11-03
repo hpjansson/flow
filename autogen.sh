@@ -52,7 +52,7 @@ fi
 am_opt="--include-deps --add-missing"
 
 echo "Running libtoolize..."
-libtoolize --force --copy || exit $?
+glibtoolize --force --copy || libtoolize --force --copy || exit $?
 
 echo "Running gtkdocize..."
 gtkdocize || exit $?
