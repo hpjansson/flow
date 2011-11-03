@@ -66,6 +66,10 @@ flow_impl_get_network_interfaces (void)
   {
     FlowIPAddr *ip_addr;
 
+    /* Ignore interfaces that have no address */
+    if (!if_addr_cur->ifa_addr)
+      continue;
+
     /* Ignore non-IP */
     if (if_addr_cur->ifa_addr->sa_family != AF_INET &&
         if_addr_cur->ifa_addr->sa_family != AF_INET6)
