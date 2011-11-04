@@ -50,12 +50,10 @@ flow_splitter_output_pad_blocked (FlowElement *element, FlowPad *output_pad)
 {
   FlowPad *input_pad;
 
-  input_pad = g_ptr_array_index (element->input_pads, 0);
-
   /* Block input pad if any output pad is blocked */
 
-  if (!flow_pad_is_blocked (input_pad))
-    flow_pad_block (input_pad);
+  input_pad = g_ptr_array_index (element->input_pads, 0);
+  flow_pad_block (input_pad);
 }
 
 static void
@@ -63,7 +61,7 @@ flow_splitter_output_pad_unblocked (FlowElement *element, FlowPad *outpud_pad)
 {
   guint i;
 
-  /* Block input pad if any output pad is blocked */
+  /* Unblock input pad if all output pads are unblocked */
 
   /* NOTE: This may be slow if we have lots of outputs. It could be solved
    * by storing a counter indicating how many blocked outputs we have. I
@@ -77,16 +75,14 @@ flow_splitter_output_pad_unblocked (FlowElement *element, FlowPad *outpud_pad)
       break;
   }
 
-  if (i >= element->output_pads->len)
+  if (i == element->output_pads->len)
   {
     FlowPad *input_pad;
 
     /* We reached the end - there are no blocked outputs */
 
     input_pad = g_ptr_array_index (element->input_pads, 0);
-
-    if (!flow_pad_is_blocked (input_pad))
-      flow_pad_block (input_pad);
+    flow_pad_unblock (input_pad);
   }
 }
 
