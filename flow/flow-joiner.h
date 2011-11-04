@@ -63,6 +63,8 @@ struct _FlowJoinerClass
 
 G_END_DECLS
 
+FlowJoiner     *flow_joiner_new              (void);
+
 FlowOutputPad  *flow_joiner_get_output_pad   (FlowJoiner *joiner);
 
 FlowInputPad   *flow_joiner_add_input_pad    (FlowJoiner *joiner);

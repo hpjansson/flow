@@ -63,6 +63,8 @@ struct _FlowSplitterClass
 
 G_END_DECLS
 
+FlowSplitter  *flow_splitter_new               (void);
+
 FlowInputPad  *flow_splitter_get_input_pad     (FlowSplitter *splitter);
 
 FlowOutputPad *flow_splitter_add_output_pad    (FlowSplitter *splitter);

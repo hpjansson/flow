@@ -157,6 +157,12 @@ flow_splitter_finalize (FlowSplitter *splitter)
 
 /* --- FlowSplitter public API --- */
 
+FlowSplitter *
+flow_splitter_new (void)
+{
+  return g_object_new (FLOW_TYPE_SPLITTER, NULL);
+}
+
 FlowInputPad *
 flow_splitter_get_input_pad (FlowSplitter *splitter)
 {

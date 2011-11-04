@@ -138,6 +138,12 @@ flow_joiner_finalize (FlowJoiner *joiner)
 
 /* --- FlowJoiner public API --- */
 
+FlowJoiner *
+flow_joiner_new (void)
+{
+  return g_object_new (FLOW_TYPE_JOINER, NULL);
+}
+
 FlowOutputPad *
 flow_joiner_get_output_pad (FlowJoiner *joiner)
 {
