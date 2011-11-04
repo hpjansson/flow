@@ -1,5 +1,6 @@
 noinst_PROGRAMS = \
-	list-interfaces
+	list-interfaces \
+	multi-target-cp
 
 INCLUDES = \
 	-I$(top_srcdir) \
