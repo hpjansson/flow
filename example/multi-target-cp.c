@@ -43,7 +43,11 @@ copy_file_cb (gpointer data)
 
   g_print ("%s\n", input_file);
 
+  /* Set up packet repeater */
+
   splitter = flow_splitter_new ();
+
+  /* Set up input file */
 
   connector = flow_file_connector_new ();
 
@@ -51,6 +55,8 @@ copy_file_cb (gpointer data)
                                  FLOW_NO_ACCESS, FLOW_NO_ACCESS, FLOW_NO_ACCESS);
   packet = flow_packet_new_take_object (op, 0);
   flow_pad_push (FLOW_PAD (flow_simplex_element_get_input_pad (FLOW_SIMPLEX_ELEMENT (connector))), packet);
+
+  /* Tell input file to stream itself from start to finish */
 
   detailed_event = flow_detailed_event_new (NULL);
   flow_detailed_event_add_code (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_BEGIN);
@@ -61,8 +67,17 @@ copy_file_cb (gpointer data)
   packet = flow_packet_new_take_object (seg_req, 0);
   flow_pad_push (FLOW_PAD (flow_simplex_element_get_input_pad (FLOW_SIMPLEX_ELEMENT (connector))), packet);
 
+  detailed_event = flow_detailed_event_new (NULL);
+  flow_detailed_event_add_code (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END);
+  packet = flow_packet_new_take_object (detailed_event, 0);
+  flow_pad_push (FLOW_PAD (flow_simplex_element_get_input_pad (FLOW_SIMPLEX_ELEMENT (connector))), packet);
+
+  /* Connect input file's output to repeater's input */
+
   flow_pad_connect (FLOW_PAD (flow_simplex_element_get_output_pad (FLOW_SIMPLEX_ELEMENT (connector))),
                     FLOW_PAD (flow_splitter_get_input_pad (splitter)));
+
+  /* Create input files and connect their inputs to repeater's outputs */
 
   for (i = 0; i < n_output_files; i++)
   {
