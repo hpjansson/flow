@@ -74,9 +74,12 @@ copy_file_cb (const gchar *input_file, const gchar **output_files, gint n_output
 
   n_output_files_left = n_output_files;
 
-  /* Set up packet repeater and collector */
+  /* Set up packet repeater */
 
   splitter = flow_splitter_new ();
+
+  /* Set up collector for status messages from output files, so we can exit when they're all done */
+
   joiner = flow_joiner_new ();
 
   user_adapter = flow_user_adapter_new ();
