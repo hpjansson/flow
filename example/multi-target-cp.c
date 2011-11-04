@@ -118,7 +118,7 @@ copy_file_cb (const gchar *input_file, const gchar **output_files, gint n_output
   flow_pad_connect (FLOW_PAD (flow_simplex_element_get_output_pad (FLOW_SIMPLEX_ELEMENT (connector))),
                     FLOW_PAD (flow_splitter_get_input_pad (splitter)));
 
-  /* Create input files and connect their inputs to repeater's outputs */
+  /* Create output files and connect their inputs to repeater's outputs */
 
   for (i = 0; i < n_output_files; i++)
   {
