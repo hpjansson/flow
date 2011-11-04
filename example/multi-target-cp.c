@@ -26,15 +26,44 @@
 #include <flow/flow.h>
 
 static GMainLoop *main_loop;
-static const gchar *input_file;
-static const gchar **output_files;
-static gint n_output_files;
+static gint n_output_files_left;
 
-static gboolean
-copy_file_cb (gpointer data)
+static void
+output_file_message_cb (gpointer user_data)
+{
+  FlowUserAdapter *user_adapter = user_data;
+  FlowPacketQueue *queue;
+  FlowPacket *packet;
+
+  queue = flow_user_adapter_get_input_queue (user_adapter);
+
+  while ((packet = flow_packet_queue_pop_first_object (queue)))
+  {
+    gpointer obj = flow_packet_get_data (packet);
+    if (!obj)
+      continue;
+
+    if (FLOW_IS_DETAILED_EVENT (obj) &&
+        flow_detailed_event_matches (FLOW_DETAILED_EVENT (obj), FLOW_STREAM_DOMAIN, FLOW_STREAM_END))
+    {
+      n_output_files_left--;
+      if (n_output_files_left == 0)
+        g_main_loop_quit (main_loop);
+    }
+
+    flow_packet_free (packet);  /* Also releases the object */
+  }
+
+  flow_packet_queue_clear (queue);
+}
+
+static void
+copy_file_cb (const gchar *input_file, const gchar **output_files, gint n_output_files)
 {
   FlowSplitter *splitter;
-  FlowFileConnector *connector, *originator;
+  FlowJoiner *joiner;
+  FlowUserAdapter *user_adapter;
+  FlowFileConnector *connector;
   FlowFileConnectOp *op;
   FlowDetailedEvent *detailed_event;
   FlowSegmentRequest *seg_req;
@@ -43,9 +72,18 @@ copy_file_cb (gpointer data)
 
   g_print ("%s\n", input_file);
 
-  /* Set up packet repeater */
+  n_output_files_left = n_output_files;
+
+  /* Set up packet repeater and collector */
 
   splitter = flow_splitter_new ();
+  joiner = flow_joiner_new ();
+
+  user_adapter = flow_user_adapter_new ();
+  flow_user_adapter_set_input_notify (user_adapter, output_file_message_cb, user_adapter);
+
+  flow_pad_connect (FLOW_PAD (flow_joiner_get_output_pad (joiner)),
+                    FLOW_PAD (flow_simplex_element_get_input_pad (FLOW_SIMPLEX_ELEMENT (user_adapter))));
 
   /* Set up input file */
 
@@ -93,40 +131,34 @@ copy_file_cb (gpointer data)
 
     flow_pad_connect (FLOW_PAD (flow_splitter_add_output_pad (splitter)),
                       FLOW_PAD (flow_simplex_element_get_input_pad (FLOW_SIMPLEX_ELEMENT (connector))));
+
+    flow_pad_connect (FLOW_PAD (flow_simplex_element_get_output_pad (FLOW_SIMPLEX_ELEMENT (connector))),
+                      FLOW_PAD (flow_joiner_add_input_pad (joiner)));
   }
 
-  return FALSE;
+  /* Run until done */
+
+  g_main_loop_run (main_loop);
 }
 
 gint
-main (gint argc, gchar *argv [])
+main (gint argc, gchar **argv)
 {
   gint i;
 
-  /* Collect arguments */
+  /* Init */
 
-  if (argc <= 1)
+  if (argc < 3)
+  {
+    g_printerr ("Usage: %s infile outfile [outfile [outfile [...]]]\n", argv [0]);
     return 1;
-
-  n_output_files = argc - 2;
-  if (n_output_files <= 0)
-    return 1;
+  }
 
   g_type_init ();
-
-  input_file = argv [1];
-  output_files = g_new (const gchar **, n_output_files);
-
-  for (i = 2; i < argc; i++)
-  {
-    output_files [i - 2] = argv [i];
-  }
 
   /* Run */
 
   main_loop = g_main_loop_new (NULL, FALSE);
-  g_idle_add (copy_file_cb, NULL);
-  g_main_loop_run (main_loop);
-
+  copy_file_cb (argv [1], (const gchar **) &argv [2], argc - 2);
   return 0;
 }
