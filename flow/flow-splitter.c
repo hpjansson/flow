@@ -57,7 +57,7 @@ flow_splitter_output_pad_blocked (FlowElement *element, FlowPad *output_pad)
 }
 
 static void
-flow_splitter_output_pad_unblocked (FlowElement *element, FlowPad *outpud_pad)
+flow_splitter_output_pad_unblocked (FlowElement *element, FlowPad *output_pad)
 {
   guint i;
 
