@@ -63,7 +63,6 @@ static void
 flow_splitter_output_pad_unblocked (FlowElement *element, FlowPad *output_pad)
 {
   FlowSplitterPrivate *priv = ((FlowSplitter *) element)->priv;
-  guint i;
 
   /* Unblock input pad if all output pads are unblocked */
 
