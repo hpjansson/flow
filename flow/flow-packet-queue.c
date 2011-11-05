@@ -518,6 +518,22 @@ flow_packet_queue_peek_packet (FlowPacketQueue *packet_queue, FlowPacket **packe
   return TRUE;
 }
 
+FlowPacket *
+flow_packet_queue_peek_nth_packet (FlowPacketQueue *packet_queue, guint n)
+{
+  FlowPacket *packet;
+
+  g_return_val_if_fail (FLOW_IS_PACKET_QUEUE (packet_queue), FALSE);
+
+  if (n == 0)
+  {
+    consolidate_partial_packet (packet_queue);
+    return packet_queue->first_packet;
+  }
+
+  return g_queue_peek_nth (packet_queue->queue, n - 1);
+}
+
 void
 flow_packet_queue_peek_packets (FlowPacketQueue *packet_queue, FlowPacket **packets_out, gint *n_packets_out)
 {

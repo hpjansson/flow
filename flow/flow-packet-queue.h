@@ -83,6 +83,7 @@ gboolean          flow_packet_queue_pop_bytes_exact        (FlowPacketQueue *pac
 
 gboolean          flow_packet_queue_peek_packet            (FlowPacketQueue *packet_queue,
                                                             FlowPacket **packet_out, gint *offset_out);
+FlowPacket       *flow_packet_queue_peek_nth_packet        (FlowPacketQueue *packet_queue, guint n);
 void              flow_packet_queue_peek_packets           (FlowPacketQueue *packet_queue,
                                                             FlowPacket **packet_out, gint *n_packets);
 gboolean          flow_packet_queue_drop_packet            (FlowPacketQueue *packet_queue);
