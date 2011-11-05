@@ -12,21 +12,11 @@ export MALLOC_PERTURB_=a
 let n=0
 let m=0
 
-# Make sure binaries are created in .libs
-
-echo -n "Preparing... "
-
-for i in $(grep "^[ \t]*[^#]" tests.list); do
-  ./$i >/dev/null 2>&1;
-done
-
-echo "done"
-
 while true; do
   echo -n -e "\rIterations: $m"
 
   for i in $(grep "^[ \t]*[^#]" tests.list); do
-    nice -10 valgrind -q --trace-children=yes --track-fds=yes --time-stamp=yes --num-callers=32 .libs/lt-$i -n >out 2>&1
+    nice -10 libtool --mode=execute valgrind -q --trace-children=yes --track-fds=yes --time-stamp=yes --num-callers=32 $i -n >out 2>&1
 
     if grep -L 'Thread' out >/dev/null 2>&1; then
       echo -e '\nFailure: ' $i
