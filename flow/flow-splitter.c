@@ -31,6 +31,7 @@
 
 typedef struct
 {
+  gint n_blocked_outputs;
 }
 FlowSplitterPrivate;
 
@@ -48,10 +49,12 @@ FLOW_GOBJECT_MAKE_IMPL        (flow_splitter, FlowSplitter, FLOW_TYPE_ELEMENT, 0
 static void
 flow_splitter_output_pad_blocked (FlowElement *element, FlowPad *output_pad)
 {
+  FlowSplitterPrivate *priv = ((FlowSplitter *) element)->priv;
   FlowPad *input_pad;
 
   /* Block input pad if any output pad is blocked */
 
+  priv->n_blocked_outputs++;
   input_pad = g_ptr_array_index (element->input_pads, 0);
   flow_pad_block (input_pad);
 }
@@ -59,29 +62,15 @@ flow_splitter_output_pad_blocked (FlowElement *element, FlowPad *output_pad)
 static void
 flow_splitter_output_pad_unblocked (FlowElement *element, FlowPad *output_pad)
 {
+  FlowSplitterPrivate *priv = ((FlowSplitter *) element)->priv;
   guint i;
 
   /* Unblock input pad if all output pads are unblocked */
 
-  /* NOTE: This may be slow if we have lots of outputs. It could be solved
-   * by storing a counter indicating how many blocked outputs we have. I
-   * very much doubt it'll be a problem in practice, though. */
-
-  for (i = 0; i < element->output_pads->len; i++)
+  priv->n_blocked_outputs--;
+  if (!priv->n_blocked_outputs)
   {
-    FlowPad *output_pad = g_ptr_array_index (element->output_pads, i);
-
-    if (flow_pad_is_blocked (output_pad))
-      break;
-  }
-
-  if (i == element->output_pads->len)
-  {
-    FlowPad *input_pad;
-
-    /* We reached the end - there are no blocked outputs */
-
-    input_pad = g_ptr_array_index (element->input_pads, 0);
+    FlowPad *input_pad = g_ptr_array_index (element->input_pads, 0);
     flow_pad_unblock (input_pad);
   }
 }
