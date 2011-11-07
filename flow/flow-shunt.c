@@ -33,9 +33,16 @@
 #include "flow-util.h"
 #include "flow-shunt.h"
 
-/* Maximum internal buffers. May be allocated on stack. */
+/* IO buffer default size */
 
-#define MAX_BUFFER 4096
+/* FIXME: In impl, use a shared buffer for sockets */
+#define IO_BUFFER_DEFAULT_SIZE 4096
+
+/* Packet queue buffer limits */
+
+/* FIXME: Make these dynamic */
+#define MAX_QUEUE_BUFFER 4096
+#define LOW_WATER_QUEUE_BUFFER 4096
 
 /* Maximum number of packets to dispatch in one go, before returning
  * to main loop. Think of it as a time slice: Higher values reduce
@@ -92,6 +99,10 @@ struct _FlowShunt
 
   FlowShuntWriteFunc *write_func;
   gpointer            write_func_data;
+
+  gpointer            io_buffer;
+  guint               io_buffer_size;
+  guint               io_buffer_desired_size;
 };
 
 static gboolean   impl_is_initialized = FALSE;
@@ -169,6 +180,7 @@ static void        flow_sync_shunt_impl_write         (FlowSyncShunt *sync_shunt
 static void        flow_shunt_init_common             (FlowShunt *shunt, ShuntSource *shunt_source);
 static void        flow_shunt_finalize_common         (FlowShunt *shunt);
 
+static void        flow_shunt_check_buffers           (FlowShunt *shunt);
 static void        flow_shunt_read_state_changed      (FlowShunt *shunt);
 static void        flow_shunt_write_state_changed     (FlowShunt *shunt);
 
@@ -240,7 +252,7 @@ dispatch_for_shunt (FlowShunt *shunt, gint *n_reads_done, gint *n_writes_done)
   /* Dispatch writes */
 
   for (written_packets = 0; shunt->write_func && !shunt->block_writes && !shunt->was_destroyed_while_dispatching &&
-                            written_packets < MAX_DISPATCH_PACKETS && written_bytes <= MAX_BUFFER &&
+                            written_packets < MAX_DISPATCH_PACKETS && written_bytes <= MAX_QUEUE_BUFFER &&
                             !received_end; written_packets++)
   {
     packet = shunt->write_func (shunt, shunt->write_func_data);
@@ -490,6 +502,9 @@ flow_shunt_init_common (FlowShunt *shunt, ShuntSource *shunt_source)
   shunt->read_queue  = flow_packet_queue_new ();
   shunt->write_queue = flow_packet_queue_new ();
 
+  shunt->io_buffer_size = shunt->io_buffer_desired_size = IO_BUFFER_DEFAULT_SIZE;
+  shunt->io_buffer = g_malloc (IO_BUFFER_DEFAULT_SIZE);
+
   add_shunt_to_shunt_source (shunt, shunt_source);
 }
 
@@ -504,6 +519,9 @@ flow_shunt_finalize_common (FlowShunt *shunt)
 
   flow_gobject_unref_clear (shunt->read_queue);
   flow_gobject_unref_clear (shunt->write_queue);
+
+  g_free (shunt->io_buffer);
+  shunt->io_buffer = NULL;
 }
 
 /* Assumes that caller is holding the impl lock */
@@ -533,6 +551,16 @@ flow_shunt_need_dispatch (FlowShunt *shunt)
   }
 }
 
+static void
+flow_shunt_check_buffers (FlowShunt *shunt)
+{
+  if (shunt->io_buffer_size != shunt->io_buffer_desired_size)
+  {
+    shunt->io_buffer = g_realloc (shunt->io_buffer, shunt->io_buffer_desired_size);
+    shunt->io_buffer_size = shunt->io_buffer_desired_size;
+  }
+}
+
 /* Assumes that caller is holding the impl lock */
 static void
 flow_shunt_read_state_changed (FlowShunt *shunt)
@@ -548,7 +576,7 @@ flow_shunt_read_state_changed (FlowShunt *shunt)
    *   - We haven't dispatched a "stream begins" event. */
 
   new_need_reads = 
-    (shunt->can_read && flow_packet_queue_get_length_bytes (shunt->read_queue) <= MAX_BUFFER &&
+    (shunt->can_read && flow_packet_queue_get_length_bytes (shunt->read_queue) <= LOW_WATER_QUEUE_BUFFER &&
      ((!shunt->block_reads && shunt->read_func) ||
      !shunt->dispatched_begin)) ? TRUE : FALSE;
 
@@ -594,7 +622,7 @@ flow_shunt_write_state_changed (FlowShunt *shunt)
   }
 
   if (!shunt->received_end &&
-      flow_packet_queue_get_length_bytes (shunt->write_queue) <= MAX_BUFFER &&
+      flow_packet_queue_get_length_bytes (shunt->write_queue) <= LOW_WATER_QUEUE_BUFFER &&
       !shunt->block_writes && shunt->write_func)
     flow_shunt_need_dispatch (shunt);
 }
@@ -782,6 +810,37 @@ flow_shunt_set_write_func (FlowShunt *shunt, FlowShuntWriteFunc *write_func, gpo
   shunt->write_func_data = user_data;
 
   flow_shunt_write_state_changed (shunt);
+
+  flow_shunt_impl_unlock ();
+}
+
+guint
+flow_shunt_get_io_buffer_size (FlowShunt *shunt)
+{
+  guint io_buffer_size;
+
+  g_return_val_if_fail (shunt != NULL, 0);
+  g_return_val_if_fail (shunt->was_destroyed == FALSE, 0);
+
+  flow_shunt_impl_lock ();
+
+  io_buffer_size = shunt->io_buffer_desired_size;
+
+  flow_shunt_impl_unlock ();
+
+  return io_buffer_size;
+}
+
+void
+flow_shunt_set_io_buffer_size (FlowShunt *shunt, guint io_buffer_size)
+{
+  g_return_if_fail (shunt != NULL);
+  g_return_if_fail (shunt->was_destroyed == FALSE);
+  g_return_if_fail (io_buffer_size > 0);
+
+  flow_shunt_impl_lock ();
+
+  shunt->io_buffer_desired_size = io_buffer_size;
 
   flow_shunt_impl_unlock ();
 }

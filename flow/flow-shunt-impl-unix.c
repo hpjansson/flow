@@ -1229,7 +1229,6 @@ tcp_listener_shunt_read (FlowShunt *shunt)
 static void
 socket_shunt_read (FlowShunt *shunt)
 {
-  guint8       buf [MAX_BUFFER];
   FlowSockaddr sa;
   guint        sa_len = sizeof (FlowSockaddr);
   gint         result;
@@ -1256,6 +1255,8 @@ socket_shunt_read (FlowShunt *shunt)
 
 #endif
 
+  flow_shunt_check_buffers (shunt);
+
   errno = 0;
 
   /* TCP listeners are sufficiently different as to warrant a separate function */
@@ -1272,7 +1273,7 @@ socket_shunt_read (FlowShunt *shunt)
       {
         SocketShunt *socket_shunt = (SocketShunt *) shunt;
 
-        result = recv (socket_shunt->fd, buf, MAX_BUFFER, 0);
+        result = recv (socket_shunt->fd, shunt->io_buffer, shunt->io_buffer_size, 0);
       }
       break;
 
@@ -1280,7 +1281,7 @@ socket_shunt_read (FlowShunt *shunt)
       {
         SocketShunt *socket_shunt = (SocketShunt *) shunt;
 
-        result = recvfrom (socket_shunt->fd, buf, MAX_BUFFER, 0, (struct sockaddr *) &sa, &sa_len);
+        result = recvfrom (socket_shunt->fd, shunt->io_buffer, shunt->io_buffer_size, 0, (struct sockaddr *) &sa, &sa_len);
       }
       break;
 
@@ -1288,7 +1289,7 @@ socket_shunt_read (FlowShunt *shunt)
       {
         PipeShunt *pipe_shunt = (PipeShunt *) shunt;
 
-        result = read (pipe_shunt->read_fd, buf, MAX_BUFFER);
+        result = read (pipe_shunt->read_fd, shunt->io_buffer, shunt->io_buffer_size);
       }
       break;
 
@@ -1325,7 +1326,7 @@ socket_shunt_read (FlowShunt *shunt)
       }
     }
 
-    packet = flow_packet_new (FLOW_PACKET_FORMAT_BUFFER, buf, result);
+    packet = flow_packet_new (FLOW_PACKET_FORMAT_BUFFER, shunt->io_buffer, result);
     flow_packet_queue_push_packet (shunt->read_queue, packet);
   }
   else if (result == 0 || saved_errno != EINTR)
@@ -1813,14 +1814,15 @@ static void
 file_shunt_read (FlowShunt *shunt)
 {
   FileShunt    *file_shunt = (FileShunt *) shunt;
-  guint8        buf [MAX_BUFFER];
   gint64        max_read;
   gint          result;
   gint          saved_errno;
   ShuntType     shunt_type;
   gint          fd;
 
-  max_read = MIN (file_shunt->read_bytes_remaining, MAX_BUFFER);
+  flow_shunt_check_buffers (shunt);
+
+  max_read = MIN (file_shunt->read_bytes_remaining, shunt->io_buffer_size);
   if (max_read < 1)
   {
     flow_shunt_read_state_changed (shunt);
@@ -1834,7 +1836,7 @@ file_shunt_read (FlowShunt *shunt)
 
   /* --- UNLOCKED CODE BEGINS --- */
 
-  result = read (fd, buf, max_read);
+  result = read (fd, shunt->io_buffer, max_read);
   saved_errno = errno;
 
   /* --- UNLOCKED CODE ENDS --- */
@@ -1847,7 +1849,7 @@ file_shunt_read (FlowShunt *shunt)
 
     /* Data */
 
-    packet = flow_packet_new (FLOW_PACKET_FORMAT_BUFFER, buf, result);
+    packet = flow_packet_new (FLOW_PACKET_FORMAT_BUFFER, shunt->io_buffer, result);
     flow_packet_queue_push_packet (shunt->read_queue, packet);
 
     file_shunt->read_bytes_remaining -= result;
@@ -3146,17 +3148,17 @@ flow_sync_shunt_impl_try_read (FlowSyncShunt *sync_shunt, FlowPacket **packet_de
     case SHUNT_TYPE_PIPE:
       {
         PipeShunt *pipe_shunt = (PipeShunt *) sync_shunt;
-        guint8     buf [MAX_BUFFER];
         gint       result;
         gint       saved_errno;
 
+        flow_shunt_check_buffers (shunt);
         flow_pipe_set_nonblock (pipe_shunt->read_fd, TRUE);
-        result = read (pipe_shunt->read_fd, buf, MAX_BUFFER);
+        result = read (pipe_shunt->read_fd, shunt->io_buffer, shunt->io_buffer_size);
         saved_errno = errno;
 
         if (result > 0)
         {
-          packet = flow_packet_new (FLOW_PACKET_FORMAT_BUFFER, buf, result);
+          packet = flow_packet_new (FLOW_PACKET_FORMAT_BUFFER, shunt->io_buffer, result);
         }
         else if (result == 0 || saved_errno == EAGAIN || saved_errno == EINTR)
         {
@@ -3176,6 +3178,7 @@ flow_sync_shunt_impl_try_read (FlowSyncShunt *sync_shunt, FlowPacket **packet_de
     case SHUNT_TYPE_THREAD:
       flow_shunt_impl_lock ();
 
+      flow_shunt_check_buffers (shunt);
       packet = flow_packet_queue_pop_packet (shunt->write_queue);
       if (packet)
         flow_shunt_write_state_changed (shunt);
@@ -3205,8 +3208,9 @@ flow_sync_shunt_impl_read (FlowSyncShunt *sync_shunt, FlowPacket **packet_dest)
     case SHUNT_TYPE_PIPE:
       {
         PipeShunt *pipe_shunt = (PipeShunt *) sync_shunt;
-        guint8     buf [MAX_BUFFER];
         gint       result;
+
+        flow_shunt_check_buffers (shunt);
 
         flow_pipe_set_nonblock (pipe_shunt->read_fd, TRUE);
 
@@ -3221,7 +3225,7 @@ flow_sync_shunt_impl_read (FlowSyncShunt *sync_shunt, FlowPacket **packet_dest)
           if (result == 0 || (result < 0 && errno == EINTR))
             continue;
 
-          result = read (pipe_shunt->read_fd, buf, MAX_BUFFER);
+          result = read (pipe_shunt->read_fd, shunt->io_buffer, shunt->io_buffer_size);
           if (result < 0 && errno == EINTR)
             continue;
 
@@ -3230,7 +3234,7 @@ flow_sync_shunt_impl_read (FlowSyncShunt *sync_shunt, FlowPacket **packet_dest)
 
         if (result > 0)
         {
-          packet = flow_packet_new (FLOW_PACKET_FORMAT_BUFFER, buf, result);
+          packet = flow_packet_new (FLOW_PACKET_FORMAT_BUFFER, shunt->io_buffer, result);
         }
         else
         {
@@ -3254,6 +3258,7 @@ flow_sync_shunt_impl_read (FlowSyncShunt *sync_shunt, FlowPacket **packet_dest)
           g_cond_wait (thread_shunt->cond, g_static_mutex_get_mutex (&global_mutex));
         }
 
+        flow_shunt_check_buffers (shunt);
         flow_shunt_write_state_changed (shunt);
         flow_shunt_impl_unlock ();
       }
@@ -3312,6 +3317,7 @@ flow_sync_shunt_impl_write (FlowSyncShunt *sync_shunt, FlowPacket *packet)
 
     case SHUNT_TYPE_THREAD:
       flow_shunt_impl_lock ();
+      flow_shunt_check_buffers (shunt);
       flow_packet_queue_push_packet (shunt->read_queue, packet);
       flow_shunt_read_state_changed (shunt);
       flow_shunt_impl_unlock ();

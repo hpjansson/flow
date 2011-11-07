@@ -70,6 +70,9 @@ void        flow_shunt_set_read_func    (FlowShunt *shunt, FlowShuntReadFunc *re
 void        flow_shunt_get_write_func   (FlowShunt *shunt, FlowShuntWriteFunc **write_func, gpointer *user_data);
 void        flow_shunt_set_write_func   (FlowShunt *shunt, FlowShuntWriteFunc *write_func, gpointer user_data);
 
+guint       flow_shunt_get_io_buffer_size (FlowShunt *shunt);
+void        flow_shunt_set_io_buffer_size (FlowShunt *shunt, guint io_buffer_size);
+
 void        flow_shunt_block_reads      (FlowShunt *shunt);
 void        flow_shunt_unblock_reads    (FlowShunt *shunt);
 
