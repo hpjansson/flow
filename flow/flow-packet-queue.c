@@ -807,3 +807,58 @@ flow_packet_queue_clear (FlowPacketQueue *packet_queue)
   clear_queue (packet_queue);
 }
 
+FlowPacket *
+flow_packet_iter_peek_packet (FlowPacketQueue *packet_queue, FlowPacketIter *packet_iter)
+{
+  g_return_val_if_fail (FLOW_IS_PACKET_QUEUE (packet_queue), NULL);
+  g_return_val_if_fail (packet_iter != NULL, NULL);
+
+  if (!*packet_iter)
+    return NULL;
+
+  if (*packet_iter == (FlowPacketIter) &packet_queue->first_packet)
+    return packet_queue->first_packet;
+
+  return ((GList *) (*packet_iter))->data;
+}
+
+gboolean
+flow_packet_iter_next (FlowPacketQueue *packet_queue, FlowPacketIter *packet_iter)
+{
+  GList *next;
+
+  g_return_val_if_fail (FLOW_IS_PACKET_QUEUE (packet_queue), FALSE);
+  g_return_val_if_fail (packet_iter != NULL, FALSE);
+
+  if (!*packet_iter)
+  {
+    if (packet_queue->first_packet)
+    {
+      *packet_iter = (FlowPacketIter) &packet_queue->first_packet;
+      return TRUE;
+    }
+
+    *packet_iter = packet_queue->queue->head;
+    if (!*packet_iter)
+      return FALSE;
+
+    return TRUE;
+  }
+  else if (*packet_iter == (FlowPacketIter) &packet_queue->first_packet)
+  {
+    next = packet_queue->queue->head;
+    if (!next)
+      return FALSE;
+
+    *packet_iter = next;
+    return TRUE;
+  }
+
+  next = ((GList *) (*packet_iter))->next;
+  if (!next)
+    return FALSE;
+
+  *((GList **) packet_iter) = next;
+  return TRUE;
+}
+

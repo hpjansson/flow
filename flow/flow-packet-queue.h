@@ -38,6 +38,8 @@ G_BEGIN_DECLS
 #define FLOW_PACKET_QUEUE_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), FLOW_TYPE_PACKET_QUEUE, FlowPacketQueueClass))
 GType   flow_packet_queue_get_type        (void) G_GNUC_CONST;
 
+typedef gpointer                     FlowPacketIter;
+
 typedef struct _FlowPacketQueue      FlowPacketQueue;
 typedef struct _FlowPacketQueueClass FlowPacketQueueClass;
 
@@ -93,6 +95,9 @@ void              flow_packet_queue_steal                  (FlowPacketQueue *pac
 FlowPacket       *flow_packet_queue_peek_first_object      (FlowPacketQueue *packet_queue);
 FlowPacket       *flow_packet_queue_pop_first_object       (FlowPacketQueue *packet_queue);
 gboolean          flow_packet_queue_skip_past_first_object (FlowPacketQueue *packet_queue);
+
+FlowPacket       *flow_packet_iter_peek_packet             (FlowPacketQueue *packet_queue, FlowPacketIter *packet_iter);
+gboolean          flow_packet_iter_next                    (FlowPacketQueue *packet_queue, FlowPacketIter *packet_iter);
 
 G_END_DECLS
 
