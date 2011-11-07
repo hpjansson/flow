@@ -70,4 +70,7 @@ FlowInputPad  *flow_splitter_get_input_pad     (FlowSplitter *splitter);
 FlowOutputPad *flow_splitter_add_output_pad    (FlowSplitter *splitter);
 void           flow_splitter_remove_output_pad (FlowSplitter *splitter, FlowOutputPad *output_pad);
 
+guint64        flow_splitter_get_buffer_limit  (FlowSplitter *splitter);
+void           flow_splitter_set_buffer_limit  (FlowSplitter *splitter, guint64 limit);
+
 #endif  /* _FLOW_SPLITTER_H */
