@@ -73,6 +73,9 @@ void        flow_shunt_set_write_func   (FlowShunt *shunt, FlowShuntWriteFunc *w
 guint       flow_shunt_get_io_buffer_size (FlowShunt *shunt);
 void        flow_shunt_set_io_buffer_size (FlowShunt *shunt, guint io_buffer_size);
 
+guint       flow_shunt_get_queue_limit  (FlowShunt *shunt);
+void        flow_shunt_set_queue_limit  (FlowShunt *shunt, guint queue_limit);
+
 void        flow_shunt_block_reads      (FlowShunt *shunt);
 void        flow_shunt_unblock_reads    (FlowShunt *shunt);
 
