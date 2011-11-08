@@ -24,14 +24,15 @@
 
 #include "config.h"
 
+#include <string.h>
+
 #include "flow-util.h"
 #include "flow-gobject-util.h"
 #include "flow-detailed-event.h"
 #include "flow-file-connect-op.h"
 #include "flow-file-connector.h"
 
-#define MAX_BUFFER_PACKETS 16
-#define MAX_BUFFER_BYTES   4096
+#define MAX_BUFFER_PACKETS 32
 
 static void        shunt_read  (FlowShunt *shunt, FlowPacket *packet, FlowFileConnector *file_connector);
 static FlowPacket *shunt_write (FlowShunt *shunt, FlowFileConnector *file_connector);
@@ -62,6 +63,7 @@ static void
 setup_shunt (FlowFileConnector *file_connector)
 {
   FlowFileConnectorPrivate *priv = file_connector->priv;
+  FlowConnector            *connector = FLOW_CONNECTOR (file_connector);
   FlowPad                  *output_pad;
 
   flow_shunt_set_read_func (priv->shunt, (FlowShuntReadFunc *) shunt_read, file_connector);
@@ -73,6 +75,9 @@ setup_shunt (FlowFileConnector *file_connector)
   {
     flow_shunt_block_reads (priv->shunt);
   }
+
+  flow_shunt_set_io_buffer_size (priv->shunt, flow_connector_get_io_buffer_size (connector));
+  flow_shunt_set_queue_limit (priv->shunt, flow_connector_get_read_queue_limit (connector));
 }
 
 static void
@@ -230,6 +235,23 @@ shunt_read (FlowShunt *shunt, FlowPacket *packet, FlowFileConnector *file_connec
   }
 }
 
+static void
+maybe_unblock_input_pad (FlowFileConnector *file_connector)
+{
+  FlowPad         *input_pad;
+  FlowPacketQueue *packet_queue;
+
+  input_pad = FLOW_PAD (flow_simplex_element_get_input_pad (FLOW_SIMPLEX_ELEMENT (file_connector)));
+  packet_queue = flow_pad_get_packet_queue (input_pad);
+
+  if (!packet_queue ||
+      (flow_packet_queue_get_length_packets (packet_queue) < MAX_BUFFER_PACKETS &&
+       flow_packet_queue_get_length_bytes (packet_queue) < flow_connector_get_write_queue_limit (FLOW_CONNECTOR (file_connector))))
+  {
+    flow_pad_unblock (input_pad);
+  }
+}
+
 static FlowPacket *
 shunt_write (FlowShunt *shunt, FlowFileConnector *file_connector)
 {
@@ -238,15 +260,8 @@ shunt_write (FlowShunt *shunt, FlowFileConnector *file_connector)
   FlowPacket      *packet;
 
   input_pad = FLOW_PAD (flow_simplex_element_get_input_pad (FLOW_SIMPLEX_ELEMENT (file_connector)));
+  maybe_unblock_input_pad (file_connector);
   packet_queue = flow_pad_get_packet_queue (input_pad);
-
-  if (!packet_queue ||
-      (flow_packet_queue_get_length_packets (packet_queue) < MAX_BUFFER_PACKETS &&
-       flow_packet_queue_get_length_bytes (packet_queue) < MAX_BUFFER_BYTES))
-  {
-    flow_pad_unblock (input_pad);
-    packet_queue = flow_pad_get_packet_queue (input_pad);
-  }
 
   if (!packet_queue || flow_packet_queue_get_length_packets (packet_queue) == 0)
   {
@@ -294,7 +309,7 @@ flow_file_connector_process_input (FlowFileConnector *file_connector, FlowPad *i
       flow_packet_free (packet);
   }
 
-  if (flow_packet_queue_get_length_bytes (packet_queue) >= MAX_BUFFER_BYTES ||
+  if (flow_packet_queue_get_length_bytes (packet_queue) >= flow_connector_get_write_queue_limit (FLOW_CONNECTOR (file_connector)) ||
       flow_packet_queue_get_length_packets (packet_queue) >= MAX_BUFFER_PACKETS)
   {
     flow_pad_block (input_pad);
@@ -331,6 +346,31 @@ flow_file_connector_type_init (GType type)
 }
 
 static void
+property_changed (FlowFileConnector *file_connector, GParamSpec *param_spec)
+{
+  FlowFileConnectorPrivate *priv = file_connector->priv;
+  FlowConnector *connector = FLOW_CONNECTOR (file_connector);
+
+  if (!param_spec || !param_spec->name)
+    return;
+
+  if (!strcmp (param_spec->name, "io-buffer-size"))
+  {
+    if (priv->shunt)
+      flow_shunt_set_io_buffer_size (priv->shunt, flow_connector_get_io_buffer_size (connector));
+  }
+  else if (!strcmp (param_spec->name, "read-queue-limit"))
+  {
+    if (priv->shunt)
+      flow_shunt_set_queue_limit (priv->shunt, flow_connector_get_read_queue_limit (connector));
+  }
+  else if (!strcmp (param_spec->name, "write-queue-limit"))
+  {
+    maybe_unblock_input_pad (file_connector);
+  }
+}
+
+static void
 flow_file_connector_class_init (FlowFileConnectorClass *klass)
 {
   FlowElementClass *element_klass = (FlowElementClass *) klass;
@@ -343,6 +383,7 @@ flow_file_connector_class_init (FlowFileConnectorClass *klass)
 static void
 flow_file_connector_init (FlowFileConnector *file_connector)
 {
+  g_signal_connect_swapped (file_connector, "notify", (GCallback) property_changed, file_connector);
 }
 
 static void
