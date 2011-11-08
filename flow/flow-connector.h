@@ -74,6 +74,15 @@ G_END_DECLS
 FlowConnectivity   flow_connector_get_state          (FlowConnector *connector);
 FlowConnectivity   flow_connector_get_last_state     (FlowConnector *connector);
 
+guint              flow_connector_get_io_buffer_size (FlowConnector *connector);
+void               flow_connector_set_io_buffer_size (FlowConnector *connector, guint io_buffer_size);
+
+guint              flow_connector_get_read_queue_limit (FlowConnector *connector);
+void               flow_connector_set_read_queue_limit (FlowConnector *connector, guint read_queue_limit);
+
+guint              flow_connector_get_write_queue_limit (FlowConnector *connector);
+void               flow_connector_set_write_queue_limit (FlowConnector *connector, guint write_queue_limit);
+
 /* For FlowConnector implementations only */
 
 void               flow_connector_set_state_internal (FlowConnector *connector, FlowConnectivity state);
