@@ -40,9 +40,7 @@
 
 /* Packet queue buffer limits */
 
-/* FIXME: Make these dynamic */
-#define MAX_QUEUE_BUFFER 4096
-#define LOW_WATER_QUEUE_BUFFER 4096
+#define QUEUE_DEFAULT_LIMIT 4096
 
 /* Maximum number of packets to dispatch in one go, before returning
  * to main loop. Think of it as a time slice: Higher values reduce
@@ -103,6 +101,9 @@ struct _FlowShunt
   gpointer            io_buffer;
   guint               io_buffer_size;
   guint               io_buffer_desired_size;
+
+  guint               queue_limit;
+  guint               queue_low_water;
 };
 
 static gboolean   impl_is_initialized = FALSE;
@@ -252,7 +253,7 @@ dispatch_for_shunt (FlowShunt *shunt, gint *n_reads_done, gint *n_writes_done)
   /* Dispatch writes */
 
   for (written_packets = 0; shunt->write_func && !shunt->block_writes && !shunt->was_destroyed_while_dispatching &&
-                            written_packets < MAX_DISPATCH_PACKETS && written_bytes <= MAX_QUEUE_BUFFER &&
+                            written_packets < MAX_DISPATCH_PACKETS && written_bytes <= shunt->queue_limit &&
                             !received_end; written_packets++)
   {
     packet = shunt->write_func (shunt, shunt->write_func_data);
@@ -576,7 +577,7 @@ flow_shunt_read_state_changed (FlowShunt *shunt)
    *   - We haven't dispatched a "stream begins" event. */
 
   new_need_reads = 
-    (shunt->can_read && flow_packet_queue_get_length_bytes (shunt->read_queue) <= LOW_WATER_QUEUE_BUFFER &&
+    (shunt->can_read && flow_packet_queue_get_length_bytes (shunt->read_queue) <= shunt->queue_low_water &&
      ((!shunt->block_reads && shunt->read_func) ||
      !shunt->dispatched_begin)) ? TRUE : FALSE;
 
@@ -622,7 +623,7 @@ flow_shunt_write_state_changed (FlowShunt *shunt)
   }
 
   if (!shunt->received_end &&
-      flow_packet_queue_get_length_bytes (shunt->write_queue) <= LOW_WATER_QUEUE_BUFFER &&
+      flow_packet_queue_get_length_bytes (shunt->write_queue) <= shunt->queue_low_water &&
       !shunt->block_writes && shunt->write_func)
     flow_shunt_need_dispatch (shunt);
 }
@@ -841,6 +842,38 @@ flow_shunt_set_io_buffer_size (FlowShunt *shunt, guint io_buffer_size)
   flow_shunt_impl_lock ();
 
   shunt->io_buffer_desired_size = io_buffer_size;
+
+  flow_shunt_impl_unlock ();
+}
+
+guint
+flow_shunt_get_queue_limit (FlowShunt *shunt)
+{
+  guint queue_limit;
+
+  g_return_val_if_fail (shunt != NULL, 0);
+  g_return_val_if_fail (shunt->was_destroyed == FALSE, 0);
+
+  flow_shunt_impl_lock ();
+
+  queue_limit = shunt->queue_limit;
+
+  flow_shunt_impl_unlock ();
+
+  return queue_limit;
+}
+
+void
+flow_shunt_set_queue_limit (FlowShunt *shunt, guint queue_limit)
+{
+  g_return_if_fail (shunt != NULL);
+  g_return_if_fail (shunt->was_destroyed == FALSE);
+  g_return_if_fail (queue_limit > 0);
+
+  flow_shunt_impl_lock ();
+
+  shunt->queue_limit = queue_limit;
+  shunt->queue_low_water = queue_limit <= 4096 ? queue_limit : queue_limit <= 8192 ? 4096 : queue_limit / 2;
 
   flow_shunt_impl_unlock ();
 }
