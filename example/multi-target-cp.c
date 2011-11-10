@@ -25,6 +25,20 @@
 #include "config.h"
 #include <flow/flow.h>
 
+/* Size of the low-level I/O buffer employed by each file. Internally, this
+ * is the maximum length of a single call to read() or write(), as well
+ * as the maximum size of individual data packets generated. */
+#define FILE_IO_BUFFER_SIZE 65536
+
+/* Maximum size of data contained in a packet queue. Each file has two
+ * queues; one for reading and one for writing. */
+#define FILE_QUEUE_SIZE (65536 * 16)
+
+/* Maximum size of data contained in splitter's packet queue. If one or
+ * more of the output data streams stalls, packets queued here are still
+ * available to the remaining streams. */
+#define SPLITTER_QUEUE_SIZE (1024 * 1024 * 16)
+
 static GMainLoop *main_loop;
 static gint n_output_files_left;
 
@@ -77,6 +91,7 @@ copy_file_cb (const gchar *input_file, const gchar **output_files, gint n_output
   /* Set up packet repeater */
 
   splitter = flow_splitter_new ();
+  flow_splitter_set_buffer_limit (splitter, SPLITTER_QUEUE_SIZE);
 
   /* Set up collector for status messages from output files, so we can exit when they're all done */
 
@@ -91,6 +106,9 @@ copy_file_cb (const gchar *input_file, const gchar **output_files, gint n_output
   /* Set up input file */
 
   connector = flow_file_connector_new ();
+  flow_connector_set_io_buffer_size (FLOW_CONNECTOR (connector), FILE_IO_BUFFER_SIZE);
+  flow_connector_set_read_queue_limit (FLOW_CONNECTOR (connector), FILE_QUEUE_SIZE);
+  flow_connector_set_write_queue_limit (FLOW_CONNECTOR (connector), FILE_QUEUE_SIZE);
 
   op = flow_file_connect_op_new (input_file, FLOW_READ_ACCESS, FALSE, FALSE,
                                  FLOW_NO_ACCESS, FLOW_NO_ACCESS, FLOW_NO_ACCESS);
@@ -125,6 +143,10 @@ copy_file_cb (const gchar *input_file, const gchar **output_files, gint n_output
     g_print (" -> %s\n", output_files [i]);
 
     connector = flow_file_connector_new ();
+    flow_connector_set_io_buffer_size (FLOW_CONNECTOR (connector), FILE_IO_BUFFER_SIZE);
+    flow_connector_set_read_queue_limit (FLOW_CONNECTOR (connector), FILE_QUEUE_SIZE);
+    flow_connector_set_write_queue_limit (FLOW_CONNECTOR (connector), FILE_QUEUE_SIZE);
+
     op = flow_file_connect_op_new (output_files [i], FLOW_WRITE_ACCESS, TRUE, TRUE,
                                    FLOW_READ_ACCESS | FLOW_WRITE_ACCESS,
                                    FLOW_READ_ACCESS | FLOW_WRITE_ACCESS,
