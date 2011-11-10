@@ -1115,14 +1115,14 @@ flow_shunt_impl_need_writes (FlowShunt *shunt)
       {
         FileShunt *file_shunt = (FileShunt *) shunt;
 
-        if (!file_shunt->read_bytes_remaining)
+        if (file_shunt->read_bytes_remaining)
+        {
+          shunt->need_writes = FALSE;
+        }
+        else
         { 
           shunt->doing_writes = TRUE;
           g_cond_signal (file_shunt->cond);
-        }
-        else
-        {
-          shunt->need_writes = FALSE;
         }
       }
       break;
