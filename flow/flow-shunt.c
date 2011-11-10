@@ -306,8 +306,8 @@ dispatch_for_shunt (FlowShunt *shunt, gint *n_reads_done, gint *n_writes_done)
   {
     if (read_packets > 0)
       flow_shunt_read_state_changed (shunt);
-    if (written_packets > 0)
-      flow_shunt_write_state_changed (shunt);
+
+    flow_shunt_write_state_changed (shunt);
   }
 
   if G_UNLIKELY (n_reads_done)
