@@ -45,6 +45,9 @@ typedef struct
   FlowFileConnectOp *next_op;
 
   FlowShunt         *shunt;
+
+  guint              reading_from_shunt : 1;
+  guint              writing_to_shunt   : 1;
 }
 FlowFileConnectorPrivate;
 
@@ -60,24 +63,84 @@ FLOW_GOBJECT_MAKE_IMPL        (flow_file_connector, FlowFileConnector, FLOW_TYPE
 /* --- FlowFileConnector implementation --- */
 
 static void
+set_reading_from_shunt (FlowFileConnector *file_connector, gboolean is_reading)
+{
+  FlowFileConnectorPrivate *priv = file_connector->priv;
+
+  if (is_reading == priv->reading_from_shunt)
+    return;
+
+  priv->reading_from_shunt = is_reading;
+
+  if (!priv->shunt)
+    return;
+
+  if (is_reading)
+    flow_shunt_unblock_reads (priv->shunt);
+  else
+    flow_shunt_block_reads (priv->shunt);
+}
+
+static void
+set_writing_to_shunt (FlowFileConnector *file_connector, gboolean is_writing)
+{
+  FlowFileConnectorPrivate *priv = file_connector->priv;
+
+  if (is_writing == priv->writing_to_shunt)
+    return;
+
+  priv->writing_to_shunt = is_writing;
+
+  if (!priv->shunt)
+    return;
+
+  if (is_writing)
+    flow_shunt_unblock_writes (priv->shunt);
+  else
+    flow_shunt_block_writes (priv->shunt);
+}
+
+static void
+maybe_unblock_input_pad (FlowFileConnector *file_connector)
+{
+  FlowPad         *input_pad;
+  FlowPacketQueue *packet_queue;
+
+  input_pad = FLOW_PAD (flow_simplex_element_get_input_pad (FLOW_SIMPLEX_ELEMENT (file_connector)));
+  packet_queue = flow_pad_get_packet_queue (input_pad);
+
+  if (!packet_queue ||
+      (flow_packet_queue_get_length_packets (packet_queue) < MAX_BUFFER_PACKETS &&
+       flow_packet_queue_get_length_bytes (packet_queue) < flow_connector_get_write_queue_limit (FLOW_CONNECTOR (file_connector)) / 2 + 1))
+  {
+    flow_pad_unblock (input_pad);
+  }
+}
+
+static void
 setup_shunt (FlowFileConnector *file_connector)
 {
   FlowFileConnectorPrivate *priv = file_connector->priv;
   FlowConnector            *connector = FLOW_CONNECTOR (file_connector);
   FlowPad                  *output_pad;
+  FlowPacketQueue          *packet_queue;
 
   flow_shunt_set_read_func (priv->shunt, (FlowShuntReadFunc *) shunt_read, file_connector);
   flow_shunt_set_write_func (priv->shunt, (FlowShuntWriteFunc *) shunt_write, file_connector);
 
-  output_pad = FLOW_PAD (flow_simplex_element_get_output_pad (FLOW_SIMPLEX_ELEMENT (file_connector)));
-
-  if (flow_pad_is_blocked (output_pad))
-  {
-    flow_shunt_block_reads (priv->shunt);
-  }
-
   flow_shunt_set_io_buffer_size (priv->shunt, flow_connector_get_io_buffer_size (connector));
   flow_shunt_set_queue_limit (priv->shunt, flow_connector_get_read_queue_limit (connector));
+
+  priv->reading_from_shunt = FALSE;
+  priv->writing_to_shunt = FALSE;
+
+  output_pad = FLOW_PAD (flow_simplex_element_get_output_pad (FLOW_SIMPLEX_ELEMENT (file_connector)));
+  packet_queue = flow_pad_get_packet_queue (FLOW_PAD (flow_simplex_element_get_input_pad (FLOW_SIMPLEX_ELEMENT (file_connector))));
+
+  set_reading_from_shunt (file_connector, !flow_pad_is_blocked (output_pad) ? TRUE : FALSE);
+  set_writing_to_shunt (file_connector, packet_queue && flow_packet_queue_get_length_packets (packet_queue) > 0 ? TRUE : FALSE);
+
+  maybe_unblock_input_pad (file_connector);
 }
 
 static void
@@ -235,23 +298,6 @@ shunt_read (FlowShunt *shunt, FlowPacket *packet, FlowFileConnector *file_connec
   }
 }
 
-static void
-maybe_unblock_input_pad (FlowFileConnector *file_connector)
-{
-  FlowPad         *input_pad;
-  FlowPacketQueue *packet_queue;
-
-  input_pad = FLOW_PAD (flow_simplex_element_get_input_pad (FLOW_SIMPLEX_ELEMENT (file_connector)));
-  packet_queue = flow_pad_get_packet_queue (input_pad);
-
-  if (!packet_queue ||
-      (flow_packet_queue_get_length_packets (packet_queue) < MAX_BUFFER_PACKETS &&
-       flow_packet_queue_get_length_bytes (packet_queue) < flow_connector_get_write_queue_limit (FLOW_CONNECTOR (file_connector))))
-  {
-    flow_pad_unblock (input_pad);
-  }
-}
-
 static FlowPacket *
 shunt_write (FlowShunt *shunt, FlowFileConnector *file_connector)
 {
@@ -265,7 +311,7 @@ shunt_write (FlowShunt *shunt, FlowFileConnector *file_connector)
 
   if (!packet_queue || flow_packet_queue_get_length_packets (packet_queue) == 0)
   {
-    flow_shunt_block_writes (shunt);
+    set_writing_to_shunt (file_connector, FALSE);
     return NULL;
   }
 
@@ -279,6 +325,7 @@ shunt_write (FlowShunt *shunt, FlowFileConnector *file_connector)
   }
   while (!packet);
 
+  maybe_unblock_input_pad (file_connector);
   return packet;
 }
 
@@ -315,29 +362,20 @@ flow_file_connector_process_input (FlowFileConnector *file_connector, FlowPad *i
     flow_pad_block (input_pad);
   }
 
-  if (priv->shunt)
-  {
-    /* FIXME: The shunt's locking might be a performance liability. We could cache the state. */
-    flow_shunt_unblock_writes (priv->shunt);
-  }
+  if (flow_packet_queue_get_length_packets (packet_queue) > 0)
+    set_writing_to_shunt (file_connector, TRUE);
 }
 
 static void
 flow_file_connector_output_pad_blocked (FlowFileConnector *file_connector, FlowPad *output_pad)
 {
-  FlowFileConnectorPrivate *priv = file_connector->priv;
-
-  if (priv->shunt)
-    flow_shunt_block_reads (priv->shunt);
+  set_reading_from_shunt (file_connector, FALSE);
 }
 
 static void
 flow_file_connector_output_pad_unblocked (FlowFileConnector *file_connector, FlowPad *output_pad)
 {
-  FlowFileConnectorPrivate *priv = file_connector->priv;
-
-  if (priv->shunt)
-    flow_shunt_unblock_reads (priv->shunt);
+  set_reading_from_shunt (file_connector, TRUE);
 }
 
 static void
