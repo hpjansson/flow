@@ -253,7 +253,7 @@ check_for_errors (FlowFileIO *file_io, FlowDetailedEvent *detailed_event)
                                            FLOW_FILE_NO_SPACE,
                                            FLOW_FILE_IS_READ_ONLY,
                                            FLOW_FILE_IS_LOCKED,
-                                           FLOW_FILE_DOES_NOT_EXIST
+                                           FLOW_FILE_DOES_NOT_EXIST,
                                            -1);
 
   if (error)
