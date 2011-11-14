@@ -106,8 +106,8 @@ struct _FlowShunt
   guint               queue_low_water;
 };
 
-static gboolean   impl_is_initialized = FALSE;
 static GPtrArray *shunt_sources       = NULL;
+static gsize      impl_is_initialized = 0;
 
 /* ------------------------- *
  * Implementation Prototypes *
@@ -494,10 +494,10 @@ remove_shunt_from_shunt_source (FlowShunt *shunt)
 static void
 flow_shunt_init_common (FlowShunt *shunt, ShuntSource *shunt_source)
 {
-  if (!impl_is_initialized)
+  if (g_once_init_enter (&impl_is_initialized))
   {
     flow_shunt_impl_init ();
-    impl_is_initialized = TRUE;
+    g_once_init_leave (&impl_is_initialized, 1);
   }
 
   shunt->read_queue  = flow_packet_queue_new ();
@@ -951,8 +951,11 @@ flow_shutdown_shunts (void)
 {
   flow_shunt_impl_lock ();
 
-  flow_shunt_impl_finalize ();
-  impl_is_initialized = FALSE;
+  if (impl_is_initialized)
+  {
+    flow_shunt_impl_finalize ();
+    impl_is_initialized = 0;
+  }
 
   flow_shunt_impl_unlock ();
 }
