@@ -60,7 +60,7 @@ benchmark_packet_size (void)
 
     g_assert (packet != NULL);
 
-    flow_packet_free (packet);
+    flow_packet_unref (packet);
     n_packets++;
   }
 

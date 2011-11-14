@@ -123,7 +123,7 @@ flow_mux_serializer_flush (FlowMuxSerializer *serializer)
   {
     if (!priv->have_channel_id)
     {
-      flow_packet_free (packet);
+      flow_packet_unref (packet);
       continue;
     }
     flow_pad_push (output_pad, packet);
@@ -179,7 +179,7 @@ flow_mux_serializer_process_input (FlowElement *element, FlowPad *input_pad)
       priv->packets_size += packet->size;
     }
     else
-      flow_packet_free (packet);
+      flow_packet_unref (packet);
   }
 }
 

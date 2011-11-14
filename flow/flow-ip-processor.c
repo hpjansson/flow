@@ -361,7 +361,7 @@ current_ip_resolved (FlowIPProcessor *ip_processor, FlowIPService *ip_service)
   if (priv->valid_state || !priv->drop_invalid_ip_services)
     flow_pad_push (output_pad, packet);
   else
-    flow_packet_free (packet);
+    flow_packet_unref (packet);
 
   if (!flow_pad_is_blocked (output_pad))
     flow_pad_unblock (input_pad);
@@ -432,7 +432,7 @@ flow_ip_processor_process_input (FlowIPProcessor *ip_processor, FlowPad *input_p
     if (should_push_packet)
       flow_pad_push (output_pad, packet);
     else
-      flow_packet_free (packet);
+      flow_packet_unref (packet);
   }
 }
 
@@ -520,7 +520,7 @@ flow_ip_processor_finalize (FlowIPProcessor *ip_processor)
         g_signal_handlers_disconnect_by_func (ip_service, current_ip_resolved, ip_processor);
     }
 
-    flow_packet_free (priv->current_packet);
+    flow_packet_unref (priv->current_packet);
     priv->current_packet = NULL;
   }
 }

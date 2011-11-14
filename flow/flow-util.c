@@ -73,7 +73,7 @@ shunt_read_object (FlowShunt *shunt, FlowPacket *packet, gpointer **object_dest)
 
   flow_shunt_set_read_func (shunt, NULL, NULL);
   *object_dest = g_object_ref (packet_data);
-  flow_packet_free (packet);
+  flow_packet_unref (packet);
 }
 
 gpointer

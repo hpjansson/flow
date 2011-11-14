@@ -138,7 +138,7 @@ pop_bytes (FlowPacketQueue *packet_queue, gpointer dest, gint max)
     if (packet_queue->packet_position == packet_len)
     {
       packet = pop_packet (packet_queue);
-      flow_packet_free (packet);
+      flow_packet_unref (packet);
 
       packet_queue->packet_position = 0;
     }
@@ -169,7 +169,7 @@ consolidate_partial_packet (FlowPacketQueue *packet_queue)
 
   new_packet = flow_packet_new (FLOW_PACKET_FORMAT_BUFFER, data,
                                 flow_packet_get_size (packet) - packet_queue->packet_position);
-  flow_packet_free (packet);
+  flow_packet_unref (packet);
 
   if (packet_queue->first_packet == packet)
     packet_queue->first_packet = new_packet;
@@ -187,13 +187,13 @@ clear_queue (FlowPacketQueue *packet_queue)
   packet = packet_queue->first_packet;
   if (packet)
   {
-    flow_packet_free (packet);
+    flow_packet_unref (packet);
     packet_queue->first_packet = NULL;
   }
 
   while ((packet = g_queue_pop_head (packet_queue->queue)))
   {
-    flow_packet_free (packet);
+    flow_packet_unref (packet);
   }
 }
 
@@ -294,7 +294,7 @@ flow_packet_queue_push_packet (FlowPacketQueue *packet_queue, FlowPacket *packet
   if (flow_packet_get_format (packet) == FLOW_PACKET_FORMAT_BUFFER &&
       flow_packet_get_size (packet) == 0)
   {
-    flow_packet_free (packet);
+    flow_packet_unref (packet);
     return;
   }
 
@@ -355,7 +355,7 @@ flow_packet_queue_push_packet_to_head (FlowPacketQueue *packet_queue, FlowPacket
   if (flow_packet_get_format (packet) == FLOW_PACKET_FORMAT_BUFFER &&
       flow_packet_get_size (packet) == 0)
   {
-    flow_packet_free (packet);
+    flow_packet_unref (packet);
     return;
   }
 
@@ -417,7 +417,7 @@ flow_packet_queue_pop_packet (FlowPacketQueue *packet_queue)
                                 (guint8 *) flow_packet_get_data (packet) + packet_queue->packet_position,
                                 new_packet_len);
 
-  flow_packet_free (packet);
+  flow_packet_unref (packet);
   packet_queue->packet_position = 0;
   packet_queue->bytes_in_queue      -= new_packet_len;
   packet_queue->data_bytes_in_queue -= new_packet_len;
@@ -593,7 +593,7 @@ flow_packet_queue_drop_packet (FlowPacketQueue *packet_queue)
     packet_queue->data_bytes_in_queue -= dropped_bytes;
   }
 
-  flow_packet_free (packet);
+  flow_packet_unref (packet);
   return TRUE;
 }
 
@@ -784,7 +784,7 @@ flow_packet_queue_skip_past_first_object (FlowPacketQueue *packet_queue)
   {
     FlowPacketFormat format = flow_packet_get_format (packet);
 
-    flow_packet_free (packet);
+    flow_packet_unref (packet);
 
     if (format != FLOW_PACKET_FORMAT_BUFFER)
       break;

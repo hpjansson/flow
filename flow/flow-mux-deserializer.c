@@ -138,7 +138,7 @@ flow_mux_deserializer_process_input (FlowElement *element, FlowPad *input_pad)
     if (forward_packet)
       flow_pad_push (output_pad, packet);
     else
-      flow_packet_free (packet);
+      flow_packet_unref (packet);
   }
 }
 

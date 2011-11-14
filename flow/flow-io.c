@@ -576,7 +576,7 @@ flow_io_read_exact (FlowIO *io, gpointer dest_buffer, gint exact_len)
     g_assert (packet != NULL);
 
     handle_object (io, flow_packet_get_data (packet));
-    flow_packet_free (packet);
+    flow_packet_unref (packet);
   }
 
   successful_read (io, exact_len);
@@ -840,7 +840,7 @@ flow_io_sync_read_exact (FlowIO *io, gpointer dest_buffer, gint exact_len, GErro
     if (packet)
     {
       handle_object (io, flow_packet_get_data (packet));
-      flow_packet_free (packet);
+      flow_packet_unref (packet);
       continue;
     }
 

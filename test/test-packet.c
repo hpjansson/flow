@@ -56,7 +56,7 @@ test_run (void)
     if (memcmp (flow_packet_get_data (packet), buffer, len))
       test_end (TEST_RESULT_FAILED, "bad data in buffer");
 
-    flow_packet_free (packet);
+    flow_packet_unref (packet);
 
     /* TODO: Test object */
   }

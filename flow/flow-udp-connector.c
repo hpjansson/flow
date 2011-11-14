@@ -161,7 +161,7 @@ handle_outbound_packet (FlowUdpConnector *udp_connector, FlowPacket *packet)
     if (FLOW_IS_UDP_CONNECT_OP (packet_data))
     {
       set_op (udp_connector, packet_data);
-      flow_packet_free (packet);
+      flow_packet_unref (packet);
       packet = NULL;
     }
     else if (FLOW_IS_DETAILED_EVENT (packet_data))
@@ -307,7 +307,7 @@ flow_udp_connector_process_input (FlowUdpConnector *udp_connector, FlowPad *inpu
 
     packet = handle_outbound_packet (udp_connector, packet);
     if (packet)
-      flow_packet_free (packet);
+      flow_packet_unref (packet);
   }
 
   if (flow_packet_queue_get_length_bytes (packet_queue) >= MAX_BUFFER_BYTES ||

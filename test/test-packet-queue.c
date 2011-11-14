@@ -69,7 +69,7 @@ test_run (void)
     if (packet != packets [i])
       test_end (TEST_RESULT_FAILED, "bad packet pop order");
 
-    flow_packet_free (packet);
+    flow_packet_unref (packet);
   }
 
   g_free (packets);

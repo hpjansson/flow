@@ -100,7 +100,7 @@ shunt_read (FlowShunt *shunt, FlowPacket *packet, FlowTcpListener *tcp_listener)
      * accepting connections. However, there isn't much we can do about that. */
   }
 
-  flow_packet_free (packet);
+  flow_packet_unref (packet);
 }
 
 static void

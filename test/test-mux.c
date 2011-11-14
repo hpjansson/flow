@@ -70,7 +70,7 @@ test_run (void)
       expected_packets = g_list_prepend (expected_packets, flow_packet_new_take_object (event, 0));
       last_pad = pads[k];
     }
-    expected_packets = g_list_prepend (expected_packets, flow_packet_copy (packet));
+    expected_packets = g_list_prepend (expected_packets, flow_packet_ref (packet));
     flow_pad_push (FLOW_PAD (pads[k]), packet);
   }
   for (k = 0; k < N_PADS; k++)

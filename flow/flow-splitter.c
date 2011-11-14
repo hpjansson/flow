@@ -85,7 +85,7 @@ push_to_output_pad (FlowSplitter *splitter, FlowPad *output_pad)
     do
     {
       FlowPacket *packet = flow_packet_iter_peek_packet (priv->output_queue, &iter);
-      flow_pad_push (output_pad, flow_packet_copy (packet));
+      flow_pad_push (output_pad, flow_packet_ref (packet));
     }
     while (!flow_pad_is_blocked (output_pad) && flow_packet_iter_next (priv->output_queue, &iter));
 

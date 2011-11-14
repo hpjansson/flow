@@ -193,7 +193,7 @@ flow_mux_process_input (FlowElement *element, FlowPad *input_pad)
         if (flow_detailed_event_matches (object, FLOW_STREAM_DOMAIN, FLOW_STREAM_END))
         {
           flow_mux_channel_shutdown (mux, info);
-          flow_packet_free (packet);
+          flow_packet_unref (packet);
           forward_packet = FALSE;
         }
       }

@@ -626,7 +626,7 @@ process_object_from_upstream (FlowTlsProtocol *tls_protocol, FlowPacket *packet)
       else if (priv->from_upstream_state == STATE_OPEN)
       {
         /* Downstream has already seen FLOW_STREAM_BEGIN */
-        flow_packet_free (packet);
+        flow_packet_unref (packet);
         packet = NULL;
       }
       else if (priv->from_upstream_state == STATE_CLOSING)
@@ -650,7 +650,7 @@ process_object_from_upstream (FlowTlsProtocol *tls_protocol, FlowPacket *packet)
       else
       {
         /* Downstream has already seen FLOW_STREAM_END */
-        flow_packet_free (packet);
+        flow_packet_unref (packet);
         packet = NULL;
       }
     }
@@ -701,7 +701,7 @@ process_object_from_downstream (FlowTlsProtocol *tls_protocol, FlowPacket *packe
       else
       {
         /* Upstream has already seen FLOW_STREAM_BEGIN */
-        flow_packet_free (packet);
+        flow_packet_unref (packet);
         packet = NULL;
       }
     }
@@ -777,7 +777,7 @@ process_input_from_upstream (FlowTlsProtocol *tls_protocol, FlowPad *input_pad)
 
       /* While the stream is closed, eat data packets. */
       flow_packet_queue_pop_packet (packet_queue);
-      flow_packet_free (packet);
+      flow_packet_unref (packet);
     }
     else if (priv->from_upstream_state == STATE_CLOSING)
     {
@@ -852,7 +852,7 @@ process_input_from_downstream (FlowTlsProtocol *tls_protocol, FlowPad *input_pad
 
       /* When the stream is closed (TLS bye or physically), eat data packets. */
       flow_packet_queue_pop_packet (packet_queue);
-      flow_packet_free (packet);
+      flow_packet_unref (packet);
     }
     else if (priv->from_downstream_state == STATE_CLOSING)
     {

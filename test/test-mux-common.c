@@ -63,8 +63,8 @@ check_user_adapter_packets (FlowUserAdapter *adapter,
       /* TODO: Test "eobj == qobj" */
     }
 
-    flow_packet_free (epacket);
-    flow_packet_free (qpacket);
+    flow_packet_unref (epacket);
+    flow_packet_unref (qpacket);
   }
   if (flow_packet_queue_peek_packet (input_packet_queue, NULL, NULL))
     test_end (TEST_RESULT_FAILED, "superfluous packet found");

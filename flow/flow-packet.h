@@ -44,12 +44,15 @@ struct _FlowPacket
 {
   guint format          :  2;
   guint size            : 30;
+  gint ref_count;
 };
 
 FlowPacket       *flow_packet_new             (FlowPacketFormat format, gpointer data, guint size);
 FlowPacket       *flow_packet_new_take_object (gpointer object, guint size);
 FlowPacket       *flow_packet_copy            (FlowPacket *packet);
-void              flow_packet_free            (FlowPacket *packet);
+
+FlowPacket       *flow_packet_ref             (FlowPacket *packet);
+void              flow_packet_unref           (FlowPacket *packet);
 
 FlowPacketFormat  flow_packet_get_format      (FlowPacket *packet);
 guint             flow_packet_get_size        (FlowPacket *packet);

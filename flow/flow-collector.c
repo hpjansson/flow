@@ -56,7 +56,7 @@ flow_collector_process_input (FlowElement *element, FlowPad *input_pad)
   for ( ; (packet = flow_packet_queue_pop_packet (packet_queue)); )
   {
     flow_handle_universal_events (element, packet);
-    flow_packet_free (packet);
+    flow_packet_unref (packet);
   }
 }
 

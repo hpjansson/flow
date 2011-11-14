@@ -119,7 +119,7 @@ test_run (void)
     if (flow_mux_event_get_channel_id (FLOW_MUX_EVENT (data)) != chunk->channel_id)
       test_end (TEST_RESULT_FAILED, "unexpected channel id in mux event packet");
 
-    flow_packet_free (packet);
+    flow_packet_unref (packet);
     
     size = 0;
     while (TRUE)

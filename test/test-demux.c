@@ -73,7 +73,7 @@ test_run (void)
       for (j = 0; j < N_PADS; j++)
       {
         if (j != k)
-          expected_packets[j] = g_list_prepend (expected_packets[j], flow_packet_copy (packet));
+          expected_packets[j] = g_list_prepend (expected_packets[j], flow_packet_ref (packet));
       }
     }
     
@@ -84,7 +84,7 @@ test_run (void)
       last_channel_id = k;
     }
     flow_pad_push (FLOW_PAD (input_pad), packet);
-    expected_packets[k] = g_list_prepend (expected_packets[k], flow_packet_copy (packet));
+    expected_packets[k] = g_list_prepend (expected_packets[k], flow_packet_ref (packet));
   }
   flow_pad_push (FLOW_PAD (input_pad),
                  flow_create_simple_event_packet (FLOW_STREAM_DOMAIN, FLOW_STREAM_END));

@@ -254,7 +254,7 @@ read_stream (FlowShunt *shunt, FlowPacket *packet, gpointer data)
     test_end (TEST_RESULT_FAILED, "got unknown packet format");
   }
 
-  flow_packet_free (packet);
+  flow_packet_unref (packet);
 
   pause_ms = get_pause_interval_ms ();
   if (pause_ms > 0)
@@ -551,7 +551,7 @@ read_random (FlowShunt *shunt, FlowPacket *packet, gpointer data)
     g_timeout_add (1000, (GSourceFunc) test_quit_main_loop, NULL);
   }
 
-  flow_packet_free (packet);
+  flow_packet_unref (packet);
 }
 
 static FlowPacket *

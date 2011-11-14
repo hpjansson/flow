@@ -221,7 +221,7 @@ handle_outbound_packet (FlowFileConnector *file_connector, FlowPacket *packet)
     if (FLOW_IS_FILE_CONNECT_OP (packet_data))
     {
       set_op (file_connector, packet_data);
-      flow_packet_free (packet);
+      flow_packet_unref (packet);
       packet = NULL;
     }
     else if (FLOW_IS_DETAILED_EVENT (packet_data))
@@ -353,7 +353,7 @@ flow_file_connector_process_input (FlowFileConnector *file_connector, FlowPad *i
 
     packet = handle_outbound_packet (file_connector, packet);
     if (packet)
-      flow_packet_free (packet);
+      flow_packet_unref (packet);
   }
 
   if (flow_packet_queue_get_length_bytes (packet_queue) >= flow_connector_get_write_queue_limit (FLOW_CONNECTOR (file_connector)) ||

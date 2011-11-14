@@ -3311,7 +3311,7 @@ flow_sync_shunt_impl_write (FlowSyncShunt *sync_shunt, FlowPacket *packet)
           }
         }
 
-        flow_packet_free (packet);
+        flow_packet_unref (packet);
       }
       break;
 

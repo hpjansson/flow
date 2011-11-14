@@ -230,7 +230,7 @@ read_from_shunt (FlowShunt *shunt, FlowPacket *packet, gpointer data)
     test_end (TEST_RESULT_FAILED, "got unknown packet format");
   }
 
-  flow_packet_free (packet);
+  flow_packet_unref (packet);
 
   pause_ms = get_pause_interval_ms ();
   if (pause_ms > 0)
@@ -317,7 +317,7 @@ read_from_listener (FlowShunt *shunt, FlowPacket *packet, gpointer data)
     test_end (TEST_RESULT_FAILED, "listener got unknown packet format");
   }
 
-  flow_packet_free (packet);
+  flow_packet_unref (packet);
 }
 
 static gboolean

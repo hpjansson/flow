@@ -76,9 +76,10 @@ flow_packet_new (FlowPacketFormat format, gpointer data, guint size)
       break;
   }
 
-  packet         = packet_alloc (PACKET_HEADER_SIZE + body_size);
-  packet->format = format;
-  packet->size   = size;
+  packet            = packet_alloc (PACKET_HEADER_SIZE + body_size);
+  packet->format    = format;
+  packet->size      = size;
+  packet->ref_count = 1;
 
   switch (format)
   {
@@ -121,9 +122,10 @@ flow_packet_new_take_object (gpointer object, guint size)
 {
   FlowPacket *packet;
 
-  packet         = packet_alloc (PACKET_HEADER_SIZE + sizeof (gpointer));
-  packet->format = FLOW_PACKET_FORMAT_OBJECT;
-  packet->size   = size;
+  packet            = packet_alloc (PACKET_HEADER_SIZE + sizeof (gpointer));
+  packet->format    = FLOW_PACKET_FORMAT_OBJECT;
+  packet->size      = size;
+  packet->ref_count = 1;
 
   g_assert (object != NULL);
   *((gpointer *) ((guint8 *) packet + PACKET_HEADER_SIZE)) = object;
@@ -162,21 +164,14 @@ flow_packet_copy (FlowPacket *packet)
       break;
   }
 
+  packet_copy->ref_count = 1;
+
   return packet_copy;
 }
 
-/**
- * flow_packet_free:
- * @packet: The packet to free.
- * 
- * Frees a packet and its data. If the packet references an object, it will
- * be unreffed.
- **/
-void
-flow_packet_free (FlowPacket *packet)
+static void
+free_packet (FlowPacket *packet)
 {
-  g_return_if_fail (packet != NULL);
-
   switch (packet->format)
   {
     case FLOW_PACKET_FORMAT_BUFFER:
@@ -198,6 +193,47 @@ flow_packet_free (FlowPacket *packet)
       g_assert_not_reached ();
       break;
   }
+}
+
+/**
+ * flow_packet_ref:
+ * @packet: The packet to add a reference to.
+ * 
+ * Adds a reference to the packet. The packet is freed when its reference count
+ * drops to zero.
+ *
+ * As a convenience, the passed-in pointer is returned, so you can use it in statements
+ * like the following: flow_pad_push (pad, flow_packet_ref (packet));
+ *
+ * Return value: The passed-in #FlowPacket.
+ **/
+FlowPacket *
+flow_packet_ref (FlowPacket *packet)
+{
+  g_return_val_if_fail (packet != NULL, NULL);
+
+  g_atomic_int_inc (&packet->ref_count);
+  return packet;
+}
+
+/**
+ * flow_packet_unref:
+ * @packet: The packet to subtract a reference from.
+ * 
+ * Removes a reference from the packet. The packet is freed when its reference count
+ * drops to zero. If the packet contains data, it will be freed with the packet. If a
+ * freed packet references an object, the object will be unreferenced.
+ **/
+void
+flow_packet_unref (FlowPacket *packet)
+{
+  gboolean is_zero;
+
+  g_return_if_fail (packet != NULL);
+
+  is_zero = g_atomic_int_dec_and_test (&packet->ref_count);
+  if (is_zero)
+    free_packet (packet);
 }
 
 /**

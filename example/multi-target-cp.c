@@ -65,7 +65,7 @@ output_file_message_cb (gpointer user_data)
         g_main_loop_quit (main_loop);
     }
 
-    flow_packet_free (packet);  /* Also releases the object */
+    flow_packet_unref (packet);  /* Also releases the object */
   }
 
   flow_packet_queue_clear (queue);

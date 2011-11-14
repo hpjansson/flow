@@ -136,7 +136,7 @@ flow_demux_process_input (FlowElement *element, FlowPad *input_pad)
         guint channel_id = flow_mux_event_get_channel_id (event);
         priv->current_output_pad = g_hash_table_lookup (priv->pads_by_channel_id,
                                                         GUINT_TO_POINTER (channel_id));
-        flow_packet_free (packet);
+        flow_packet_unref (packet);
       }
       else
       {
@@ -146,7 +146,7 @@ flow_demux_process_input (FlowElement *element, FlowPad *input_pad)
         for (i = 1; i < element->output_pads->len; i++)
         {
           FlowPad *pad = g_ptr_array_index (element->output_pads, i);
-          flow_pad_push (pad, flow_packet_copy (packet));
+          flow_pad_push (pad, flow_packet_ref (packet));
         }
         if (element->output_pads->len > 0)
           flow_pad_push (g_ptr_array_index (element->output_pads, 0), packet);
@@ -155,7 +155,7 @@ flow_demux_process_input (FlowElement *element, FlowPad *input_pad)
     else /* Buffer */
     {
       if (priv->current_output_pad == NULL)
-        flow_packet_free (packet);
+        flow_packet_unref (packet);
       else
         flow_pad_push (FLOW_PAD (priv->current_output_pad), packet);
     }
