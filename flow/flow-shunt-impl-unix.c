@@ -1818,6 +1818,8 @@ file_shunt_read (FlowShunt *shunt)
   gint          result;
   gint          saved_errno;
   ShuntType     shunt_type;
+  FlowPacket   *packet;
+  gpointer      packet_data;
   gint          fd;
 
   flow_shunt_check_buffers (shunt);
@@ -1836,7 +1838,9 @@ file_shunt_read (FlowShunt *shunt)
 
   /* --- UNLOCKED CODE BEGINS --- */
 
-  result = read (fd, shunt->io_buffer, max_read);
+  packet = flow_packet_alloc_for_data (max_read, &packet_data);
+
+  result = read (fd, packet_data, max_read);
   saved_errno = errno;
 
   /* --- UNLOCKED CODE ENDS --- */
@@ -1845,11 +1849,15 @@ file_shunt_read (FlowShunt *shunt)
 
   if G_LIKELY (result > 0)
   {
-    FlowPacket *packet;
-
     /* Data */
 
-    packet = flow_packet_new (FLOW_PACKET_FORMAT_BUFFER, shunt->io_buffer, result);
+    if (result < max_read)
+    {
+      FlowPacket *new_packet = flow_packet_new (FLOW_PACKET_FORMAT_BUFFER, packet_data, result);
+      flow_packet_unref (packet);
+      packet = new_packet;
+    }
+
     flow_packet_queue_push_packet (shunt->read_queue, packet);
 
     file_shunt->read_bytes_remaining -= result;
@@ -1866,6 +1874,8 @@ file_shunt_read (FlowShunt *shunt)
   else if (result == 0)
   {
     /* EOF: End segment */
+
+    flow_packet_unref (packet);
 
     file_shunt->read_bytes_remaining = 0;
     shunt->need_reads  = FALSE;
@@ -1885,6 +1895,8 @@ file_shunt_read (FlowShunt *shunt)
     /* I/O error */
 
     assert_non_fatal_errno (saved_errno, file_read_fatal_errnos);
+
+    flow_packet_unref (packet);
 
     file_shunt->read_bytes_remaining = 0;
     shunt->need_reads  = FALSE;

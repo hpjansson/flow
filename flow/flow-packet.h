@@ -49,6 +49,7 @@ struct _FlowPacket
 
 FlowPacket       *flow_packet_new             (FlowPacketFormat format, gpointer data, guint size);
 FlowPacket       *flow_packet_new_take_object (gpointer object, guint size);
+FlowPacket       *flow_packet_alloc_for_data  (guint size, gpointer *data_ptr_out);
 FlowPacket       *flow_packet_copy            (FlowPacket *packet);
 
 FlowPacket       *flow_packet_ref             (FlowPacket *packet);

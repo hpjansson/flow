@@ -105,6 +105,23 @@ flow_packet_new (FlowPacketFormat format, gpointer data, guint size)
   return packet;
 }
 
+FlowPacket *
+flow_packet_alloc_for_data (guint size, gpointer *data_ptr_out)
+{
+  FlowPacket *packet;
+
+  g_return_val_if_fail (size > 0, NULL);
+
+  packet            = packet_alloc (PACKET_HEADER_SIZE + size);
+  packet->format    = FLOW_PACKET_FORMAT_BUFFER;
+  packet->size      = size;
+  packet->ref_count = 1;
+
+  *data_ptr_out = (gpointer *) ((guint8 *) packet + PACKET_HEADER_SIZE);
+
+  return packet;
+}
+
 /**
  * flow_packet_new_take_object:
  * @object: A pointer to the object that will be referenced.
