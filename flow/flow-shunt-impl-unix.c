@@ -212,6 +212,7 @@ static GStaticMutex    global_mutex       = G_STATIC_MUTEX_INIT;
 static FlowWakeupPipe  wakeup_pipe        = FLOW_WAKEUP_PIPE_INVALID;
 static GThread        *watch_thread;
 static GPtrArray      *active_socket_shunts;
+static gpointer        socket_buffer      = NULL;
 
 /* --------------------------------------- *
  * Errno maps for Linux 2.6.16 / glibc 2.4 *
@@ -936,6 +937,7 @@ flow_shunt_impl_init (void)
   g_type_class_ref (FLOW_TYPE_POSITION);
 
   active_socket_shunts = g_ptr_array_new ();
+  socket_buffer = g_malloc (IO_BUFFER_DEFAULT_SIZE);
 
   flow_wakeup_pipe_init (&wakeup_pipe);
 
@@ -951,6 +953,9 @@ flow_shunt_impl_finalize (void)
 
   g_ptr_array_free (active_socket_shunts, TRUE);
   active_socket_shunts = NULL;
+
+  g_free (socket_buffer);
+  socket_buffer = NULL;
 
   /* FIXME: Do something about ShuntSources, but in flow-shunt.c */
 
@@ -1134,6 +1139,17 @@ flow_shunt_impl_need_writes (FlowShunt *shunt)
  * ----------------------------- */
 
 static void
+socket_buffer_check (FlowShunt *shunt)
+{
+  if (shunt->io_buffer_desired_size > shunt->io_buffer_size)
+  {
+    shunt->io_buffer_size = shunt->io_buffer_desired_size;
+    g_free (socket_buffer);
+    socket_buffer = g_malloc (shunt->io_buffer_size);
+  }
+}
+
+static void
 tcp_listener_shunt_read (FlowShunt *shunt)
 {
   FlowSockaddr      sa;
@@ -1255,8 +1271,7 @@ socket_shunt_read (FlowShunt *shunt)
 
 #endif
 
-  flow_shunt_check_buffers (shunt);
-
+  socket_buffer_check (shunt);
   errno = 0;
 
   /* TCP listeners are sufficiently different as to warrant a separate function */
@@ -1273,7 +1288,7 @@ socket_shunt_read (FlowShunt *shunt)
       {
         SocketShunt *socket_shunt = (SocketShunt *) shunt;
 
-        result = recv (socket_shunt->fd, shunt->io_buffer, shunt->io_buffer_size, 0);
+        result = recv (socket_shunt->fd, socket_buffer, shunt->io_buffer_size, 0);
       }
       break;
 
@@ -1281,7 +1296,7 @@ socket_shunt_read (FlowShunt *shunt)
       {
         SocketShunt *socket_shunt = (SocketShunt *) shunt;
 
-        result = recvfrom (socket_shunt->fd, shunt->io_buffer, shunt->io_buffer_size, 0, (struct sockaddr *) &sa, &sa_len);
+        result = recvfrom (socket_shunt->fd, socket_buffer, shunt->io_buffer_size, 0, (struct sockaddr *) &sa, &sa_len);
       }
       break;
 
@@ -1289,7 +1304,7 @@ socket_shunt_read (FlowShunt *shunt)
       {
         PipeShunt *pipe_shunt = (PipeShunt *) shunt;
 
-        result = read (pipe_shunt->read_fd, shunt->io_buffer, shunt->io_buffer_size);
+        result = read (pipe_shunt->read_fd, socket_buffer, shunt->io_buffer_size);
       }
       break;
 
@@ -1326,7 +1341,7 @@ socket_shunt_read (FlowShunt *shunt)
       }
     }
 
-    packet = flow_packet_new (FLOW_PACKET_FORMAT_BUFFER, shunt->io_buffer, result);
+    packet = flow_packet_new (FLOW_PACKET_FORMAT_BUFFER, socket_buffer, result);
     flow_packet_queue_push_packet (shunt->read_queue, packet);
   }
   else if (result == 0 || saved_errno != EINTR)
@@ -1822,7 +1837,7 @@ file_shunt_read (FlowShunt *shunt)
   gpointer      packet_data;
   gint          fd;
 
-  flow_shunt_check_buffers (shunt);
+  socket_buffer_check (shunt);
 
   max_read = MIN (file_shunt->read_bytes_remaining, shunt->io_buffer_size);
   if (max_read < 1)
@@ -3160,17 +3175,20 @@ flow_sync_shunt_impl_try_read (FlowSyncShunt *sync_shunt, FlowPacket **packet_de
     case SHUNT_TYPE_PIPE:
       {
         PipeShunt *pipe_shunt = (PipeShunt *) sync_shunt;
+        gpointer   buffer;
         gint       result;
         gint       saved_errno;
 
-        flow_shunt_check_buffers (shunt);
+        shunt->io_buffer_size = shunt->io_buffer_desired_size;
+        buffer = alloca (shunt->io_buffer_desired_size);
+
         flow_pipe_set_nonblock (pipe_shunt->read_fd, TRUE);
-        result = read (pipe_shunt->read_fd, shunt->io_buffer, shunt->io_buffer_size);
+        result = read (pipe_shunt->read_fd, buffer, shunt->io_buffer_size);
         saved_errno = errno;
 
         if (result > 0)
         {
-          packet = flow_packet_new (FLOW_PACKET_FORMAT_BUFFER, shunt->io_buffer, result);
+          packet = flow_packet_new (FLOW_PACKET_FORMAT_BUFFER, buffer, result);
         }
         else if (result == 0 || saved_errno == EAGAIN || saved_errno == EINTR)
         {
@@ -3190,7 +3208,8 @@ flow_sync_shunt_impl_try_read (FlowSyncShunt *sync_shunt, FlowPacket **packet_de
     case SHUNT_TYPE_THREAD:
       flow_shunt_impl_lock ();
 
-      flow_shunt_check_buffers (shunt);
+      shunt->io_buffer_size = shunt->io_buffer_desired_size;
+
       packet = flow_packet_queue_pop_packet (shunt->write_queue);
       if (packet)
         flow_shunt_write_state_changed (shunt);
@@ -3220,9 +3239,11 @@ flow_sync_shunt_impl_read (FlowSyncShunt *sync_shunt, FlowPacket **packet_dest)
     case SHUNT_TYPE_PIPE:
       {
         PipeShunt *pipe_shunt = (PipeShunt *) sync_shunt;
+        gpointer   buffer;
         gint       result;
 
-        flow_shunt_check_buffers (shunt);
+        shunt->io_buffer_size = shunt->io_buffer_desired_size;
+        buffer = alloca (shunt->io_buffer_size);
 
         flow_pipe_set_nonblock (pipe_shunt->read_fd, TRUE);
 
@@ -3237,7 +3258,7 @@ flow_sync_shunt_impl_read (FlowSyncShunt *sync_shunt, FlowPacket **packet_dest)
           if (result == 0 || (result < 0 && errno == EINTR))
             continue;
 
-          result = read (pipe_shunt->read_fd, shunt->io_buffer, shunt->io_buffer_size);
+          result = read (pipe_shunt->read_fd, buffer, shunt->io_buffer_size);
           if (result < 0 && errno == EINTR)
             continue;
 
@@ -3246,7 +3267,7 @@ flow_sync_shunt_impl_read (FlowSyncShunt *sync_shunt, FlowPacket **packet_dest)
 
         if (result > 0)
         {
-          packet = flow_packet_new (FLOW_PACKET_FORMAT_BUFFER, shunt->io_buffer, result);
+          packet = flow_packet_new (FLOW_PACKET_FORMAT_BUFFER, buffer, result);
         }
         else
         {
@@ -3265,12 +3286,13 @@ flow_sync_shunt_impl_read (FlowSyncShunt *sync_shunt, FlowPacket **packet_dest)
 
         flow_shunt_impl_lock ();
 
+        shunt->io_buffer_size = shunt->io_buffer_desired_size;
+
         while (!(packet = flow_packet_queue_pop_packet (shunt->write_queue)))
         {
           g_cond_wait (thread_shunt->cond, g_static_mutex_get_mutex (&global_mutex));
         }
 
-        flow_shunt_check_buffers (shunt);
         flow_shunt_write_state_changed (shunt);
         flow_shunt_impl_unlock ();
       }
@@ -3329,7 +3351,6 @@ flow_sync_shunt_impl_write (FlowSyncShunt *sync_shunt, FlowPacket *packet)
 
     case SHUNT_TYPE_THREAD:
       flow_shunt_impl_lock ();
-      flow_shunt_check_buffers (shunt);
       flow_packet_queue_push_packet (shunt->read_queue, packet);
       flow_shunt_read_state_changed (shunt);
       flow_shunt_impl_unlock ();

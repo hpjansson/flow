@@ -98,7 +98,6 @@ struct _FlowShunt
   FlowShuntWriteFunc *write_func;
   gpointer            write_func_data;
 
-  gpointer            io_buffer;
   guint               io_buffer_size;
   guint               io_buffer_desired_size;
 
@@ -181,7 +180,6 @@ static void        flow_sync_shunt_impl_write         (FlowSyncShunt *sync_shunt
 static void        flow_shunt_init_common             (FlowShunt *shunt, ShuntSource *shunt_source);
 static void        flow_shunt_finalize_common         (FlowShunt *shunt);
 
-static void        flow_shunt_check_buffers           (FlowShunt *shunt);
 static void        flow_shunt_read_state_changed      (FlowShunt *shunt);
 static void        flow_shunt_write_state_changed     (FlowShunt *shunt);
 
@@ -504,7 +502,6 @@ flow_shunt_init_common (FlowShunt *shunt, ShuntSource *shunt_source)
   shunt->write_queue = flow_packet_queue_new ();
 
   shunt->io_buffer_size = shunt->io_buffer_desired_size = IO_BUFFER_DEFAULT_SIZE;
-  shunt->io_buffer = g_malloc (IO_BUFFER_DEFAULT_SIZE);
 
   add_shunt_to_shunt_source (shunt, shunt_source);
 }
@@ -520,9 +517,6 @@ flow_shunt_finalize_common (FlowShunt *shunt)
 
   flow_gobject_unref_clear (shunt->read_queue);
   flow_gobject_unref_clear (shunt->write_queue);
-
-  g_free (shunt->io_buffer);
-  shunt->io_buffer = NULL;
 }
 
 /* Assumes that caller is holding the impl lock */
@@ -549,16 +543,6 @@ flow_shunt_need_dispatch (FlowShunt *shunt)
   {
     main_context = g_source_get_context (source);
     g_main_context_wakeup (main_context);
-  }
-}
-
-static void
-flow_shunt_check_buffers (FlowShunt *shunt)
-{
-  if (shunt->io_buffer_size != shunt->io_buffer_desired_size)
-  {
-    shunt->io_buffer = g_realloc (shunt->io_buffer, shunt->io_buffer_desired_size);
-    shunt->io_buffer_size = shunt->io_buffer_desired_size;
   }
 }
 
