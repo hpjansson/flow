@@ -37,14 +37,14 @@ G_BEGIN_DECLS
 #define FLOW_ANONYMOUS_EVENT_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), FLOW_TYPE_ANONYMOUS_EVENT, FlowAnonymousEventClass))
 GType   flow_anonymous_event_get_type        (void) G_GNUC_CONST;
 
-typedef struct _FlowAnonymousEvent      FlowAnonymousEvent;
-typedef struct _FlowAnonymousEventClass FlowAnonymousEventClass;
+typedef struct _FlowAnonymousEvent        FlowAnonymousEvent;
+typedef struct _FlowAnonymousEventClass   FlowAnonymousEventClass;
 
 struct _FlowAnonymousEvent
 {
-  /* --- Private --- */
-
   FlowEvent      parent;
+
+  /*< private >*/
 
   gpointer       data;
   GDestroyNotify notify;

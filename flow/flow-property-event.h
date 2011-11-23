@@ -37,21 +37,24 @@ G_BEGIN_DECLS
 #define FLOW_PROPERTY_EVENT_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), FLOW_TYPE_PROPERTY_EVENT, FlowPropertyEventClass))
 GType   flow_property_event_get_type        (void) G_GNUC_CONST;
 
-typedef struct _FlowPropertyEvent      FlowPropertyEvent;
-typedef struct _FlowPropertyEventClass FlowPropertyEventClass;
+typedef struct _FlowPropertyEvent        FlowPropertyEvent;
+typedef struct _FlowPropertyEventPrivate FlowPropertyEventPrivate;
+typedef struct _FlowPropertyEventClass   FlowPropertyEventClass;
 
 struct _FlowPropertyEvent
 {
   FlowEvent  parent;
 
-  /* --- Private --- */
+  /*< private >*/
 
-  gpointer   priv;
+  FlowPropertyEventPrivate *priv;
 };
 
 struct _FlowPropertyEventClass
 {
   FlowEventClass parent_class;
+
+  /*< private >*/
 
   /* Padding for future expansion */
 

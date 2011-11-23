@@ -32,11 +32,11 @@ typedef struct
   gboolean eof;
 } ChannelInfo;
 
-typedef struct 
+struct _FlowMuxPrivate
 {
   FlowInputPad *current_input_pad;
   gint open_channels;
-} FlowMuxPrivate;
+};
 
 FLOW_GOBJECT_PROPERTIES_BEGIN (flow_mux)
 FLOW_GOBJECT_PROPERTIES_END   ()

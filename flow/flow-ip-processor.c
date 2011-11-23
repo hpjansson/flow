@@ -31,7 +31,7 @@
 
 /* --- FlowIPProcessor private data --- */
 
-typedef struct
+struct _FlowIPProcessorPrivate
 {
   FlowPacket *current_packet;
   guint       resolve_to_addrs         : 1;
@@ -42,8 +42,7 @@ typedef struct
   guint       drop_invalid_objs        : 1;
   guint       drop_invalid_ip_services : 1;
   guint       valid_state              : 1;
-}
-FlowIPProcessorPrivate;
+};
 
 /* --- FlowIPProcessor properties --- */
 

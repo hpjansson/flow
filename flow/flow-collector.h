@@ -38,14 +38,17 @@ G_BEGIN_DECLS
 #define FLOW_COLLECTOR_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), FLOW_TYPE_COLLECTOR, FlowCollectorClass))
 GType   flow_collector_get_type        (void) G_GNUC_CONST;
 
-typedef struct _FlowCollector      FlowCollector;
-typedef struct _FlowCollectorClass FlowCollectorClass;
+typedef struct _FlowCollector        FlowCollector;
+typedef struct _FlowCollectorPrivate FlowCollectorPrivate;
+typedef struct _FlowCollectorClass   FlowCollectorClass;
 
 struct _FlowCollector
 {
-  FlowElement    parent;
+  FlowElement           parent;
 
-  gpointer       priv;
+  /*< private >*/
+
+  FlowCollectorPrivate *priv;
 };
 
 struct _FlowCollectorClass

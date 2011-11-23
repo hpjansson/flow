@@ -40,21 +40,24 @@ G_BEGIN_DECLS
 #define FLOW_TCP_LISTENER_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), FLOW_TYPE_TCP_LISTENER, FlowTcpListenerClass))
 GType   flow_tcp_listener_get_type        (void) G_GNUC_CONST;
 
-typedef struct _FlowTcpListener      FlowTcpListener;
-typedef struct _FlowTcpListenerClass FlowTcpListenerClass;
+typedef struct _FlowTcpListener        FlowTcpListener;
+typedef struct _FlowTcpListenerPrivate FlowTcpListenerPrivate;
+typedef struct _FlowTcpListenerClass   FlowTcpListenerClass;
 
 struct _FlowTcpListener
 {
   GObject          parent;
 
-  /* --- Private --- */
+  /*< private >*/
 
-  gpointer         priv;
+  FlowTcpListenerPrivate *priv;
 };
 
 struct _FlowTcpListenerClass
 {
   GObjectClass parent_class;
+
+  /*< private >*/
 
   /* Padding for future expansion */
 

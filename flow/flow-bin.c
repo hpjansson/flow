@@ -28,12 +28,11 @@
 
 /* --- FlowBin private data --- */
 
-typedef struct
+struct _FlowBinPrivate
 {
   GHashTable *string_to_element;
   GHashTable *element_to_string;
-}
-FlowBinPrivate;
+};
 
 /* --- FlowBin properties --- */
 

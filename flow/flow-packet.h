@@ -42,6 +42,8 @@ typedef struct _FlowPacket FlowPacket;
 
 struct _FlowPacket
 {
+  /*< private >*/
+
   guint format          :  2;
   guint size            : 30;
   gint ref_count;

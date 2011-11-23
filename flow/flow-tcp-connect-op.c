@@ -33,12 +33,11 @@
 
 /* --- FlowTcpConnectOp private data --- */
 
-typedef struct
+struct _FlowTcpConnectOpPrivate
 {
   FlowIPService *remote_ip_service;
   gint           local_port;
-}
-FlowTcpConnectOpPrivate;
+};
 
 /* --- FlowTcpConnectOp properties --- */
 

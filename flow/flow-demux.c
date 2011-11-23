@@ -26,11 +26,11 @@
 #include "flow-util.h"
 #include "flow-gobject-util.h"
 
-typedef struct 
+struct _FlowDemuxPrivate
 {
   FlowInputPad *current_output_pad;
   GHashTable *pads_by_channel_id;
-} FlowDemuxPrivate;
+};
 
 FLOW_GOBJECT_PROPERTIES_BEGIN (flow_demux)
 FLOW_GOBJECT_PROPERTIES_END   ()

@@ -28,10 +28,9 @@
 
 /* --- FlowElement private data --- */
 
-typedef struct
+struct _FlowElementPrivate
 {
-}
-FlowElementPrivate;
+};
 
 /* --- FlowElement properties --- */
 

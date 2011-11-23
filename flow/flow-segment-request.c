@@ -29,11 +29,10 @@
 
 /* --- FlowSegmentRequest private data --- */
 
-typedef struct
+struct _FlowSegmentRequestPrivate
 {
   gint64 length;
-}
-FlowSegmentRequestPrivate;
+};
 
 /* --- FlowSegmentRequest properties --- */
 

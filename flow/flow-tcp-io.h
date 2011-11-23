@@ -40,21 +40,24 @@ G_BEGIN_DECLS
 #define FLOW_TCP_IO_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), FLOW_TYPE_TCP_IO, FlowTcpIOClass))
 GType   flow_tcp_io_get_type        (void) G_GNUC_CONST;
 
-typedef struct _FlowTcpIO      FlowTcpIO;
-typedef struct _FlowTcpIOClass FlowTcpIOClass;
+typedef struct _FlowTcpIO        FlowTcpIO;
+typedef struct _FlowTcpIOPrivate FlowTcpIOPrivate;
+typedef struct _FlowTcpIOClass   FlowTcpIOClass;
 
 struct _FlowTcpIO
 {
   FlowIO            parent;
 
-  /* --- Private --- */
+  /*< private >*/
 
-  gpointer          priv;
+  FlowTcpIOPrivate *priv;
 };
 
 struct _FlowTcpIOClass
 {
   FlowIOClass parent_class;
+
+  /*< private >*/
 
   /* Padding for future expansion */
 

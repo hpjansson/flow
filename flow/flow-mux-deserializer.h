@@ -35,18 +35,23 @@ G_BEGIN_DECLS
 #define FLOW_MUX_DESERIALIZER_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS ((obj), FLOW_TYPE_MUX_DESERIALIZER, FlowMuxDeserializerClass))
 
 typedef struct _FlowMuxDeserializer FlowMuxDeserializer;
+typedef struct _FlowMuxDeserializerPrivate FlowMuxDeserializerPrivate;
 typedef struct _FlowMuxDeserializerClass FlowMuxDeserializerClass;
 
 struct _FlowMuxDeserializer
 {
   FlowSimplexElement base;
 
-  gpointer priv;
+  /*< private >*/
+
+  FlowMuxDeserializerPrivate *priv;
 };
 
 struct _FlowMuxDeserializerClass
 {
   FlowSimplexElementClass base_class;
+
+  /*< private >*/
 };
 
 GType flow_mux_deserializer_get_type (void) G_GNUC_CONST;

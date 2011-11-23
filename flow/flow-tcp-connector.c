@@ -38,14 +38,13 @@ static FlowPacket *shunt_write (FlowShunt *shunt, FlowTcpConnector *tcp_connecto
 
 /* --- FlowTcpConnector private data --- */
 
-typedef struct
+struct _FlowTcpConnectorPrivate
 {
   FlowTcpConnectOp *op;
   FlowTcpConnectOp *next_op;
 
   FlowShunt        *shunt;
-}
-FlowTcpConnectorPrivate;
+};
 
 /* --- FlowTcpConnector properties --- */
 

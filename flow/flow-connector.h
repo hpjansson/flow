@@ -47,19 +47,24 @@ FlowConnectivity;
 #define FLOW_CONNECTOR_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), FLOW_TYPE_CONNECTOR, FlowConnectorClass))
 GType   flow_connector_get_type        (void) G_GNUC_CONST;
 
-typedef struct _FlowConnector      FlowConnector;
-typedef struct _FlowConnectorClass FlowConnectorClass;
+typedef struct _FlowConnector        FlowConnector;
+typedef struct _FlowConnectorPrivate FlowConnectorPrivate;
+typedef struct _FlowConnectorClass   FlowConnectorClass;
 
 struct _FlowConnector
 {
   FlowSimplexElement parent;
 
-  gpointer           priv;
+  /*< private >*/
+
+  FlowConnectorPrivate *priv;
 };
 
 struct _FlowConnectorClass
 {
   FlowSimplexElementClass parent_class;
+
+  /*< private >*/
 
   /* Padding for future expansion */
 

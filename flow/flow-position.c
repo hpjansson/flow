@@ -29,12 +29,11 @@
 
 /* --- FlowPosition private data --- */
 
-typedef struct
+struct _FlowPositionPrivate
 {
   guint     anchor    : 4;
   gint64    offset;
-}
-FlowPositionPrivate;
+};
 
 /* --- FlowPosition properties --- */
 

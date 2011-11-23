@@ -38,21 +38,24 @@ G_BEGIN_DECLS
 #define FLOW_TLS_TCP_IO_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), FLOW_TYPE_TLS_TCP_IO, FlowTlsTcpIOClass))
 GType   flow_tls_tcp_io_get_type        (void) G_GNUC_CONST;
 
-typedef struct _FlowTlsTcpIO      FlowTlsTcpIO;
-typedef struct _FlowTlsTcpIOClass FlowTlsTcpIOClass;
+typedef struct _FlowTlsTcpIO        FlowTlsTcpIO;
+typedef struct _FlowTlsTcpIOPrivate FlowTlsTcpIOPrivate;
+typedef struct _FlowTlsTcpIOClass   FlowTlsTcpIOClass;
 
 struct _FlowTlsTcpIO
 {
   FlowTcpIO         parent;
 
-  /* --- Private --- */
+  /*< private >*/
 
-  gpointer          priv;
+  FlowTlsTcpIOPrivate *priv;
 };
 
 struct _FlowTlsTcpIOClass
 {
   FlowTcpIOClass parent_class;
+
+  /*< private >*/
 
   /* Padding for future expansion */
 

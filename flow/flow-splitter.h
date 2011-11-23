@@ -39,19 +39,24 @@ G_BEGIN_DECLS
 #define FLOW_SPLITTER_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), FLOW_TYPE_SPLITTER, FlowSplitterClass))
 GType   flow_splitter_get_type        (void) G_GNUC_CONST;
 
-typedef struct _FlowSplitter      FlowSplitter;
-typedef struct _FlowSplitterClass FlowSplitterClass;
+typedef struct _FlowSplitter        FlowSplitter;
+typedef struct _FlowSplitterPrivate FlowSplitterPrivate;
+typedef struct _FlowSplitterClass   FlowSplitterClass;
 
 struct _FlowSplitter
 {
   FlowElement    parent;
 
-  gpointer       priv;
+  /*< private >*/
+
+  FlowSplitterPrivate *priv;
 };
 
 struct _FlowSplitterClass
 {
   FlowElementClass parent_class;
+
+  /*< private >*/
 
   /* Padding for future expansion */
 

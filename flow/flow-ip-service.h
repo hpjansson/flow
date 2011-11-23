@@ -46,21 +46,24 @@ FlowQuality;
 #define FLOW_IP_SERVICE_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), FLOW_TYPE_IP_SERVICE, FlowIPServiceClass))
 GType   flow_ip_service_get_type        (void) G_GNUC_CONST;
 
-typedef struct _FlowIPService      FlowIPService;
-typedef struct _FlowIPServiceClass FlowIPServiceClass;
+typedef struct _FlowIPService        FlowIPService;
+typedef struct _FlowIPServicePrivate FlowIPServicePrivate;
+typedef struct _FlowIPServiceClass   FlowIPServiceClass;
 
 struct _FlowIPService
 {
   GObject     parent;
 
-  /* --- Private --- */
+  /*< private >*/
 
-  gpointer    priv;
+  FlowIPServicePrivate *priv;
 };
 
 struct _FlowIPServiceClass
 {
   GObjectClass parent_class;
+
+  /*< private >*/
 
   /* Padding for future expansion */
   void (*_pad_1) (void);

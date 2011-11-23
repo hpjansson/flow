@@ -28,10 +28,9 @@
 
 /* --- FlowEmitter private data --- */
 
-typedef struct
+struct _FlowEmitterPrivate
 {
-}
-FlowEmitterPrivate;
+};
 
 /* --- FlowEmitter properties --- */
 

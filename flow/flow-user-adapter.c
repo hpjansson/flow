@@ -30,7 +30,7 @@
 
 /* --- FlowUserAdapter private data --- */
 
-typedef struct
+struct _FlowUserAdapterPrivate
 {
   FlowPacketQueue    *input_queue;
   FlowPacketQueue    *output_queue;
@@ -57,8 +57,7 @@ typedef struct
   guint               output_is_blocked  :  1;
   guint               waiting_for_input  : 14;
   guint               waiting_for_output : 14;
-}
-FlowUserAdapterPrivate;
+};
 
 /* --- FlowUserAdapter properties --- */
 

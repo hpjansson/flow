@@ -37,21 +37,24 @@ G_BEGIN_DECLS
 #define FLOW_SEGMENT_REQUEST_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), FLOW_TYPE_SEGMENT_REQUEST, FlowSegmentRequestClass))
 GType   flow_segment_request_get_type        (void) G_GNUC_CONST;
 
-typedef struct _FlowSegmentRequest      FlowSegmentRequest;
-typedef struct _FlowSegmentRequestClass FlowSegmentRequestClass;
+typedef struct _FlowSegmentRequest        FlowSegmentRequest;
+typedef struct _FlowSegmentRequestPrivate FlowSegmentRequestPrivate;
+typedef struct _FlowSegmentRequestClass   FlowSegmentRequestClass;
 
 struct _FlowSegmentRequest
 {
   FlowEvent parent;
 
-  /* --- Private --- */
+  /*< private >*/
 
-  gpointer  priv;
+  FlowSegmentRequestPrivate *priv;
 };
 
 struct _FlowSegmentRequestClass
 {
   FlowEventClass parent_class;
+
+  /*< private >*/
 
   /* Padding for future expansion */
 

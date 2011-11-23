@@ -40,20 +40,23 @@ G_BEGIN_DECLS
 GType   flow_simplex_element_get_type        (void) G_GNUC_CONST;
 
 typedef struct _FlowSimplexElement      FlowSimplexElement;
+typedef struct _FlowSimplexElementPrivate FlowSimplexElementPrivate;
 typedef struct _FlowSimplexElementClass FlowSimplexElementClass;
 
 struct _FlowSimplexElement
 {
   FlowElement    parent;
 
-  /* --- Private --- */
+  /*< private >*/
 
-  gpointer       priv;
+  FlowSimplexElementPrivate *priv;
 };
 
 struct _FlowSimplexElementClass
 {
   FlowElementClass parent_class;
+
+  /*< private >*/
 
   /* Padding for future expansion */
 

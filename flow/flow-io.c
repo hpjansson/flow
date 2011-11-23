@@ -76,7 +76,7 @@
 
 /* --- FlowIO private data --- */
 
-typedef struct
+struct _FlowIOPrivate
 {
   guint            reads_are_blocked       : 1;
   guint            writes_are_blocked      : 1;
@@ -90,8 +90,7 @@ typedef struct
 
   gint             min_read_buffer;
   FlowUserAdapter *user_adapter;
-}
-FlowIOPrivate;
+};
 
 /* --- FlowIO properties --- */
 

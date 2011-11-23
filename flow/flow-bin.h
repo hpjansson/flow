@@ -38,14 +38,17 @@ G_BEGIN_DECLS
 #define FLOW_BIN_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), FLOW_TYPE_BIN, FlowBinClass))
 GType   flow_bin_get_type        (void) G_GNUC_CONST;
 
-typedef struct _FlowBin      FlowBin;
-typedef struct _FlowBinClass FlowBinClass;
+typedef struct _FlowBin        FlowBin;
+typedef struct _FlowBinPrivate FlowBinPrivate;
+typedef struct _FlowBinClass   FlowBinClass;
 
 struct _FlowBin
 {
-  GObject     parent;
+  GObject         parent;
 
-  gpointer    priv;
+  /*< private >*/
+
+  FlowBinPrivate *priv;
 };
 
 struct _FlowBinClass

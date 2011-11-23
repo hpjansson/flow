@@ -39,7 +39,7 @@ static FlowPacket *shunt_write (FlowShunt *shunt, FlowFileConnector *file_connec
 
 /* --- FlowFileConnector private data --- */
 
-typedef struct
+struct _FlowFileConnectorPrivate
 {
   FlowFileConnectOp *op;
   FlowFileConnectOp *next_op;
@@ -48,8 +48,7 @@ typedef struct
 
   guint              reading_from_shunt : 1;
   guint              writing_to_shunt   : 1;
-}
-FlowFileConnectorPrivate;
+};
 
 /* --- FlowFileConnector properties --- */
 

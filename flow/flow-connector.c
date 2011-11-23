@@ -31,7 +31,7 @@
 
 /* --- FlowConnector private data --- */
 
-typedef struct
+struct _FlowConnectorPrivate
 {
   FlowConnectivity   state;
   FlowConnectivity   last_state;
@@ -39,8 +39,7 @@ typedef struct
   guint              io_buffer_size;
   guint              read_queue_limit;
   guint              write_queue_limit;
-}
-FlowConnectorPrivate;
+};
 
 /* --- FlowConnector properties --- */
 

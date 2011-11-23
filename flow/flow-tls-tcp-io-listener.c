@@ -30,10 +30,9 @@
 
 /* --- FlowTlsTcpIOListener private data --- */
 
-typedef struct
+struct _FlowTlsTcpIOListenerPrivate
 {
-}
-FlowTlsTcpIOListenerPrivate;
+};
 
 /* --- FlowTlsTcpIOListener properties --- */
 

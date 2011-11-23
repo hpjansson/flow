@@ -38,19 +38,24 @@ G_BEGIN_DECLS
 #define FLOW_EMITTER_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), FLOW_TYPE_EMITTER, FlowEmitterClass))
 GType   flow_emitter_get_type        (void) G_GNUC_CONST;
 
-typedef struct _FlowEmitter      FlowEmitter;
-typedef struct _FlowEmitterClass FlowEmitterClass;
+typedef struct _FlowEmitter        FlowEmitter;
+typedef struct _FlowEmitterPrivate FlowEmitterPrivate;
+typedef struct _FlowEmitterClass   FlowEmitterClass;
 
 struct _FlowEmitter
 {
   FlowElement    parent;
 
-  gpointer       priv;
+  /*< private >*/
+
+  FlowEmitterPrivate *priv;
 };
 
 struct _FlowEmitterClass
 {
   FlowElementClass parent_class;
+
+  /*< private >*/
 
   /* Padding for future expansion */
 

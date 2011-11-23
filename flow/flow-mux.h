@@ -36,18 +36,23 @@ G_BEGIN_DECLS
 #define FLOW_MUX_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS ((obj), FLOW_TYPE_MUX, FlowMuxClass))
 
 typedef struct _FlowMux FlowMux;
+typedef struct _FlowMuxPrivate FlowMuxPrivate;
 typedef struct _FlowMuxClass FlowMuxClass;
 
 struct _FlowMux
 {
   FlowJoiner base;
 
-  gpointer priv;
+  /*< private >*/
+
+  FlowMuxPrivate *priv;
 };
 
 struct _FlowMuxClass
 {
   FlowJoinerClass base_class;
+
+  /*< private >*/
 };
 
 GType flow_mux_get_type (void) G_GNUC_CONST;

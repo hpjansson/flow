@@ -39,21 +39,24 @@ G_BEGIN_DECLS
 #define FLOW_TCP_CONNECTOR_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), FLOW_TYPE_TCP_CONNECTOR, FlowTcpConnectorClass))
 GType   flow_tcp_connector_get_type        (void) G_GNUC_CONST;
 
-typedef struct _FlowTcpConnector      FlowTcpConnector;
-typedef struct _FlowTcpConnectorClass FlowTcpConnectorClass;
+typedef struct _FlowTcpConnector        FlowTcpConnector;
+typedef struct _FlowTcpConnectorPrivate FlowTcpConnectorPrivate;
+typedef struct _FlowTcpConnectorClass   FlowTcpConnectorClass;
 
 struct _FlowTcpConnector
 {
   FlowConnector    parent;
 
-  /* --- Private --- */
+  /*< private >*/
 
-  gpointer         priv;
+  FlowTcpConnectorPrivate *priv;
 };
 
 struct _FlowTcpConnectorClass
 {
   FlowConnectorClass parent_class;
+
+  /*< private >*/
 
   /* Padding for future expansion */
 

@@ -37,21 +37,24 @@ G_BEGIN_DECLS
 #define FLOW_INPUT_PAD_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), FLOW_TYPE_INPUT_PAD, FlowInputPadClass))
 GType   flow_input_pad_get_type        (void) G_GNUC_CONST;
 
-typedef struct _FlowInputPad      FlowInputPad;
-typedef struct _FlowInputPadClass FlowInputPadClass;
+typedef struct _FlowInputPad        FlowInputPad;
+typedef struct _FlowInputPadPrivate FlowInputPadPrivate;
+typedef struct _FlowInputPadClass   FlowInputPadClass;
 
 struct _FlowInputPad
 {
   FlowPad     parent;
 
-  /* --- Private --- */
+  /*< private >*/
 
-  gpointer    priv;
+  FlowInputPadPrivate *priv;
 };
 
 struct _FlowInputPadClass
 {
   FlowPadClass parent_class;
+
+  /*< private >*/
 
   /* Padding for future expansion */
 

@@ -37,12 +37,15 @@ G_BEGIN_DECLS
 #define FLOW_EVENT_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), FLOW_TYPE_EVENT, FlowEventClass))
 GType   flow_event_get_type        (void) G_GNUC_CONST;
 
-typedef struct _FlowEvent      FlowEvent;
-typedef struct _FlowEventClass FlowEventClass;
+typedef struct _FlowEvent        FlowEvent;
+typedef struct _FlowEventPrivate FlowEventPrivate;
+typedef struct _FlowEventClass   FlowEventClass;
 
 struct _FlowEvent
 {
   GObject      parent;
+
+  /*< private >*/
 
   /* --- Protected --- */
 
@@ -51,7 +54,7 @@ struct _FlowEvent
 
   /* --- Private --- */
 
-  gpointer     priv;
+  FlowEventPrivate *priv;
 };
 
 struct _FlowEventClass
@@ -59,6 +62,8 @@ struct _FlowEventClass
   GObjectClass parent_class;
 
   void (*update_description) (FlowEvent *event);
+
+  /*< private >*/
 
   /* Padding for future expansion */
 

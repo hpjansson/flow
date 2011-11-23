@@ -40,21 +40,24 @@ G_BEGIN_DECLS
 #define FLOW_FILE_IO_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), FLOW_TYPE_FILE_IO, FlowFileIOClass))
 GType   flow_file_io_get_type        (void) G_GNUC_CONST;
 
-typedef struct _FlowFileIO      FlowFileIO;
-typedef struct _FlowFileIOClass FlowFileIOClass;
+typedef struct _FlowFileIO        FlowFileIO;
+typedef struct _FlowFileIOPrivate FlowFileIOPrivate;
+typedef struct _FlowFileIOClass   FlowFileIOClass;
 
 struct _FlowFileIO
 {
   FlowIO            parent;
 
-  /* --- Private --- */
+  /*< private >*/
 
-  gpointer          priv;
+  FlowFileIOPrivate *priv;
 };
 
 struct _FlowFileIOClass
 {
   FlowIOClass parent_class;
+
+  /*< private >*/
 
   /* Padding for future expansion */
 

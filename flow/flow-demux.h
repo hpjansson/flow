@@ -36,18 +36,23 @@ G_BEGIN_DECLS
 #define FLOW_DEMUX_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS ((obj), FLOW_TYPE_DEMUX, FlowDemuxClass))
 
 typedef struct _FlowDemux FlowDemux;
+typedef struct _FlowDemuxPrivate FlowDemuxPrivate;
 typedef struct _FlowDemuxClass FlowDemuxClass;
 
 struct _FlowDemux
 {
-  FlowSplitter base;
+  FlowSplitter parent;
 
-  gpointer priv;
+  /*< private >*/
+
+  FlowDemuxPrivate *priv;
 };
 
 struct _FlowDemuxClass
 {
-  FlowSplitterClass base_class;
+  FlowSplitterClass parent_class;
+
+  /*< private >*/
 };
 
 GType flow_demux_get_type (void) G_GNUC_CONST;

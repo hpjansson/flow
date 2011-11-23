@@ -28,12 +28,12 @@
 #include "flow-gobject-util.h"
 #include "flow-util.h"
 
-typedef struct 
+struct _FlowMuxDeserializerPrivate
 {
   guint32 size_left;
   FlowMuxHeaderOps ops;
   gpointer ops_user_data;
-} FlowMuxDeserializerPrivate;
+};
 
 FLOW_GOBJECT_PROPERTIES_BEGIN (flow_mux_deserializer)
 FLOW_GOBJECT_PROPERTIES_END   ()

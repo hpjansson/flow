@@ -59,6 +59,8 @@ struct _FlowIPAddr
 {
   GObject          object;
 
+  /*< private >*/
+
   /* --- Protected --- */
 
   FlowIPAddrFamily family;
@@ -68,6 +70,8 @@ struct _FlowIPAddr
 struct _FlowIPAddrClass
 {
   GObjectClass parent_class;
+
+  /*< private >*/
 
   /* Padding for future expansion */
   void (*_pad_1) (void);

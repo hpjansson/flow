@@ -27,15 +27,15 @@
 #include "flow-gobject-util.h"
 #include "flow-util.h"
 
-typedef struct 
+struct _FlowMuxSerializerPrivate
 {
-    gboolean have_channel_id;
-    guint channel_id;
-    GQueue *packets;
-    guint32 packets_size;
-    FlowMuxHeaderOps ops;
-    gpointer ops_user_data;
-} FlowMuxSerializerPrivate;
+  gboolean have_channel_id;
+  guint channel_id;
+  GQueue *packets;
+  guint32 packets_size;
+  FlowMuxHeaderOps ops;
+  gpointer ops_user_data;
+};
 
 FLOW_GOBJECT_PROPERTIES_BEGIN (flow_mux_serializer)
 FLOW_GOBJECT_PROPERTIES_END   ()

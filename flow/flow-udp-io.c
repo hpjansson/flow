@@ -92,7 +92,7 @@
 
 /* --- FlowUdpIO private data --- */
 
-typedef struct
+struct _FlowUdpIOPrivate
 {
   FlowConnectivity  connectivity;
   FlowConnectivity  last_connectivity;
@@ -107,8 +107,7 @@ typedef struct
   guint             setting_local_service  : 1;
   guint             setting_remote_service : 1;
   guint             name_resolution_id;
-}
-FlowUdpIOPrivate;
+};
 
 /* --- FlowUdpIO properties --- */
 

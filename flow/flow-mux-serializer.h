@@ -35,6 +35,7 @@ G_BEGIN_DECLS
 #define FLOW_MUX_SERIALIZER_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS ((obj), FLOW_TYPE_MUX_SERIALIZER, FlowMuxSerializerClass))
 
 typedef struct _FlowMuxSerializer FlowMuxSerializer;
+typedef struct _FlowMuxSerializerPrivate FlowMuxSerializerPrivate;
 typedef struct _FlowMuxSerializerClass FlowMuxSerializerClass;
 typedef struct _FlowMuxHeaderOps FlowMuxHeaderOps;
 
@@ -42,12 +43,16 @@ struct _FlowMuxSerializer
 {
   FlowSimplexElement base;
 
-  gpointer priv;
+  /*< private >*/
+
+  FlowMuxSerializerPrivate *priv;
 };
 
 struct _FlowMuxSerializerClass
 {
   FlowSimplexElementClass base_class;
+
+  /*< private >*/
 };
 
 struct _FlowMuxHeaderOps

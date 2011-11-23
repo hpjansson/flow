@@ -37,19 +37,24 @@ G_BEGIN_DECLS
 #define FLOW_DESTRUCTOR_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), FLOW_TYPE_DESTRUCTOR, FlowDestructorClass))
 GType   flow_destructor_get_type        (void) G_GNUC_CONST;
 
-typedef struct _FlowDestructor      FlowDestructor;
-typedef struct _FlowDestructorClass FlowDestructorClass;
+typedef struct _FlowDestructor        FlowDestructor;
+typedef struct _FlowDestructorPrivate FlowDestructorPrivate;
+typedef struct _FlowDestructorClass   FlowDestructorClass;
 
 struct _FlowDestructor
 {
   FlowCollector parent;
 
-  gpointer      priv;
+  /*< private >*/
+
+  FlowDestructorPrivate *priv;
 };
 
 struct _FlowDestructorClass
 {
   FlowCollectorClass parent_class;
+
+  /*< private >*/
 
   /* Padding for future expansion */
 

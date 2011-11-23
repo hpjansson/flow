@@ -39,21 +39,24 @@ G_BEGIN_DECLS
 #define FLOW_TLS_TCP_IO_LISTENER_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), FLOW_TYPE_TLS_TCP_IO_LISTENER, FlowTlsTcpIOListenerClass))
 GType   flow_tls_tcp_io_listener_get_type        (void) G_GNUC_CONST;
 
-typedef struct _FlowTlsTcpIOListener      FlowTlsTcpIOListener;
-typedef struct _FlowTlsTcpIOListenerClass FlowTlsTcpIOListenerClass;
+typedef struct _FlowTlsTcpIOListener        FlowTlsTcpIOListener;
+typedef struct _FlowTlsTcpIOListenerPrivate FlowTlsTcpIOListenerPrivate;
+typedef struct _FlowTlsTcpIOListenerClass   FlowTlsTcpIOListenerClass;
 
 struct _FlowTlsTcpIOListener
 {
   FlowTcpIOListener  parent;
 
-  /* --- Private --- */
+  /*< private >*/
 
-  gpointer           priv;
+  FlowTlsTcpIOListenerPrivate *priv;
 };
 
 struct _FlowTlsTcpIOListenerClass
 {
   FlowTcpIOListenerClass parent_class;
+
+  /*< private >*/
 
   /* Padding for future expansion */
 

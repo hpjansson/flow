@@ -37,21 +37,24 @@ typedef void (FlowIPLookupFunc) (GList *addr_list, GList *name_list, GError *err
 #define FLOW_IP_RESOLVER_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), FLOW_TYPE_IP_RESOLVER, FlowIPResolverClass))
 GType   flow_ip_resolver_get_type        (void) G_GNUC_CONST;
 
-typedef struct _FlowIPResolver      FlowIPResolver;
-typedef struct _FlowIPResolverClass FlowIPResolverClass;
+typedef struct _FlowIPResolver        FlowIPResolver;
+typedef struct _FlowIPResolverPrivate FlowIPResolverPrivate;
+typedef struct _FlowIPResolverClass   FlowIPResolverClass;
 
 struct _FlowIPResolver
 {
   GObject      object;
 
-  /* --- Private --- */
+  /*< private >*/
 
-  gpointer     priv;
+  FlowIPResolverPrivate *priv;
 };
 
 struct _FlowIPResolverClass
 {
   GObjectClass parent_class;
+
+  /*< private >*/
 
   /* Padding for future expansion */
   void (*_pad_1) (void);

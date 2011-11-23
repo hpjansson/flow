@@ -78,7 +78,7 @@
 
 /* --- FlowFileIO private data --- */
 
-typedef struct
+struct _FlowFileIOPrivate
 {
   FlowConnectivity   connectivity;
   FlowConnectivity   last_connectivity;
@@ -105,8 +105,7 @@ typedef struct
 
   FlowOffsetAnchor   user_anchor;
   goffset            user_offset;
-}
-FlowFileIOPrivate;
+};
 
 /* --- FlowFileIO properties --- */
 

@@ -61,11 +61,10 @@
 
 /* --- FlowTlsTcpIO private data --- */
 
-typedef struct
+struct _FlowTlsTcpIOPrivate
 {
   FlowTlsProtocol *tls_protocol;
-}
-FlowTlsTcpIOPrivate;
+};
 
 /* --- FlowTlsTcpIO properties --- */
 

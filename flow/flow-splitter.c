@@ -29,14 +29,13 @@
 
 /* --- FlowSplitter private data --- */
 
-typedef struct
+struct _FlowSplitterPrivate
 {
   guint64 buffer_limit;
   guint64 buffer_low_water_mark;
   FlowPacketQueue *output_queue;
   GHashTable *output_queue_iters;
-}
-FlowSplitterPrivate;
+};
 
 /* --- FlowSplitter properties --- */
 

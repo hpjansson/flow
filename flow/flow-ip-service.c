@@ -34,7 +34,7 @@
 
 /* --- FlowIPService private data --- */
 
-typedef struct
+struct _FlowIPServicePrivate
 {
   GMutex      *mutex;
   gchar       *name;
@@ -44,8 +44,7 @@ typedef struct
   GError      *resolve_error;
   guint        quality               : 3;
   guint        resolve_id_is_idle_id : 1;
-}
-FlowIPServicePrivate;
+};
 
 /* --- FlowIPService properties --- */
 

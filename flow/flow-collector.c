@@ -29,10 +29,9 @@
 
 /* --- FlowCollector private data --- */
 
-typedef struct
+struct _FlowCollectorPrivate
 {
-}
-FlowCollectorPrivate;
+};
 
 /* --- FlowCollector properties --- */
 

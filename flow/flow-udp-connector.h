@@ -39,21 +39,24 @@ G_BEGIN_DECLS
 #define FLOW_UDP_CONNECTOR_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), FLOW_TYPE_UDP_CONNECTOR, FlowUdpConnectorClass))
 GType   flow_udp_connector_get_type        (void) G_GNUC_CONST;
 
-typedef struct _FlowUdpConnector      FlowUdpConnector;
-typedef struct _FlowUdpConnectorClass FlowUdpConnectorClass;
+typedef struct _FlowUdpConnector        FlowUdpConnector;
+typedef struct _FlowUdpConnectorPrivate FlowUdpConnectorPrivate;
+typedef struct _FlowUdpConnectorClass   FlowUdpConnectorClass;
 
 struct _FlowUdpConnector
 {
   FlowConnector    parent;
 
-  /* --- Private --- */
+  /*< private >*/
 
-  gpointer         priv;
+  FlowUdpConnectorPrivate *priv;
 };
 
 struct _FlowUdpConnectorClass
 {
   FlowConnectorClass parent_class;
+
+  /*< private >*/
 
   /* Padding for future expansion */
 

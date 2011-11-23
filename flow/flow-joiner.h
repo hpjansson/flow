@@ -39,19 +39,24 @@ G_BEGIN_DECLS
 #define FLOW_JOINER_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), FLOW_TYPE_JOINER, FlowJoinerClass))
 GType   flow_joiner_get_type        (void) G_GNUC_CONST;
 
-typedef struct _FlowJoiner      FlowJoiner;
-typedef struct _FlowJoinerClass FlowJoinerClass;
+typedef struct _FlowJoiner        FlowJoiner;
+typedef struct _FlowJoinerPrivate FlowJoinerPrivate;
+typedef struct _FlowJoinerClass   FlowJoinerClass;
 
 struct _FlowJoiner
 {
   FlowElement    parent;
 
-  gpointer       priv;
+  /*< private >*/
+
+  FlowJoinerPrivate *priv;
 };
 
 struct _FlowJoinerClass
 {
   FlowElementClass parent_class;
+
+  /*< private >*/
 
   /* Padding for future expansion */
 

@@ -36,19 +36,24 @@ G_BEGIN_DECLS
 #define FLOW_IS_MUX_EVENT_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), FLOW_TYPE_MUX_EVENT))
 #define FLOW_MUX_EVENT_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), FLOW_TYPE_MUX_EVENT, FlowMuxEventClass))
 
-typedef struct _FlowMuxEvent      FlowMuxEvent;
-typedef struct _FlowMuxEventClass FlowMuxEventClass;
+typedef struct _FlowMuxEvent        FlowMuxEvent;
+typedef struct _FlowMuxEventPrivate FlowMuxEventPrivate;
+typedef struct _FlowMuxEventClass   FlowMuxEventClass;
 
 struct _FlowMuxEvent
 {
   FlowEvent parent;
 
-  gpointer priv;
+  /*< private >*/
+
+  FlowMuxEventPrivate *priv;
 };
 
 struct _FlowMuxEventClass
 {
   FlowEventClass parent_class;
+
+  /*< private >*/
 };
 
 GType flow_mux_event_get_type (void) G_GNUC_CONST;

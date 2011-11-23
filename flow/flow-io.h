@@ -38,12 +38,15 @@ G_BEGIN_DECLS
 #define FLOW_IO_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), FLOW_TYPE_IO, FlowIOClass))
 GType   flow_io_get_type        (void) G_GNUC_CONST;
 
-typedef struct _FlowIO      FlowIO;
-typedef struct _FlowIOClass FlowIOClass;
+typedef struct _FlowIO        FlowIO;
+typedef struct _FlowIOPrivate FlowIOPrivate;
+typedef struct _FlowIOClass   FlowIOClass;
 
 struct _FlowIO
 {
   FlowBin          parent;
+
+  /*< private >*/
 
   /* --- Protected --- */
 
@@ -55,9 +58,7 @@ struct _FlowIO
   /* Return copies only, not the error itself */
   GError          *error;
 
-  /* --- Private --- */
-
-  gpointer         priv;
+  FlowIOPrivate   *priv;
 };
 
 struct _FlowIOClass
@@ -71,6 +72,8 @@ struct _FlowIOClass
   void     (*prepare_read)        (FlowIO *io, gint request_len);
   void     (*successful_read)     (FlowIO *io, gint len);
   void     (*prepare_write)       (FlowIO *io, gint request_len);
+
+  /*< private >*/
 
   /* Padding for future expansion */
 

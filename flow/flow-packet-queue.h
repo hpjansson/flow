@@ -47,7 +47,7 @@ struct _FlowPacketQueue
 {
   GObject     object;
 
-  /* --- Private --- */
+  /*< private >*/
 
   FlowPacket *first_packet;
   GQueue     *queue;
@@ -59,6 +59,8 @@ struct _FlowPacketQueue
 struct _FlowPacketQueueClass
 {
   GObjectClass parent_class;
+
+  /*< private >*/
 
   /* Padding for future expansion */
   void (*_pad_1) (void);

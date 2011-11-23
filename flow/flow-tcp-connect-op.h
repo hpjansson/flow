@@ -36,21 +36,24 @@
 #define FLOW_TCP_CONNECT_OP_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), FLOW_TYPE_TCP_CONNECT_OP, FlowTcpConnectOpClass))
 GType   flow_tcp_connect_op_get_type        (void) G_GNUC_CONST;
 
-typedef struct _FlowTcpConnectOp      FlowTcpConnectOp;
-typedef struct _FlowTcpConnectOpClass FlowTcpConnectOpClass;
+typedef struct _FlowTcpConnectOp        FlowTcpConnectOp;
+typedef struct _FlowTcpConnectOpPrivate FlowTcpConnectOpPrivate;
+typedef struct _FlowTcpConnectOpClass   FlowTcpConnectOpClass;
 
 struct _FlowTcpConnectOp
 {
   FlowEvent   parent;
 
-  /* --- Private --- */
+  /*< private >*/
 
-  gpointer    priv;
+  FlowTcpConnectOpPrivate *priv;
 };
 
 struct _FlowTcpConnectOpClass
 {
   FlowEventClass parent_class;
+
+  /*< private >*/
 
   /* Padding for future expansion */
   void (*_pad_1) (void);

@@ -34,7 +34,7 @@
 
 /* --- FlowFileConnectOp private data --- */
 
-typedef struct
+struct _FlowFileConnectOpPrivate
 {
   gchar          *path;
   FlowAccessMode  access_mode;
@@ -45,8 +45,7 @@ typedef struct
   FlowAccessMode  create_mode_user;
   FlowAccessMode  create_mode_group;
   FlowAccessMode  create_mode_others;
-}
-FlowFileConnectOpPrivate;
+};
 
 /* --- FlowFileConnectOp properties --- */
 

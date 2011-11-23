@@ -61,7 +61,7 @@ static gnutls_dh_params_t gnutls_dh_parameters;
 
 /* --- FlowTlsProtocol private data --- */
 
-typedef struct
+struct _FlowTlsProtocolPrivate
 {
   guint                            from_downstream_state   : 4;
   guint                            from_upstream_state     : 4;
@@ -76,8 +76,7 @@ typedef struct
    * for us. */
 
   gpointer                         creds;
-}
-FlowTlsProtocolPrivate;
+};
 
 /* --- FlowTlsProtocol properties --- */
 

@@ -37,13 +37,12 @@ SetProperty;
 
 /* --- FlowPropertyEvent private data --- */
 
-typedef struct
+struct _FlowPropertyEventPrivate
 {
   guint      is_instance : 1;
   gpointer   instance_or_class;
   GArray    *props;
-}
-FlowPropertyEventPrivate;
+};
 
 /* --- FlowPropertyEvent properties --- */
 

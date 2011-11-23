@@ -38,21 +38,24 @@ G_BEGIN_DECLS
 #define FLOW_USER_ADAPTER_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), FLOW_TYPE_USER_ADAPTER, FlowUserAdapterClass))
 GType   flow_user_adapter_get_type        (void) G_GNUC_CONST;
 
-typedef struct _FlowUserAdapter      FlowUserAdapter;
-typedef struct _FlowUserAdapterClass FlowUserAdapterClass;
+typedef struct _FlowUserAdapter        FlowUserAdapter;
+typedef struct _FlowUserAdapterPrivate FlowUserAdapterPrivate;
+typedef struct _FlowUserAdapterClass   FlowUserAdapterClass;
 
 struct _FlowUserAdapter
 {
   FlowSimplexElement  parent;
 
-  /* --- Private --- */
+  /*< private >*/
 
-  gpointer            priv;
+  FlowUserAdapterPrivate *priv;
 };
 
 struct _FlowUserAdapterClass
 {
   FlowSimplexElementClass parent_class;
+
+  /*< private >*/
 
   /* Padding for future expansion */
 

@@ -44,15 +44,14 @@
 
 /* --- FlowIPResolver private data --- */
 
-typedef struct
+struct _FlowIPResolverPrivate
 {
   GMutex      *mutex;
   GThreadPool *thread_pool;
   GHashTable  *lookup_table;
 
   guint        next_lookup_id;
-}
-FlowIPResolverPrivate;
+};
 
 typedef struct
 {

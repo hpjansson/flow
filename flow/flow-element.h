@@ -26,8 +26,9 @@
 #define _FLOW_ELEMENT_H
 
 /* FlowPad and FlowElement are co-dependent types */
-typedef struct _FlowElement      FlowElement;
-typedef struct _FlowElementClass FlowElementClass;
+typedef struct _FlowElement        FlowElement;
+typedef struct _FlowElementPrivate FlowElementPrivate;
+typedef struct _FlowElementClass   FlowElementClass;
 
 #include <glib-object.h>
 #include <flow/flow-pad.h>
@@ -46,6 +47,8 @@ struct _FlowElement
 {
   GObject     parent;
 
+  /*< private >*/
+
   /* --- Protected --- */
 
   GPtrArray  *input_pads;
@@ -60,9 +63,9 @@ struct _FlowElement
   FlowPad    *current_input;
   GSList     *pending_inputs;
 
-  /* --- Private --- */
+  /*< private >*/
 
-  gpointer    priv;
+  FlowElementPrivate *priv;
 };
 
 struct _FlowElementClass
@@ -74,6 +77,8 @@ struct _FlowElementClass
   void     (*output_pad_blocked)       (FlowElement *element, FlowPad *output_pad);
   void     (*output_pad_unblocked)     (FlowElement *element, FlowPad *output_pad);
   void     (*process_input)            (FlowElement *element, FlowPad *input_pad);
+
+  /*< private >*/
 
   /* Padding for future expansion */
 

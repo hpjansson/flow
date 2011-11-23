@@ -25,13 +25,12 @@
 #include "flow-gobject-util.h"
 #include "flow-mux-event.h"
 
-typedef struct
+struct _FlowMuxEventPrivate
 {
   guint channel_id;
-} FlowMuxEventPrivate;
+};
 
 static guint flow_mux_event_set_channel_id_internal (FlowMuxEvent *event, guint channel_id);
-
   
 FLOW_GOBJECT_PROPERTIES_BEGIN (flow_mux_event)
 FLOW_GOBJECT_PROPERTY_INT     (G_TYPE_UINT, "channel-id", "Channel ID", "Channel ID",

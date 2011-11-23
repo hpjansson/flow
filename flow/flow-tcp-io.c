@@ -92,7 +92,7 @@
 
 /* --- FlowTcpIO private data --- */
 
-typedef struct
+struct _FlowTcpIOPrivate
 {
   FlowConnectivity  connectivity;
   FlowConnectivity  last_connectivity;
@@ -102,8 +102,7 @@ typedef struct
   FlowIPProcessor  *ip_processor;
 
   guint             wrote_stream_begin : 1;
-}
-FlowTcpIOPrivate;
+};
 
 /* --- FlowTcpIO properties --- */
 

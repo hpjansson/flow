@@ -38,19 +38,24 @@ G_BEGIN_DECLS
 #define FLOW_IP_PROCESSOR_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), FLOW_TYPE_IP_PROCESSOR, FlowIPProcessorClass))
 GType   flow_ip_processor_get_type        (void) G_GNUC_CONST;
 
-typedef struct _FlowIPProcessor      FlowIPProcessor;
-typedef struct _FlowIPProcessorClass FlowIPProcessorClass;
+typedef struct _FlowIPProcessor        FlowIPProcessor;
+typedef struct _FlowIPProcessorPrivate FlowIPProcessorPrivate;
+typedef struct _FlowIPProcessorClass   FlowIPProcessorClass;
 
 struct _FlowIPProcessor
 {
   FlowSimplexElement parent;
 
-  gpointer           priv;
+  /*< private >*/
+
+  FlowIPProcessorPrivate *priv;
 };
 
 struct _FlowIPProcessorClass
 {
   FlowSimplexElementClass parent_class;
+
+  /*< private >*/
 
   /* Padding for future expansion */
 

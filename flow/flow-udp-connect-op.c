@@ -33,12 +33,11 @@
 
 /* --- FlowUdpConnectOp private data --- */
 
-typedef struct
+struct _FlowUdpConnectOpPrivate
 {
   FlowIPService *local_ip_service;
   FlowIPService *remote_ip_service;
-}
-FlowUdpConnectOpPrivate;
+};
 
 /* --- FlowUdpConnectOp properties --- */
 

@@ -38,7 +38,7 @@ static FlowPacket *shunt_write (FlowShunt *shunt, FlowUdpConnector *udp_connecto
 
 /* --- FlowUdpConnector private data --- */
 
-typedef struct
+struct _FlowUdpConnectorPrivate
 {
   FlowUdpConnectOp *op;
   FlowUdpConnectOp *next_op;
@@ -46,8 +46,7 @@ typedef struct
   FlowIPService    *remote_service;
 
   FlowShunt        *shunt;
-}
-FlowUdpConnectorPrivate;
+};
 
 /* --- FlowUdpConnector properties --- */
 

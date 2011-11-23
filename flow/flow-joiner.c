@@ -29,10 +29,9 @@
 
 /* --- FlowJoiner private data --- */
 
-typedef struct
+struct _FlowJoinerPrivate
 {
-}
-FlowJoinerPrivate;
+};
 
 /* --- FlowJoiner properties --- */
 

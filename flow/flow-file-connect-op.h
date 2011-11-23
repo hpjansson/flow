@@ -36,23 +36,27 @@
 #define FLOW_FILE_CONNECT_OP_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), FLOW_TYPE_FILE_CONNECT_OP, FlowFileConnectOpClass))
 GType   flow_file_connect_op_get_type        (void) G_GNUC_CONST;
 
-typedef struct _FlowFileConnectOp      FlowFileConnectOp;
-typedef struct _FlowFileConnectOpClass FlowFileConnectOpClass;
+typedef struct _FlowFileConnectOp        FlowFileConnectOp;
+typedef struct _FlowFileConnectOpPrivate FlowFileConnectOpPrivate;
+typedef struct _FlowFileConnectOpClass   FlowFileConnectOpClass;
 
 struct _FlowFileConnectOp
 {
   FlowEvent   parent;
 
-  /* --- Private --- */
+  /*< private >*/
 
-  gpointer    priv;
+  FlowFileConnectOpPrivate *priv;
 };
 
 struct _FlowFileConnectOpClass
 {
   FlowEventClass parent_class;
 
+  /*< private >*/
+
   /* Padding for future expansion */
+
   void (*_pad_1) (void);
   void (*_pad_2) (void);
   void (*_pad_3) (void);

@@ -45,21 +45,24 @@ FlowOffsetAnchor;
 #define FLOW_POSITION_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), FLOW_TYPE_POSITION, FlowPositionClass))
 GType   flow_position_get_type        (void) G_GNUC_CONST;
 
-typedef struct _FlowPosition      FlowPosition;
-typedef struct _FlowPositionClass FlowPositionClass;
+typedef struct _FlowPosition        FlowPosition;
+typedef struct _FlowPositionPrivate FlowPositionPrivate;
+typedef struct _FlowPositionClass   FlowPositionClass;
 
 struct _FlowPosition
 {
   FlowEvent parent;
 
-  /* --- Private --- */
+  /*< private >*/
 
-  gpointer  priv;
+  FlowPositionPrivate *priv;
 };
 
 struct _FlowPositionClass
 {
   FlowEventClass parent_class;
+
+  /*< private >*/
 
   /* Padding for future expansion */
 

@@ -28,10 +28,9 @@
 
 /* --- FlowInputPad private data --- */
 
-typedef struct
+struct _FlowInputPadPrivate
 {
-}
-FlowInputPadPrivate;
+};
 
 /* --- FlowInputPad properties --- */
 

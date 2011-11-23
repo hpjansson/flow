@@ -39,19 +39,24 @@ G_BEGIN_DECLS
 #define FLOW_DUPLEX_ELEMENT_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), FLOW_TYPE_DUPLEX_ELEMENT, FlowDuplexElementClass))
 GType   flow_duplex_element_get_type        (void) G_GNUC_CONST;
 
-typedef struct _FlowDuplexElement      FlowDuplexElement;
-typedef struct _FlowDuplexElementClass FlowDuplexElementClass;
+typedef struct _FlowDuplexElement        FlowDuplexElement;
+typedef struct _FlowDuplexElementPrivate FlowDuplexElementPrivate;
+typedef struct _FlowDuplexElementClass   FlowDuplexElementClass;
 
 struct _FlowDuplexElement
 {
   FlowElement    parent;
 
-  gpointer       priv;
+  /*< private >*/
+
+  FlowDuplexElementPrivate *priv;
 };
 
 struct _FlowDuplexElementClass
 {
   FlowElementClass parent_class;
+
+  /*< private >*/
 
   /* Padding for future expansion */
 

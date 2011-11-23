@@ -30,10 +30,9 @@
 
 /* --- FlowPad private data --- */
 
-typedef struct
+struct _FlowPadPrivate
 {
-}
-FlowPadPrivate;
+};
 
 /* --- FlowPad properties --- */
 

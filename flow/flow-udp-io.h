@@ -40,21 +40,24 @@ G_BEGIN_DECLS
 #define FLOW_UDP_IO_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), FLOW_TYPE_UDP_IO, FlowUdpIOClass))
 GType   flow_udp_io_get_type        (void) G_GNUC_CONST;
 
-typedef struct _FlowUdpIO      FlowUdpIO;
-typedef struct _FlowUdpIOClass FlowUdpIOClass;
+typedef struct _FlowUdpIO        FlowUdpIO;
+typedef struct _FlowUdpIOPrivate FlowUdpIOPrivate;
+typedef struct _FlowUdpIOClass   FlowUdpIOClass;
 
 struct _FlowUdpIO
 {
   FlowIO            parent;
 
-  /* --- Private --- */
+  /*< private >*/
 
-  gpointer          priv;
+  FlowUdpIOPrivate *priv;
 };
 
 struct _FlowUdpIOClass
 {
   FlowIOClass parent_class;
+
+  /*< private >*/
 
   /* Padding for future expansion */
 

@@ -28,10 +28,9 @@
 
 /* --- FlowDestructor private data --- */
 
-typedef struct
+struct _FlowDestructorPrivate
 {
-}
-FlowDestructorPrivate;
+};
 
 /* --- FlowDestructor properties --- */
 

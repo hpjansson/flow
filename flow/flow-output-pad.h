@@ -38,11 +38,14 @@ G_BEGIN_DECLS
 GType   flow_output_pad_get_type        (void) G_GNUC_CONST;
 
 typedef struct _FlowOutputPad      FlowOutputPad;
+typedef struct _FlowOutputPadPrivate FlowOutputPadPrivate;
 typedef struct _FlowOutputPadClass FlowOutputPadClass;
 
 struct _FlowOutputPad
 {
   FlowPad  parent;
+
+  /*< private >*/
 
   gpointer priv;
 };
@@ -50,6 +53,8 @@ struct _FlowOutputPad
 struct _FlowOutputPadClass
 {
   FlowPadClass parent_class;
+
+  /*< private >*/
 
   /* Padding for future expansion */
 

@@ -26,11 +26,10 @@
 #include "flow-gobject-util.h"
 #include "flow-detailed-event.h"
 
-typedef struct
+struct _FlowDetailedEventPrivate
 {
   GSList      *codes;
-}
-FlowDetailedEventPrivate;
+};
 
 typedef struct
 {

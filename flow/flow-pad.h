@@ -26,8 +26,9 @@
 #define _FLOW_PAD_H
 
 /* FlowPad and FlowElement are co-dependent types */
-typedef struct _FlowPad      FlowPad;
-typedef struct _FlowPadClass FlowPadClass;
+typedef struct _FlowPad        FlowPad;
+typedef struct _FlowPadPrivate FlowPadPrivate;
+typedef struct _FlowPadClass   FlowPadClass;
 
 #include <glib-object.h>
 #include <flow/flow-element.h>
@@ -47,6 +48,8 @@ struct _FlowPad
 {
   GObject          parent;
 
+  /*< private >*/
+
   /* --- Protected --- */
 
   guint            is_blocked     : 1;
@@ -59,7 +62,7 @@ struct _FlowPad
 
   /* --- Private --- */
 
-  gpointer         priv;
+  FlowPadPrivate *priv;
 };
 
 struct _FlowPadClass
@@ -71,6 +74,8 @@ struct _FlowPadClass
   void (*push)    (FlowPad *pad, FlowPacket *packet);
   void (*block)   (FlowPad *pad);
   void (*unblock) (FlowPad *pad);
+
+  /*< private >*/
 
   /* Padding for future expansion */
 

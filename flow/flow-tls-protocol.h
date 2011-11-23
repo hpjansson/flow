@@ -44,19 +44,24 @@ typedef enum
 }
 FlowAgentRole;
 
-typedef struct _FlowTlsProtocol      FlowTlsProtocol;
-typedef struct _FlowTlsProtocolClass FlowTlsProtocolClass;
+typedef struct _FlowTlsProtocol        FlowTlsProtocol;
+typedef struct _FlowTlsProtocolPrivate FlowTlsProtocolPrivate;
+typedef struct _FlowTlsProtocolClass   FlowTlsProtocolClass;
 
 struct _FlowTlsProtocol
 {
   FlowDuplexElement    parent;
 
-  gpointer             priv;
+  /*< private >*/
+
+  FlowTlsProtocolPrivate *priv;
 };
 
 struct _FlowTlsProtocolClass
 {
   FlowDuplexElementClass parent_class;
+
+  /*< private >*/
 
   /* Padding for future expansion */
 

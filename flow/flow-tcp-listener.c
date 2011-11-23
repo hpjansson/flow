@@ -38,7 +38,7 @@ static void shunt_read (FlowShunt *shunt, FlowPacket *packet, FlowTcpListener *t
 
 /* --- FlowTcpListener private data --- */
 
-typedef struct
+struct _FlowTcpListenerPrivate
 {
   FlowIPService   *local_ip_service;
   FlowShunt       *shunt;
@@ -47,8 +47,7 @@ typedef struct
 
   guint            waiting_for_pop;
   GMainLoop       *pop_loop;
-}
-FlowTcpListenerPrivate;
+};
 
 /* --- FlowTcpListener properties --- */
 

@@ -28,10 +28,9 @@
 
 /* --- FlowEvent private data --- */
 
-typedef struct
+struct _FlowEventPrivate
 {
-}
-FlowEventPrivate;
+};
 
 /* --- FlowEvent properties --- */
 

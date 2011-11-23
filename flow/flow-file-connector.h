@@ -39,21 +39,24 @@ G_BEGIN_DECLS
 #define FLOW_FILE_CONNECTOR_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), FLOW_TYPE_FILE_CONNECTOR, FlowFileConnectorClass))
 GType   flow_file_connector_get_type        (void) G_GNUC_CONST;
 
-typedef struct _FlowFileConnector      FlowFileConnector;
-typedef struct _FlowFileConnectorClass FlowFileConnectorClass;
+typedef struct _FlowFileConnector        FlowFileConnector;
+typedef struct _FlowFileConnectorPrivate FlowFileConnectorPrivate;
+typedef struct _FlowFileConnectorClass   FlowFileConnectorClass;
 
 struct _FlowFileConnector
 {
   FlowConnector    parent;
 
-  /* --- Private --- */
+  /*< private >*/
 
-  gpointer         priv;
+  FlowFileConnectorPrivate *priv;
 };
 
 struct _FlowFileConnectorClass
 {
   FlowConnectorClass parent_class;
+
+  /*< private >*/
 
   /* Padding for future expansion */
 

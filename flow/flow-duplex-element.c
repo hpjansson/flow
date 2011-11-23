@@ -32,10 +32,9 @@
 
 /* --- FlowDuplexElement private data --- */
 
-typedef struct
+struct _FlowDuplexElementPrivate
 {
-}
-FlowDuplexElementPrivate;
+};
 
 /* --- FlowDuplexElement properties --- */
 
