@@ -405,6 +405,8 @@ flow_ip_service_have_addresses (FlowIPService *ip_service)
 
   g_return_val_if_fail (FLOW_IS_IP_SERVICE (ip_service), 0);
 
+  priv = ip_service->priv;
+
   g_mutex_lock (priv->mutex);
   have_addresses = priv->addresses ? TRUE : FALSE;
   g_mutex_unlock (priv->mutex);
