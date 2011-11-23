@@ -55,6 +55,8 @@ struct _FlowBinClass
 {
   GObjectClass parent_class;
 
+  /*< private >*/
+
   /* Padding for future expansion */
   void (*_pad_1) (void);
   void (*_pad_2) (void);

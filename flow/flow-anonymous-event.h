@@ -54,6 +54,8 @@ struct _FlowAnonymousEventClass
 {
   FlowEventClass parent_class;
 
+  /*< private >*/
+
   /* Padding for future expansion */
 
   void (*_pad_1) (void);
