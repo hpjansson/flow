@@ -14,7 +14,7 @@ while true; do
   echo -n -e "\rIterations: $m"
 
   for i in $(grep "^[ \t]*[^#]" tests.list); do
-    if ! ./$i -v >out 2>&1; then
+    if ! nice -10 libtool --mode=execute ./$i -v >out 2>&1; then
       echo 'Failure: ' $(head -1 out)
       mv out stress-failure-$n.log
       let n=$n+1
