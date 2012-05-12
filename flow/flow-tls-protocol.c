@@ -29,7 +29,6 @@
 #include "flow-tls-protocol.h"
 
 #include <gnutls/gnutls.h>
-#include <gcrypt.h>
 
 #include <errno.h>
 
@@ -113,31 +112,31 @@ FLOW_GOBJECT_MAKE_IMPL        (flow_tls_protocol, FlowTlsProtocol, FLOW_TYPE_DUP
 
 static void flow_tls_protocol_process_input (FlowElement *element, FlowPad *input_pad);
 
-/* Thread safety functions for GCrypt */
+/* Thread safety functions for GnuTLS */
 
 static gint
-mutex_init_gcrypt (void **mutex_ptr)
+mutex_init_gnutls (void **mutex_ptr)
 {
   *mutex_ptr = g_mutex_new ();
   return 0;
 }
 
 static gint
-mutex_destroy_gcrypt (void **mutex_ptr)
+mutex_destroy_gnutls (void **mutex_ptr)
 {
   g_mutex_free (*mutex_ptr);
   return 0;
 }
 
 static gint
-mutex_lock_gcrypt (void **mutex_ptr)
+mutex_lock_gnutls (void **mutex_ptr)
 {
   g_mutex_lock (*mutex_ptr);
   return 0;
 }
 
 static gint
-mutex_unlock_gcrypt (void **mutex_ptr)
+mutex_unlock_gnutls (void **mutex_ptr)
 {
   g_mutex_unlock (*mutex_ptr);
   return 0;
@@ -158,10 +157,10 @@ global_ref_gnutls (void)
                                      (gnutls_is_secure_function) NULL,
                                      (gnutls_realloc_function)   g_realloc,
                                      (gnutls_free_function)      g_free);
-    gnutls_global_set_mutex (mutex_init_gcrypt,
-                             mutex_destroy_gcrypt,
-                             mutex_lock_gcrypt,
-                             mutex_unlock_gcrypt);
+    gnutls_global_set_mutex (mutex_init_gnutls,
+                             mutex_destroy_gnutls,
+                             mutex_lock_gnutls,
+                             mutex_unlock_gnutls);
 
     gnutls_is_initialized = TRUE;
   }
