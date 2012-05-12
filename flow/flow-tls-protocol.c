@@ -302,7 +302,6 @@ initialize_session (FlowTlsProtocol *tls_protocol)
     gnutls_credentials_set (priv->tls_session, GNUTLS_CRD_ANON, priv->creds);
   }
 
-  gnutls_transport_set_lowat (priv->tls_session, 0);
   gnutls_transport_set_push_function (priv->tls_session,
                                       (gnutls_push_func) send_for_gnutls);
   gnutls_transport_set_pull_function (priv->tls_session,
