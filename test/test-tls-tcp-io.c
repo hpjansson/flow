@@ -23,7 +23,7 @@
  */
 
 #define TEST_UNIT_NAME "FlowTlsTcpIO"
-#define TEST_TIMEOUT_S 60
+#define TEST_TIMEOUT_S 360
 
 /* Test variables; adjustable */
 
