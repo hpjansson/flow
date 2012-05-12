@@ -148,23 +148,6 @@ global_ref_gnutls (void)
 {
   guchar buf [1];
   gint   result;
-  static struct gcry_thread_cbs gcrypt_thread_callbacks =
-  {
-    GCRY_THREAD_OPTION_USER,
-    NULL,                     /* Global init */
-    mutex_init_gcrypt,
-    mutex_destroy_gcrypt,
-    mutex_lock_gcrypt,
-    mutex_unlock_gcrypt,
-    NULL,                     /* read */
-    NULL,                     /* write */
-    NULL,                     /* select */
-    NULL,                     /* waitpid */
-    NULL,                     /* accept */
-    NULL,                     /* connect */
-    NULL,                     /* sendmsg */
-    NULL                      /* recvmsg */
-  };
 
   g_static_mutex_lock (&gnutls_mutex);
 
@@ -175,8 +158,10 @@ global_ref_gnutls (void)
                                      (gnutls_is_secure_function) NULL,
                                      (gnutls_realloc_function)   g_realloc,
                                      (gnutls_free_function)      g_free);
-
-    gcry_control (GCRYCTL_SET_THREAD_CBS, &gcrypt_thread_callbacks);
+    gnutls_global_set_mutex (mutex_init_gcrypt,
+                             mutex_destroy_gcrypt,
+                             mutex_lock_gcrypt,
+                             mutex_unlock_gcrypt);
 
     gnutls_is_initialized = TRUE;
   }
@@ -185,13 +170,6 @@ global_ref_gnutls (void)
   result = gnutls_global_init ();
   if (result != GNUTLS_E_SUCCESS)
     g_error (G_STRLOC ": Failed to initialize GNU TLS: %s", gnutls_strerror (result));
-
-  /* Run the GCrypt randomizer so it'll do its non-threadsafe initialization
-   * while we hold a lock. This is a workaround for a bug in GCrypt 1.2.3. If
-   * someone initializes GCrypt in another part of the program that can
-   * run concurrently with us, we're fucked */
-
-  gcry_randomize (buf, 1, 0);
 
   g_static_mutex_unlock (&gnutls_mutex);
 }
