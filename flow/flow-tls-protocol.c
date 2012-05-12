@@ -267,7 +267,6 @@ static void
 initialize_session (FlowTlsProtocol *tls_protocol)
 {
   FlowTlsProtocolPrivate *priv = tls_protocol->priv;
-  const int kx_prio []         = { GNUTLS_KX_ANON_DH, 0 };
 
   if (priv->session_initialized)
     return;
@@ -283,9 +282,7 @@ initialize_session (FlowTlsProtocol *tls_protocol)
 
     gnutls_init (&priv->tls_session, GNUTLS_SERVER);
 
-  gnutls_set_default_priority (priv->tls_session);
-  gnutls_kx_set_priority (priv->tls_session, kx_prio);
-
+    gnutls_priority_set_direct (priv->tls_session, "PERFORMANCE:+ANON-ECDH:+ANON-DH", NULL);
     gnutls_credentials_set (priv->tls_session, GNUTLS_CRD_ANON, priv->creds);
 
     gnutls_dh_set_prime_bits (priv->tls_session, DH_BITS_DEFAULT);
@@ -294,10 +291,8 @@ initialize_session (FlowTlsProtocol *tls_protocol)
   {
     gnutls_init (&priv->tls_session, GNUTLS_CLIENT);
 
-  gnutls_set_default_priority (priv->tls_session);
-  gnutls_kx_set_priority (priv->tls_session, kx_prio);
-
     gnutls_anon_allocate_client_credentials ((gpointer) &priv->creds);
+    gnutls_priority_set_direct (priv->tls_session, "PERFORMANCE:+ANON-ECDH:+ANON-DH", NULL);
     gnutls_credentials_set (priv->tls_session, GNUTLS_CRD_ANON, priv->creds);
   }
 
