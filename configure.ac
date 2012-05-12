@@ -70,7 +70,7 @@ AC_SUBST(REBUILD)
 # IPv6 (HAVE_IPV6)
 
 AC_CACHE_CHECK([for IPv6], flow_cv_hasipv6,[
-    AC_COMPILE_IFELSE([
+    AC_COMPILE_IFELSE([AC_LANG_SOURCE([
         #include <sys/types.h>
         #include <sys/socket.h>
         #include <netinet/in.h>
@@ -78,7 +78,7 @@ AC_CACHE_CHECK([for IPv6], flow_cv_hasipv6,[
         int main () {
         struct sockaddr_in6 *sa6_ptr;
         int family = AF_INET6; }
-        ],
+        ])],
     flow_cv_hasipv6=yes,
     flow_cv_hasipv6=no,)
 ])
@@ -90,7 +90,7 @@ esac
 # getaddrinfo (HAVE_GETADDRINFO)
 
 AC_CACHE_CHECK([for getaddrinfo], flow_cv_hasgetaddrinfo,[
-    AC_COMPILE_IFELSE([
+    AC_COMPILE_IFELSE([AC_LANG_SOURCE([
         #include <sys/types.h>
         #include <sys/socket.h>
         #include <netdb.h>
@@ -101,7 +101,7 @@ AC_CACHE_CHECK([for getaddrinfo], flow_cv_hasgetaddrinfo,[
         hints.ai_socktype = SOCK_STREAM;
         getaddrinfo (name, NULL, &hints, &res);
         if (res) freeaddrinfo (res); }
-        ],
+        ])],
     flow_cv_hasgetaddrinfo=yes,
     flow_cv_hasgetaddrinfo=no,)
 ])
@@ -113,7 +113,7 @@ esac
 # inet_ntop
 
 AC_CACHE_CHECK([for inet_ntop], flow_cv_hasntop,[
-    AC_COMPILE_IFELSE([
+    AC_COMPILE_IFELSE([AC_LANG_SOURCE([
         #include <sys/types.h>
         #include <sys/socket.h>
         #include <arpa/inet.h>
@@ -122,7 +122,7 @@ AC_CACHE_CHECK([for inet_ntop], flow_cv_hasntop,[
         char *dest;
         const char *ret;
         ret = inet_ntop (AF_INET, src, dest, 64); }
-        ],
+        ])],
     flow_cv_hasntop=yes,
     flow_cv_hasntop=no,)
 ])
@@ -134,7 +134,7 @@ esac
 # inet_pton
 
 AC_CACHE_CHECK([for inet_pton], flow_cv_haspton,[
-    AC_COMPILE_IFELSE([
+    AC_COMPILE_IFELSE([AC_LANG_SOURCE([
         #include <sys/types.h>
         #include <sys/socket.h>
         #include <arpa/inet.h>
@@ -143,7 +143,7 @@ AC_CACHE_CHECK([for inet_pton], flow_cv_haspton,[
         char *dest;
         int ret;
         ret = inet_pton (AF_INET, src, dest); }
-        ],
+        ])],
     flow_cv_haspton=yes,
     flow_cv_haspton=no,)
 ])
