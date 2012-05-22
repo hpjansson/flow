@@ -17,6 +17,9 @@ A container for interrelated elements
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### STRUCT FlowBin ##### -->
 <para>
 
@@ -39,11 +42,19 @@ A container for interrelated elements
 @flowbin: the object which received the signal.
 @arg1: 
 
+<!-- ##### STRUCT FlowBinClass ##### -->
+<para>
+
+</para>
+
+@parent_class: 
+
 <!-- ##### FUNCTION flow_bin_new ##### -->
 <para>
 
 </para>
 
+@void: 
 @Returns: 
 
 

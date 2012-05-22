@@ -17,17 +17,28 @@ Element with N input pads and one output pad
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### STRUCT FlowDemux ##### -->
 <para>
 
 </para>
 
 
+<!-- ##### STRUCT FlowDemuxClass ##### -->
+<para>
+
+</para>
+
+@parent_class: 
+
 <!-- ##### FUNCTION flow_demux_new ##### -->
 <para>
 
 </para>
 
+@void: 
 @Returns: 
 
 

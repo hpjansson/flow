@@ -17,6 +17,9 @@ Event carrying machine- and human-readable message
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### STRUCT FlowDetailedEvent ##### -->
 <para>
 
@@ -28,13 +31,20 @@ Event carrying machine- and human-readable message
 
 </para>
 
+<!-- ##### STRUCT FlowDetailedEventClass ##### -->
+<para>
+
+</para>
+
+@parent_class: 
+
 <!-- ##### FUNCTION flow_detailed_event_new ##### -->
 <para>
 
 </para>
 
 @format: 
-@Varargs: 
+@...: 
 @Returns: 
 
 

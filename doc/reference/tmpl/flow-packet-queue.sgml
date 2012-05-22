@@ -17,17 +17,34 @@ Featureful queue for FlowPackets
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
+<!-- ##### TYPEDEF FlowPacketIter ##### -->
+<para>
+
+</para>
+
+
 <!-- ##### STRUCT FlowPacketQueue ##### -->
 <para>
 
 </para>
 
 
+<!-- ##### STRUCT FlowPacketQueueClass ##### -->
+<para>
+
+</para>
+
+@parent_class: 
+
 <!-- ##### FUNCTION flow_packet_queue_new ##### -->
 <para>
 
 </para>
 
+@void: 
 @Returns: 
 
 
@@ -85,6 +102,15 @@ Featureful queue for FlowPackets
 @n: 
 
 
+<!-- ##### FUNCTION flow_packet_queue_push_packet_to_head ##### -->
+<para>
+
+</para>
+
+@packet_queue: 
+@packet: 
+
+
 <!-- ##### FUNCTION flow_packet_queue_pop_packet ##### -->
 <para>
 
@@ -124,6 +150,16 @@ Featureful queue for FlowPackets
 @packet_queue: 
 @packet_out: 
 @offset_out: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_packet_queue_peek_nth_packet ##### -->
+<para>
+
+</para>
+
+@packet_queue: 
+@n: 
 @Returns: 
 
 
@@ -181,6 +217,26 @@ Featureful queue for FlowPackets
 </para>
 
 @packet_queue: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_packet_iter_peek_packet ##### -->
+<para>
+
+</para>
+
+@packet_queue: 
+@packet_iter: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_packet_iter_next ##### -->
+<para>
+
+</para>
+
+@packet_queue: 
+@packet_iter: 
 @Returns: 
 
 

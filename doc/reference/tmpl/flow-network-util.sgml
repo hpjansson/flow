@@ -17,11 +17,15 @@ flow-network-util
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### FUNCTION flow_get_preferred_ip_addr_family ##### -->
 <para>
 
 </para>
 
+@void: 
 @Returns: 
 
 
@@ -38,6 +42,7 @@ flow-network-util
 
 </para>
 
+@void: 
 @Returns: 
 
 
@@ -55,6 +60,7 @@ flow-network-util
 
 </para>
 
+@void: 
 @Returns: 
 
 

@@ -17,11 +17,21 @@ Element with a single input pad
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### STRUCT FlowCollector ##### -->
 <para>
 
 </para>
 
+
+<!-- ##### STRUCT FlowCollectorClass ##### -->
+<para>
+
+</para>
+
+@parent_class: 
 
 <!-- ##### FUNCTION flow_collector_get_input_pad ##### -->
 <para>

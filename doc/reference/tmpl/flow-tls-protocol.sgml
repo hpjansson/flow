@@ -17,6 +17,9 @@ TLS protocol element
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### ENUM FlowAgentRole ##### -->
 <para>
 
@@ -35,6 +38,13 @@ TLS protocol element
 <para>
 
 </para>
+
+<!-- ##### STRUCT FlowTlsProtocolClass ##### -->
+<para>
+
+</para>
+
+@parent_class: 
 
 <!-- ##### FUNCTION flow_tls_protocol_new ##### -->
 <para>

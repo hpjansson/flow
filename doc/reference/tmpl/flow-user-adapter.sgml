@@ -17,17 +17,28 @@ Application-friendly interface to I/O pipeline
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### STRUCT FlowUserAdapter ##### -->
 <para>
 
 </para>
 
 
+<!-- ##### STRUCT FlowUserAdapterClass ##### -->
+<para>
+
+</para>
+
+@parent_class: 
+
 <!-- ##### FUNCTION flow_user_adapter_new ##### -->
 <para>
 
 </para>
 
+@void: 
 @Returns: 
 
 

@@ -17,6 +17,9 @@ flow-messages
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### FUNCTION flow_get_event_message ##### -->
 <para>
 

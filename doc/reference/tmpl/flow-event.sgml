@@ -17,11 +17,22 @@ Base class for events
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### STRUCT FlowEvent ##### -->
 <para>
 
 </para>
 
+
+<!-- ##### STRUCT FlowEventClass ##### -->
+<para>
+
+</para>
+
+@parent_class: 
+@update_description: 
 
 <!-- ##### FUNCTION flow_event_get_source_element ##### -->
 <para>

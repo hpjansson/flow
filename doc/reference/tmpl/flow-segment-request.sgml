@@ -17,6 +17,9 @@ Request data from a seekable stream
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### STRUCT FlowSegmentRequest ##### -->
 <para>
 
@@ -27,6 +30,13 @@ Request data from a seekable stream
 <para>
 
 </para>
+
+<!-- ##### STRUCT FlowSegmentRequestClass ##### -->
+<para>
+
+</para>
+
+@parent_class: 
 
 <!-- ##### FUNCTION flow_segment_request_new ##### -->
 <para>

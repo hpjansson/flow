@@ -17,6 +17,9 @@ IP address
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### ENUM FlowIPAddrFamily ##### -->
 <para>
 
@@ -33,11 +36,19 @@ IP address
 </para>
 
 
+<!-- ##### STRUCT FlowIPAddrClass ##### -->
+<para>
+
+</para>
+
+@parent_class: 
+
 <!-- ##### FUNCTION flow_ip_addr_new ##### -->
 <para>
 
 </para>
 
+@void: 
 @Returns: 
 
 
@@ -151,6 +162,16 @@ IP address
 </para>
 
 @ip_addr: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_ip_addr_is_equal ##### -->
+<para>
+
+</para>
+
+@ip_addr_a: 
+@ip_addr_b: 
 @Returns: 
 
 

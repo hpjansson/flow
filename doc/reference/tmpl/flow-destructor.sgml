@@ -17,17 +17,28 @@ Destroys incoming packets
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### STRUCT FlowDestructor ##### -->
 <para>
 
 </para>
 
 
+<!-- ##### STRUCT FlowDestructorClass ##### -->
+<para>
+
+</para>
+
+@parent_class: 
+
 <!-- ##### FUNCTION flow_destructor_new ##### -->
 <para>
 
 </para>
 
+@void: 
 @Returns: 
 
 

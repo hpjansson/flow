@@ -17,6 +17,9 @@ Asynchronous low-level I/O wrappers
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### ENUM FlowAccessMode ##### -->
 <para>
 
@@ -178,6 +181,42 @@ Asynchronous low-level I/O wrappers
 @user_data: 
 
 
+<!-- ##### FUNCTION flow_shunt_get_io_buffer_size ##### -->
+<para>
+
+</para>
+
+@shunt: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_shunt_set_io_buffer_size ##### -->
+<para>
+
+</para>
+
+@shunt: 
+@io_buffer_size: 
+
+
+<!-- ##### FUNCTION flow_shunt_get_queue_limit ##### -->
+<para>
+
+</para>
+
+@shunt: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_shunt_set_queue_limit ##### -->
+<para>
+
+</para>
+
+@shunt: 
+@queue_limit: 
+
+
 <!-- ##### FUNCTION flow_shunt_block_reads ##### -->
 <para>
 
@@ -215,6 +254,7 @@ Asynchronous low-level I/O wrappers
 
 </para>
 
+@void: 
 
 
 <!-- ##### FUNCTION flow_sync_shunt_read ##### -->

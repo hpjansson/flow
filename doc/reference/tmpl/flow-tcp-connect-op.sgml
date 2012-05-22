@@ -17,6 +17,9 @@ FlowTcpConnectOp
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### STRUCT FlowTcpConnectOp ##### -->
 <para>
 
@@ -32,6 +35,13 @@ FlowTcpConnectOp
 <para>
 
 </para>
+
+<!-- ##### STRUCT FlowTcpConnectOpClass ##### -->
+<para>
+
+</para>
+
+@parent_class: 
 
 <!-- ##### FUNCTION flow_tcp_connect_op_new ##### -->
 <para>

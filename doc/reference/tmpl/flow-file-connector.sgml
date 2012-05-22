@@ -17,17 +17,28 @@ FlowFileConnector
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### STRUCT FlowFileConnector ##### -->
 <para>
 
 </para>
 
 
+<!-- ##### STRUCT FlowFileConnectorClass ##### -->
+<para>
+
+</para>
+
+@parent_class: 
+
 <!-- ##### FUNCTION flow_file_connector_new ##### -->
 <para>
 
 </para>
 
+@void: 
 @Returns: 
 
 

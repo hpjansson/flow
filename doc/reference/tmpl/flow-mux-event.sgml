@@ -17,6 +17,9 @@ FlowMuxEvent
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### STRUCT FlowMuxEvent ##### -->
 <para>
 
@@ -27,6 +30,13 @@ FlowMuxEvent
 <para>
 
 </para>
+
+<!-- ##### STRUCT FlowMuxEventClass ##### -->
+<para>
+
+</para>
+
+@parent_class: 
 
 <!-- ##### FUNCTION flow_mux_event_new ##### -->
 <para>

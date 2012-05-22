@@ -17,6 +17,9 @@ Base class for packet accumulators used by elements
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### STRUCT FlowPad ##### -->
 <para>
 
@@ -32,6 +35,16 @@ Base class for packet accumulators used by elements
 <para>
 
 </para>
+
+<!-- ##### STRUCT FlowPadClass ##### -->
+<para>
+
+</para>
+
+@parent_class: 
+@push: 
+@block: 
+@unblock: 
 
 <!-- ##### FUNCTION flow_pad_push ##### -->
 <para>

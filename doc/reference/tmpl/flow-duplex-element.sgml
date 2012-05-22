@@ -17,11 +17,21 @@ Element with two input and two output pads
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### STRUCT FlowDuplexElement ##### -->
 <para>
 
 </para>
 
+
+<!-- ##### STRUCT FlowDuplexElementClass ##### -->
+<para>
+
+</para>
+
+@parent_class: 
 
 <!-- ##### FUNCTION flow_duplex_element_get_upstream_input_pad ##### -->
 <para>

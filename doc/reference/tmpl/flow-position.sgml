@@ -17,6 +17,9 @@ A seek request or a successful seek
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### ENUM FlowOffsetAnchor ##### -->
 <para>
 
@@ -41,6 +44,13 @@ A seek request or a successful seek
 <para>
 
 </para>
+
+<!-- ##### STRUCT FlowPositionClass ##### -->
+<para>
+
+</para>
+
+@parent_class: 
 
 <!-- ##### FUNCTION flow_position_new ##### -->
 <para>

@@ -17,6 +17,9 @@ A stream packet that can contain data or an object reference
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### MACRO FLOW_PACKET_MAX_SIZE ##### -->
 <para>
 
@@ -37,8 +40,6 @@ A stream packet that can contain data or an object reference
 
 </para>
 
-@format: 
-@size: 
 
 <!-- ##### FUNCTION flow_packet_new ##### -->
 <para>
@@ -61,6 +62,16 @@ A stream packet that can contain data or an object reference
 @Returns: 
 
 
+<!-- ##### FUNCTION flow_packet_alloc_for_data ##### -->
+<para>
+
+</para>
+
+@size: 
+@data_ptr_out: 
+@Returns: 
+
+
 <!-- ##### FUNCTION flow_packet_copy ##### -->
 <para>
 
@@ -70,7 +81,16 @@ A stream packet that can contain data or an object reference
 @Returns: 
 
 
-<!-- ##### FUNCTION flow_packet_free ##### -->
+<!-- ##### FUNCTION flow_packet_ref ##### -->
+<para>
+
+</para>
+
+@packet: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_packet_unref ##### -->
 <para>
 
 </para>

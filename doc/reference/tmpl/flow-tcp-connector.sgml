@@ -17,17 +17,28 @@ Element with remote TCP origin/endpoint
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### STRUCT FlowTcpConnector ##### -->
 <para>
 
 </para>
 
 
+<!-- ##### STRUCT FlowTcpConnectorClass ##### -->
+<para>
+
+</para>
+
+@parent_class: 
+
 <!-- ##### FUNCTION flow_tcp_connector_new ##### -->
 <para>
 
 </para>
 
+@void: 
 @Returns: 
 
 

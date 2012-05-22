@@ -1,3 +1,57 @@
+<!-- ##### SECTION ./tmpl/flow-enum-headers.sgml:Long_Description ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SECTION ./tmpl/flow-enum-headers.sgml:See_Also ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SECTION ./tmpl/flow-enum-headers.sgml:Short_Description ##### -->
+
+
+
+<!-- ##### SECTION ./tmpl/flow-enum-headers.sgml:Stability_Level ##### -->
+
+
+
+<!-- ##### SECTION ./tmpl/flow-enum-headers.sgml:Title ##### -->
+flow-enum-headers
+
+
+<!-- ##### SECTION ./tmpl/flow.sgml:Long_Description ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SECTION ./tmpl/flow.sgml:See_Also ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SECTION ./tmpl/flow.sgml:Short_Description ##### -->
+
+
+
+<!-- ##### SECTION ./tmpl/flow.sgml:Stability_Level ##### -->
+
+
+
+<!-- ##### SECTION ./tmpl/flow.sgml:Title ##### -->
+flow
+
+
+<!-- ##### ARG FlowIPProcessor:resolve-to-addresses ##### -->
+<para>
+
+</para>
+
+
 <!-- ##### SIGNAL FlowIPResolver::resolved ##### -->
 <para>
 
@@ -111,6 +165,13 @@
 
 @mux: 
 @input_pad: 
+
+<!-- ##### FUNCTION flow_packet_free ##### -->
+<para>
+
+</para>
+
+@packet: 
 
 <!-- ##### FUNCTION flow_segment_request_set_length ##### -->
 <para>

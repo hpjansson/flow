@@ -17,17 +17,28 @@ Asynchronous IP address DNS resolver
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### STRUCT FlowIPResolver ##### -->
 <para>
 
 </para>
 
 
+<!-- ##### STRUCT FlowIPResolverClass ##### -->
+<para>
+
+</para>
+
+@parent_class: 
+
 <!-- ##### FUNCTION flow_ip_resolver_new ##### -->
 <para>
 
 </para>
 
+@void: 
 @Returns: 
 
 
@@ -36,6 +47,7 @@ Asynchronous IP address DNS resolver
 
 </para>
 
+@void: 
 @Returns: 
 
 

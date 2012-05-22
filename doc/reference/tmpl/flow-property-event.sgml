@@ -17,11 +17,21 @@ Event setting property on elements it visits
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### STRUCT FlowPropertyEvent ##### -->
 <para>
 
 </para>
 
+
+<!-- ##### STRUCT FlowPropertyEventClass ##### -->
+<para>
+
+</para>
+
+@parent_class: 
 
 <!-- ##### FUNCTION flow_property_event_new_for_class_valist ##### -->
 <para>
@@ -52,7 +62,7 @@ Event setting property on elements it visits
 
 @klass_type: 
 @first_property_name: 
-@Varargs: 
+@...: 
 @Returns: 
 
 
@@ -63,7 +73,7 @@ Event setting property on elements it visits
 
 @instance: 
 @first_property_name: 
-@Varargs: 
+@...: 
 @Returns: 
 
 

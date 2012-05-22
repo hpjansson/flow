@@ -17,6 +17,34 @@ Simplify class and property creation
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
+<!-- ##### USER_FUNCTION value_getter ##### -->
+<para>
+
+</para>
+
+@void: 
+
+
+<!-- ##### USER_FUNCTION value_setter ##### -->
+<para>
+
+</para>
+
+@void: 
+
+
+<!-- ##### USER_FUNCTION type_getter ##### -->
+<para>
+
+</para>
+
+@void: 
+@Returns: 
+
+
 <!-- ##### MACRO FLOW_GOBJECT_PROPERTY_OVERRIDE ##### -->
 <para>
 

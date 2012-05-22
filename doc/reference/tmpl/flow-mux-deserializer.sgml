@@ -17,17 +17,28 @@ FlowMuxDeserializer
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### STRUCT FlowMuxDeserializer ##### -->
 <para>
 
 </para>
 
 
+<!-- ##### STRUCT FlowMuxDeserializerClass ##### -->
+<para>
+
+</para>
+
+@base_class: 
+
 <!-- ##### FUNCTION flow_mux_deserializer_new ##### -->
 <para>
 
 </para>
 
+@void: 
 @Returns: 
 
 

@@ -17,6 +17,9 @@ Manage per-thread main contexts
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### FUNCTION flow_idle_add_full ##### -->
 <para>
 
@@ -87,6 +90,7 @@ Manage per-thread main contexts
 
 </para>
 
+@void: 
 @Returns: 
 
 

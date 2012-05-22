@@ -17,6 +17,22 @@ FlowMuxSerializer
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
+<!-- ##### STRUCT FlowMuxSerializer ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### STRUCT FlowMuxSerializerClass ##### -->
+<para>
+
+</para>
+
+@base_class: 
+
 <!-- ##### STRUCT FlowMuxHeaderOps ##### -->
 <para>
 
@@ -26,17 +42,12 @@ FlowMuxSerializer
 @parse: 
 @unparse: 
 
-<!-- ##### STRUCT FlowMuxSerializer ##### -->
-<para>
-
-</para>
-
-
 <!-- ##### FUNCTION flow_mux_serializer_new ##### -->
 <para>
 
 </para>
 
+@void: 
 @Returns: 
 
 

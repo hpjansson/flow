@@ -17,6 +17,9 @@ Simplex element with connection state
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### ENUM FlowConnectivity ##### -->
 <para>
 
@@ -40,6 +43,28 @@ Simplex element with connection state
 
 @flowconnector: the object which received the signal.
 
+<!-- ##### ARG FlowConnector:io-buffer-size ##### -->
+<para>
+
+</para>
+
+<!-- ##### ARG FlowConnector:read-queue-limit ##### -->
+<para>
+
+</para>
+
+<!-- ##### ARG FlowConnector:write-queue-limit ##### -->
+<para>
+
+</para>
+
+<!-- ##### STRUCT FlowConnectorClass ##### -->
+<para>
+
+</para>
+
+@parent_class: 
+
 <!-- ##### FUNCTION flow_connector_get_state ##### -->
 <para>
 
@@ -56,6 +81,60 @@ Simplex element with connection state
 
 @connector: 
 @Returns: 
+
+
+<!-- ##### FUNCTION flow_connector_get_io_buffer_size ##### -->
+<para>
+
+</para>
+
+@connector: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_connector_set_io_buffer_size ##### -->
+<para>
+
+</para>
+
+@connector: 
+@io_buffer_size: 
+
+
+<!-- ##### FUNCTION flow_connector_get_read_queue_limit ##### -->
+<para>
+
+</para>
+
+@connector: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_connector_set_read_queue_limit ##### -->
+<para>
+
+</para>
+
+@connector: 
+@read_queue_limit: 
+
+
+<!-- ##### FUNCTION flow_connector_get_write_queue_limit ##### -->
+<para>
+
+</para>
+
+@connector: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_connector_set_write_queue_limit ##### -->
+<para>
+
+</para>
+
+@connector: 
+@write_queue_limit: 
 
 
 <!-- ##### FUNCTION flow_connector_set_state_internal ##### -->

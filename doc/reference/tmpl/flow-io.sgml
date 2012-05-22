@@ -17,17 +17,33 @@ Bin for constructing simple I/O pipelines
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### STRUCT FlowIO ##### -->
 <para>
 
 </para>
 
 
+<!-- ##### STRUCT FlowIOClass ##### -->
+<para>
+
+</para>
+
+@parent_class: 
+@check_bin: 
+@handle_input_object: 
+@prepare_read: 
+@successful_read: 
+@prepare_write: 
+
 <!-- ##### FUNCTION flow_io_new ##### -->
 <para>
 
 </para>
 
+@void: 
 @Returns: 
 
 
@@ -149,6 +165,7 @@ Bin for constructing simple I/O pipelines
 @io: 
 @dest_buffer: 
 @max_len: 
+@error: 
 @Returns: 
 
 
@@ -160,6 +177,7 @@ Bin for constructing simple I/O pipelines
 @io: 
 @dest_buffer: 
 @exact_len: 
+@error: 
 @Returns: 
 
 
@@ -169,6 +187,7 @@ Bin for constructing simple I/O pipelines
 </para>
 
 @io: 
+@error: 
 @Returns: 
 
 
@@ -180,6 +199,8 @@ Bin for constructing simple I/O pipelines
 @io: 
 @src_buffer: 
 @exact_len: 
+@error: 
+@Returns: 
 
 
 <!-- ##### FUNCTION flow_io_sync_write_object ##### -->
@@ -189,6 +210,8 @@ Bin for constructing simple I/O pipelines
 
 @io: 
 @object: 
+@error: 
+@Returns: 
 
 
 <!-- ##### FUNCTION flow_io_sync_flush ##### -->
@@ -197,6 +220,17 @@ Bin for constructing simple I/O pipelines
 </para>
 
 @io: 
+@error: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_io_get_last_error ##### -->
+<para>
+
+</para>
+
+@io: 
+@Returns: 
 
 
 <!-- ##### FUNCTION flow_io_get_user_adapter ##### -->

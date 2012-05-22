@@ -17,11 +17,24 @@ Base class for stream elements
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### STRUCT FlowElement ##### -->
 <para>
 
 </para>
 
+
+<!-- ##### STRUCT FlowElementClass ##### -->
+<para>
+
+</para>
+
+@parent_class: 
+@output_pad_blocked: 
+@output_pad_unblocked: 
+@process_input: 
 
 <!-- ##### FUNCTION flow_element_get_input_pads ##### -->
 <para>

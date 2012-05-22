@@ -17,17 +17,28 @@ Element with one input pad and N output pads
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### STRUCT FlowMux ##### -->
 <para>
 
 </para>
 
 
+<!-- ##### STRUCT FlowMuxClass ##### -->
+<para>
+
+</para>
+
+@base_class: 
+
 <!-- ##### FUNCTION flow_mux_new ##### -->
 <para>
 
 </para>
 
+@void: 
 @Returns: 
 
 

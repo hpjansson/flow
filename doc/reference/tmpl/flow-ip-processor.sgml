@@ -17,13 +17,41 @@ FlowIPProcessor
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### STRUCT FlowIPProcessor ##### -->
 <para>
 
 </para>
 
 
-<!-- ##### ARG FlowIPProcessor:resolve-to-addresses ##### -->
+<!-- ##### ARG FlowIPProcessor:drop-invalid-data ##### -->
+<para>
+
+</para>
+
+<!-- ##### ARG FlowIPProcessor:drop-invalid-ip-services ##### -->
+<para>
+
+</para>
+
+<!-- ##### ARG FlowIPProcessor:drop-invalid-objs ##### -->
+<para>
+
+</para>
+
+<!-- ##### ARG FlowIPProcessor:require-addrs ##### -->
+<para>
+
+</para>
+
+<!-- ##### ARG FlowIPProcessor:require-names ##### -->
+<para>
+
+</para>
+
+<!-- ##### ARG FlowIPProcessor:resolve-to-addrs ##### -->
 <para>
 
 </para>
@@ -33,11 +61,24 @@ FlowIPProcessor
 
 </para>
 
+<!-- ##### ARG FlowIPProcessor:valid-state ##### -->
+<para>
+
+</para>
+
+<!-- ##### STRUCT FlowIPProcessorClass ##### -->
+<para>
+
+</para>
+
+@parent_class: 
+
 <!-- ##### FUNCTION flow_ip_processor_new ##### -->
 <para>
 
 </para>
 
+@void: 
 @Returns: 
 
 
@@ -75,5 +116,113 @@ FlowIPProcessor
 
 @ip_processor: 
 @resolve_to_names: 
+
+
+<!-- ##### FUNCTION flow_ip_processor_get_require_addrs ##### -->
+<para>
+
+</para>
+
+@ip_processor: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_ip_processor_set_require_addrs ##### -->
+<para>
+
+</para>
+
+@ip_processor: 
+@require_addrs: 
+
+
+<!-- ##### FUNCTION flow_ip_processor_get_require_names ##### -->
+<para>
+
+</para>
+
+@ip_processor: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_ip_processor_set_require_names ##### -->
+<para>
+
+</para>
+
+@ip_processor: 
+@require_names: 
+
+
+<!-- ##### FUNCTION flow_ip_processor_get_drop_invalid_data ##### -->
+<para>
+
+</para>
+
+@ip_processor: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_ip_processor_set_drop_invalid_data ##### -->
+<para>
+
+</para>
+
+@ip_processor: 
+@drop_invalid_data: 
+
+
+<!-- ##### FUNCTION flow_ip_processor_get_drop_invalid_objs ##### -->
+<para>
+
+</para>
+
+@ip_processor: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_ip_processor_set_drop_invalid_objs ##### -->
+<para>
+
+</para>
+
+@ip_processor: 
+@drop_invalid_objs: 
+
+
+<!-- ##### FUNCTION flow_ip_processor_get_drop_invalid_ip_services ##### -->
+<para>
+
+</para>
+
+@ip_processor: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_ip_processor_set_drop_invalid_ip_services ##### -->
+<para>
+
+</para>
+
+@ip_processor: 
+@drop_invalid_ip_services: 
+
+
+<!-- ##### FUNCTION flow_ip_processor_get_valid_state ##### -->
+<para>
+
+</para>
+
+@ip_processor: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_ip_processor_set_valid_state ##### -->
+<para>
+
+</para>
+
+@ip_processor: 
+@valid_state: 
 
 

@@ -17,10 +17,34 @@ FlowSplitter
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### STRUCT FlowSplitter ##### -->
 <para>
 
 </para>
+
+
+<!-- ##### ARG FlowSplitter:buffer-limit ##### -->
+<para>
+
+</para>
+
+<!-- ##### STRUCT FlowSplitterClass ##### -->
+<para>
+
+</para>
+
+@parent_class: 
+
+<!-- ##### FUNCTION flow_splitter_new ##### -->
+<para>
+
+</para>
+
+@void: 
+@Returns: 
 
 
 <!-- ##### FUNCTION flow_splitter_get_input_pad ##### -->
@@ -48,5 +72,23 @@ FlowSplitter
 
 @splitter: 
 @output_pad: 
+
+
+<!-- ##### FUNCTION flow_splitter_get_buffer_limit ##### -->
+<para>
+
+</para>
+
+@splitter: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_splitter_set_buffer_limit ##### -->
+<para>
+
+</para>
+
+@splitter: 
+@limit: 
 
 

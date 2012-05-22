@@ -17,6 +17,9 @@ FlowFileConnectOp
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### STRUCT FlowFileConnectOp ##### -->
 <para>
 
@@ -57,6 +60,13 @@ FlowFileConnectOp
 <para>
 
 </para>
+
+<!-- ##### STRUCT FlowFileConnectOpClass ##### -->
+<para>
+
+</para>
+
+@parent_class: 
 
 <!-- ##### FUNCTION flow_file_connect_op_new ##### -->
 <para>

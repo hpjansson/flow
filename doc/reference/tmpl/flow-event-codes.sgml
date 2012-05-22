@@ -17,6 +17,9 @@ flow-event-codes
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### MACRO FLOW_STREAM_DOMAIN ##### -->
 <para>
 
@@ -39,6 +42,48 @@ flow-event-codes
 
 
 <!-- ##### MACRO FLOW_SOCKET_DOMAIN ##### -->
+<para>
+
+</para>
+
+
+
+<!-- ##### MACRO FLOW_LOOKUP_DOMAIN ##### -->
+<para>
+
+</para>
+
+
+
+<!-- ##### MACRO FLOW_STREAM_DOMAIN_QUARK ##### -->
+<para>
+
+</para>
+
+
+
+<!-- ##### MACRO FLOW_FILE_DOMAIN_QUARK ##### -->
+<para>
+
+</para>
+
+
+
+<!-- ##### MACRO FLOW_EXEC_DOMAIN_QUARK ##### -->
+<para>
+
+</para>
+
+
+
+<!-- ##### MACRO FLOW_SOCKET_DOMAIN_QUARK ##### -->
+<para>
+
+</para>
+
+
+
+<!-- ##### MACRO FLOW_LOOKUP_DOMAIN_QUARK ##### -->
 <para>
 
 </para>
@@ -102,4 +147,58 @@ flow-event-codes
 @FLOW_SOCKET_NETWORK_UNREACHABLE: 
 @FLOW_SOCKET_ACCEPT_ERROR: 
 @FLOW_SOCKET_OVERSIZED_PACKET: 
+
+<!-- ##### ENUM FlowLookupEventCode ##### -->
+<para>
+
+</para>
+
+@FLOW_LOOKUP_TEMPORARY_SERVER_FAILURE: 
+@FLOW_LOOKUP_PERMANENT_SERVER_FAILURE: 
+@FLOW_LOOKUP_NO_RECORDS: 
+
+<!-- ##### FUNCTION flow_stream_domain_quark ##### -->
+<para>
+
+</para>
+
+@void: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_file_domain_quark ##### -->
+<para>
+
+</para>
+
+@void: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_exec_domain_quark ##### -->
+<para>
+
+</para>
+
+@void: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_socket_domain_quark ##### -->
+<para>
+
+</para>
+
+@void: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_lookup_domain_quark ##### -->
+<para>
+
+</para>
+
+@void: 
+@Returns: 
+
 

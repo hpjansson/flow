@@ -17,6 +17,9 @@ Event carrying an unqualified pointer
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### STRUCT FlowAnonymousEvent ##### -->
 <para>
 
@@ -33,11 +36,19 @@ Event carrying an unqualified pointer
 
 </para>
 
+<!-- ##### STRUCT FlowAnonymousEventClass ##### -->
+<para>
+
+</para>
+
+@parent_class: 
+
 <!-- ##### FUNCTION flow_anonymous_event_new ##### -->
 <para>
 
 </para>
 
+@void: 
 @Returns: 
 
 

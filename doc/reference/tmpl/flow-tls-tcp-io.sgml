@@ -17,17 +17,28 @@ Connectable TCP socket with TLS/SSL support
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### STRUCT FlowTlsTcpIO ##### -->
 <para>
 
 </para>
 
 
+<!-- ##### STRUCT FlowTlsTcpIOClass ##### -->
+<para>
+
+</para>
+
+@parent_class: 
+
 <!-- ##### FUNCTION flow_tls_tcp_io_new ##### -->
 <para>
 
 </para>
 
+@void: 
 @Returns: 
 
 

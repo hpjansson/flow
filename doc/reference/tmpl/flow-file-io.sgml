@@ -17,6 +17,9 @@ FlowFileIO
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### STRUCT FlowFileIO ##### -->
 <para>
 
@@ -30,11 +33,19 @@ FlowFileIO
 
 @flowfileio: the object which received the signal.
 
+<!-- ##### STRUCT FlowFileIOClass ##### -->
+<para>
+
+</para>
+
+@parent_class: 
+
 <!-- ##### FUNCTION flow_file_io_new ##### -->
 <para>
 
 </para>
 
+@void: 
 @Returns: 
 
 
@@ -97,6 +108,7 @@ FlowFileIO
 @file_io: 
 @path: 
 @access_mode: 
+@error: 
 @Returns: 
 
 
@@ -112,6 +124,7 @@ FlowFileIO
 @create_mode_user: 
 @create_mode_group: 
 @create_mode_others: 
+@error: 
 @Returns: 
 
 
@@ -121,6 +134,8 @@ FlowFileIO
 </para>
 
 @file_io: 
+@error: 
+@Returns: 
 
 
 <!-- ##### FUNCTION flow_file_io_get_path ##### -->

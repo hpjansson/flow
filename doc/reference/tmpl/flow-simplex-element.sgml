@@ -17,11 +17,21 @@ Element with one input and one output pad
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### STRUCT FlowSimplexElement ##### -->
 <para>
 
 </para>
 
+
+<!-- ##### STRUCT FlowSimplexElementClass ##### -->
+<para>
+
+</para>
+
+@parent_class: 
 
 <!-- ##### FUNCTION flow_simplex_element_get_input_pad ##### -->
 <para>

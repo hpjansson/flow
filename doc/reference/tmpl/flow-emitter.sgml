@@ -17,11 +17,21 @@ Element with a single output pad
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### STRUCT FlowEmitter ##### -->
 <para>
 
 </para>
 
+
+<!-- ##### STRUCT FlowEmitterClass ##### -->
+<para>
+
+</para>
+
+@parent_class: 
 
 <!-- ##### FUNCTION flow_emitter_get_output_pad ##### -->
 <para>

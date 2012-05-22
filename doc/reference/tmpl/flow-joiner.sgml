@@ -17,10 +17,29 @@ FlowJoiner
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### STRUCT FlowJoiner ##### -->
 <para>
 
 </para>
+
+
+<!-- ##### STRUCT FlowJoinerClass ##### -->
+<para>
+
+</para>
+
+@parent_class: 
+
+<!-- ##### FUNCTION flow_joiner_new ##### -->
+<para>
+
+</para>
+
+@void: 
+@Returns: 
 
 
 <!-- ##### FUNCTION flow_joiner_get_output_pad ##### -->

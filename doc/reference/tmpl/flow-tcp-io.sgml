@@ -17,6 +17,9 @@ Connectable TCP socket
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### STRUCT FlowTcpIO ##### -->
 <para>
 
@@ -30,11 +33,19 @@ Connectable TCP socket
 
 @flowtcpio: the object which received the signal.
 
+<!-- ##### STRUCT FlowTcpIOClass ##### -->
+<para>
+
+</para>
+
+@parent_class: 
+
 <!-- ##### FUNCTION flow_tcp_io_new ##### -->
 <para>
 
 </para>
 
+@void: 
 @Returns: 
 
 
@@ -73,6 +84,7 @@ Connectable TCP socket
 
 @tcp_io: 
 @ip_service: 
+@error: 
 @Returns: 
 
 
@@ -84,6 +96,7 @@ Connectable TCP socket
 @tcp_io: 
 @name: 
 @port: 
+@error: 
 @Returns: 
 
 
@@ -93,6 +106,8 @@ Connectable TCP socket
 </para>
 
 @tcp_io: 
+@error: 
+@Returns: 
 
 
 <!-- ##### FUNCTION flow_tcp_io_get_remote_service ##### -->

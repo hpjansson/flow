@@ -17,6 +17,9 @@ Describes an IP-based service
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### ENUM FlowQuality ##### -->
 <para>
 
@@ -41,11 +44,19 @@ Describes an IP-based service
 
 @flowipservice: the object which received the signal.
 
+<!-- ##### STRUCT FlowIPServiceClass ##### -->
+<para>
+
+</para>
+
+@parent_class: 
+
 <!-- ##### FUNCTION flow_ip_service_new ##### -->
 <para>
 
 </para>
 
+@void: 
 @Returns: 
 
 
@@ -110,6 +121,15 @@ Describes an IP-based service
 
 @ip_service: 
 @quality: 
+
+
+<!-- ##### FUNCTION flow_ip_service_have_addresses ##### -->
+<para>
+
+</para>
+
+@ip_service: 
+@Returns: 
 
 
 <!-- ##### FUNCTION flow_ip_service_get_n_addresses ##### -->
@@ -177,6 +197,16 @@ Describes an IP-based service
 
 
 <!-- ##### FUNCTION flow_ip_service_sync_resolve ##### -->
+<para>
+
+</para>
+
+@ip_service: 
+@error: 
+@Returns: 
+
+
+<!-- ##### FUNCTION flow_ip_service_get_last_error ##### -->
 <para>
 
 </para>

@@ -17,9 +17,19 @@ Accumulates output from element
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### STRUCT FlowOutputPad ##### -->
 <para>
 
 </para>
 
+
+<!-- ##### STRUCT FlowOutputPadClass ##### -->
+<para>
+
+</para>
+
+@parent_class: 
 
