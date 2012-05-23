@@ -67,6 +67,15 @@ fi
 
 AC_SUBST(REBUILD)
 
+# ifaddrs.h (HAVE_IFADDRS_H)
+
+AC_CHECK_HEADERS([net/if.h])
+AC_CHECK_HEADERS([ifaddrs.h], [], [],
+[#ifdef HAVE_NET_IF_H
+# include <net/if.h>
+#endif
+])
+
 # IPv6 (HAVE_IPV6)
 
 AC_CACHE_CHECK([for IPv6], flow_cv_hasipv6,[

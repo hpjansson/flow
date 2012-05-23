@@ -37,8 +37,12 @@
 # include <sys/time.h>
 # include <sys/socket.h>
 # include <sys/ioctl.h>
-# include <net/if.h>
-# include <ifaddrs.h>  /* Include after net/if.h */
+# ifdef HAVE_NET_IF_H
+#  include <net/if.h>
+# endif
+# ifdef HAVE_IFADDRS_H
+#  include <ifaddrs.h>  /* Include after net/if.h */
+# endif
 #else
 # include <io.h>
 # include <winsock2.h>
@@ -49,6 +53,8 @@
 #include "flow-common-impl-unix.h"
 
 #ifndef G_PLATFORM_WIN32  /* Unix-specific code follows */
+
+#ifdef HAVE_IFADDRS_H
 
 static GList *
 flow_impl_get_network_interfaces (void)
@@ -91,6 +97,31 @@ flow_impl_get_network_interfaces (void)
   interface_list = g_list_reverse (interface_list);
   return interface_list;
 }
+
+#else /* !HAVE_IFADDRS_H */
+
+/* Last ditch: Report "Internet interface" only */
+
+static GList *
+flow_impl_get_network_interfaces (void)
+{
+  FlowIPAddr *foreign_ip_addr;
+  FlowIPAddr *ip_addr;
+
+  foreign_ip_addr = flow_ip_addr_new ();
+  flow_ip_addr_set_string (foreign_ip_addr, "1.1.1.1");
+
+  ip_addr = flow_impl_get_network_interface_to (foreign_ip_addr);
+
+  g_object_unref (foreign_ip_addr);
+
+  if (!ip_addr)
+    return NULL;
+
+  return g_list_prepend (NULL, ip_addr);
+}
+
+#endif
 
 #else  /* Win32-specific code follows */
 
