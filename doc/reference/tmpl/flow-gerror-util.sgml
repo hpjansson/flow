@@ -1,0 +1,33 @@
+<!-- ##### SECTION Title ##### -->
+flow-gerror-util
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### SECTION Image ##### -->
+
+
+<!-- ##### FUNCTION flow_gerror_from_detailed_event ##### -->
+<para>
+
+</para>
+
+@detailed_event: 
+@domain: 
+@...: 
+@Returns: 
+
+
