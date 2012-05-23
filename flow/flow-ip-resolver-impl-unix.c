@@ -80,7 +80,11 @@ flow_ip_resolver_impl_lookup_by_name (const gchar *name, GError **error)
   memset (&hints, 0, sizeof (struct addrinfo));
   hints.ai_socktype = SOCK_STREAM;
   hints.ai_family   = AF_UNSPEC;
+#ifdef AI_ADDRCONFIG
   hints.ai_flags    = AI_ADDRCONFIG;
+#else
+  hints.ai_flags    = 0;
+#endif
 
   do
   {
