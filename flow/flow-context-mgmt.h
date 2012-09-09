@@ -29,19 +29,22 @@
 
 G_BEGIN_DECLS
 
-guint         flow_idle_add_full                       (GMainContext *dispatch_context, gint priority,
-                                                        GSourceFunc func, gpointer data, GDestroyNotify notify);
-guint         flow_idle_add_to_current_thread          (GSourceFunc func, gpointer data);
+guint         flow_idle_add_full                         (GMainContext *dispatch_context, gint priority,
+                                                          GSourceFunc func, gpointer data, GDestroyNotify notify);
+guint         flow_idle_add_to_current_thread            (GSourceFunc func, gpointer data);
 
-guint         flow_timeout_add_full                    (GMainContext *dispatch_context, gint priority, guint interval,
-                                                        GSourceFunc func, gpointer data, GDestroyNotify notify);
-guint         flow_timeout_add_to_current_thread       (guint interval, GSourceFunc func, gpointer data);
+guint         flow_timeout_add_full                      (GMainContext *dispatch_context, gint priority, guint interval,
+                                                          GSourceFunc func, gpointer data, GDestroyNotify notify);
+guint         flow_timeout_add_seconds_full              (GMainContext *dispatch_context, gint priority, guint interval,
+                                                          GSourceFunc func, gpointer data, GDestroyNotify notify);
+guint         flow_timeout_add_to_current_thread         (guint interval, GSourceFunc func, gpointer data);
+guint         flow_timeout_add_seconds_to_current_thread (guint interval, GSourceFunc func, gpointer data);
 
-void          flow_source_remove                       (GMainContext *dispatch_context, guint source_id);
-void          flow_source_remove_from_current_thread   (guint source_id);
+void          flow_source_remove                         (GMainContext *dispatch_context, guint source_id);
+void          flow_source_remove_from_current_thread     (guint source_id);
 
-GMainContext *flow_get_main_context_for_current_thread (void);
-void          flow_set_main_context_for_current_thread (GMainContext *main_context);
+GMainContext *flow_get_main_context_for_current_thread   (void);
+void          flow_set_main_context_for_current_thread   (GMainContext *main_context);
 
 G_END_DECLS
 

@@ -243,6 +243,58 @@ flow_timeout_add_full (GMainContext *dispatch_context, gint priority, guint inte
 }
 
 /**
+ * flow_timeout_add_seconds_full:
+ * @dispatch_context: A #GMainContext.
+ * @priority: The priority of the timeout source. Typically this will be in the range between #G_PRIORITY_DEFAULT_IDLE and #G_PRIORITY_HIGH_IDLE.
+ * @interval: The time between calls to the function, in seconds.
+ * @func: Function to call.
+ * @data: Data to pass to @func.
+ * @notify: Function to call when the timeout is removed, or %NULL.
+ * 
+ * Sets a function to be called at regular intervals, with the given priority.
+ * The function is called repeatedly until it returns %FALSE, at which point the
+ * timeout is automatically destroyed and the function will not be called
+ * again. The notify function is called when the timeout is destroyed. The
+ * first call to the function will be at the end of the first interval.
+ *
+ * Note that timeout functions may be delayed, due to the processing of other
+ * event sources. Thus they should not be relied on for precise timing. After
+ * each call to the timeout function, the time of the next timeout is recalculated
+ * based on the current time and the given interval (it does not try to 'catch up'
+ * time lost in delays).
+ * 
+ * Unlike flow_timeout_add_full(), this function operates at whole second granularity.
+ * The initial starting point of the timer is determined by the implementation and the
+ * implementation is expected to group multiple timers together so that they fire
+ * all at the same time. To allow this grouping, the interval to the first timer
+ * is rounded and can deviate up to one second from the specified interval.
+ * Subsequent timer iterations will generally run at the specified interval.
+ * 
+ * The callback is dispatched from @dispatch_context, in the thread running it.
+ *
+ * Return value: The ID (greater than 0) of the event source.
+ **/
+guint
+flow_timeout_add_seconds_full (GMainContext *dispatch_context, gint priority, guint interval,
+                               GSourceFunc func, gpointer data, GDestroyNotify notify)
+{
+  GSource      *timeout_source;
+  guint         id;
+
+  if (!dispatch_context)
+    dispatch_context = get_main_context_for_current_thread ();
+
+  timeout_source = g_timeout_source_new_seconds (interval);
+  g_source_set_priority (timeout_source, priority);
+  g_source_set_callback (timeout_source, func, data, notify);
+
+  id = g_source_attach (timeout_source, dispatch_context);
+  g_source_unref (timeout_source);
+
+  return id;
+}
+
+/**
  * flow_timeout_add_to_current_thread:
  * @interval: The time between calls to the function, in milliseconds (1/1000ths of a second).
  * @func: Function to call.
@@ -274,6 +326,54 @@ flow_timeout_add_to_current_thread (guint interval, GSourceFunc func, gpointer d
   main_context = get_main_context_for_current_thread ();
 
   timeout_source = g_timeout_source_new (interval);
+  g_source_set_callback (timeout_source, func, data, NULL);
+
+  id = g_source_attach (timeout_source, main_context);
+  g_source_unref (timeout_source);
+
+  return id;
+}
+
+/**
+ * flow_timeout_add_seconds_to_current_thread:
+ * @interval: The time between calls to the function, in milliseconds (1/1000ths of a second).
+ * @func: Function to call.
+ * @data: Data to pass to @func.
+ * 
+ * Sets a function to be called at regular intervals, with the default
+ * priority, #G_PRIORITY_DEFAULT. The function is called repeatedly until
+ * it returns %FALSE, at which point the timeout is automatically destroyed
+ * and the function will not be called again. The first call to the
+ * function will be at the end of the first interval.
+ * 
+ * Note that timeout functions may be delayed, due to the processing of
+ * other event sources. Thus they should not be relied on for precise timing.
+ * After each call to the timeout function, the time of the next timeout
+ * is recalculated based on the current time and the given interval (it does
+ * not try to 'catch up' time lost in delays). 
+ * 
+ * Unlike flow_timeout_add_to_current_thread(), this function operates at
+ * whole second granularity. The initial starting point of the timer is
+ * determined by the implementation and the implementation is expected to group
+ * multiple timers together so that they fire all at the same time. To allow this
+ * grouping, the interval to the first timer is rounded and can deviate up to one
+ * second from the specified interval. Subsequent timer iterations will generally
+ * run at the specified interval.
+ * 
+ * The callback is dispatched from the current thread's main context.
+ * 
+ * Return value: The ID (greater than 0) of the event source.
+ **/
+guint
+flow_timeout_add_seconds_to_current_thread (guint interval, GSourceFunc func, gpointer data)
+{
+  GMainContext *main_context;
+  GSource      *timeout_source;
+  guint         id;
+
+  main_context = get_main_context_for_current_thread ();
+
+  timeout_source = g_timeout_source_new_seconds (interval);
   g_source_set_callback (timeout_source, func, data, NULL);
 
   id = g_source_attach (timeout_source, main_context);
