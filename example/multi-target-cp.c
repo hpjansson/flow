@@ -268,8 +268,6 @@ copy_file_cb (const gchar *input_file, const gchar **output_files, gint n_output
   if (current_input_file_size < 0)
     return;
 
-  g_print ("Size: %" G_GUINT64_FORMAT "\n", current_input_file_size);
-
   /* Set up statistics timer */
 
   g_timeout_add_seconds (1, (GSourceFunc) print_statistics_cb, controller);
