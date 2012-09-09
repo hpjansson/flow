@@ -127,7 +127,7 @@ print_final_statistics (guint64 byte_total, guint64 time_interval)
   guint64 byte_rate = byte_total / (time_interval / G_GINT64_CONSTANT (1000000));
   gchar *time_interval_s = format_time_interval (time_interval);
 
-  g_printerr ("\r%" G_GUINT64_FORMAT "MiB copied - %s elapsed - %" G_GUINT64_FORMAT "MiB/s\n",
+  g_printerr ("\r%" G_GUINT64_FORMAT "MiB copied - %s elapsed - %" G_GUINT64_FORMAT "MiB/s          \n",
               byte_total / (G_GUINT64_CONSTANT (1024) * G_GUINT64_CONSTANT (1024)),
               time_interval_s,
               byte_rate / (G_GUINT64_CONSTANT (1024) * G_GUINT64_CONSTANT (1024)));
@@ -142,7 +142,7 @@ print_statistics_cb (FlowController *controller)
   guint64 byte_total = flow_controller_get_byte_total (controller);
   gchar *time_left_s = byte_rate > 0 ? format_time_interval (((current_input_file_size - byte_total) * 1000000) / byte_rate) : g_strdup ("?");
 
-  g_printerr ("\r%" G_GUINT64_FORMAT "MiB copied - %s left - %" G_GUINT64_FORMAT "MiB/s",
+  g_printerr ("\r%" G_GUINT64_FORMAT "MiB copied - %s left - %" G_GUINT64_FORMAT "MiB/s          ",
               byte_total / (G_GUINT64_CONSTANT (1024) * G_GUINT64_CONSTANT (1024)),
               time_left_s,
               byte_rate / (G_GUINT64_CONSTANT (1024) * G_GUINT64_CONSTANT (1024)));
