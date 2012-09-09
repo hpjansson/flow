@@ -124,8 +124,11 @@ format_time_interval (gint64 interval)
 static void
 print_final_statistics (guint64 byte_total, guint64 time_interval)
 {
-  guint64 byte_rate = byte_total / (time_interval / G_GINT64_CONSTANT (1000000));
+  guint64 byte_rate = byte_total;
   gchar *time_interval_s = format_time_interval (time_interval);
+
+  if (time_interval > 0)
+    byte_rate = (byte_total * 1000000) / time_interval;
 
   g_printerr ("\r%" G_GUINT64_FORMAT "MiB copied - %s elapsed - %" G_GUINT64_FORMAT "MiB/s          \n",
               byte_total / (G_GUINT64_CONSTANT (1024) * G_GUINT64_CONSTANT (1024)),
