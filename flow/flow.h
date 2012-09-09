@@ -28,6 +28,7 @@
 #include <flow/flow-collector.h>
 #include <flow/flow-connector.h>
 #include <flow/flow-context-mgmt.h>
+#include <flow/flow-controller.h>
 #include <flow/flow-demux.h>
 #include <flow/flow-destructor.h>
 #include <flow/flow-detailed-event.h>

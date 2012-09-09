@@ -40,6 +40,7 @@ libflow_la_SOURCES = \
 	flow-collector.c \
 	flow-connector.c \
 	flow-context-mgmt.c \
+	flow-controller.c \
 	flow-common.c \
 	flow-demux.c \
 	flow-destructor.c \
@@ -100,6 +101,7 @@ pkginclude_HEADERS = \
 	flow-collector.h \
 	flow-connector.h \
 	flow-context-mgmt.h \
+	flow-controller.h \
 	flow-demux.h \
 	flow-destructor.h \
 	flow-detailed-event.h \
