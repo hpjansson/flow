@@ -71,9 +71,19 @@ output_file_message_cb (gpointer user_data)
   flow_packet_queue_clear (queue);
 }
 
+static gboolean
+print_statistics_cb (FlowController *controller)
+{
+  g_printerr ("\r%" G_GUINT64_FORMAT "MiB copied",
+              flow_controller_get_total_bytes (controller) / (G_GUINT64_CONSTANT (1024) * G_GUINT64_CONSTANT (1024)));
+
+  return TRUE;
+}
+
 static void
 copy_file_cb (const gchar *input_file, const gchar **output_files, gint n_output_files)
 {
+  FlowController *controller;
   FlowSplitter *splitter;
   FlowJoiner *joiner;
   FlowUserAdapter *user_adapter;
@@ -84,9 +94,13 @@ copy_file_cb (const gchar *input_file, const gchar **output_files, gint n_output
   FlowPacket *packet;
   gint i;
 
-  g_print ("%s\n", input_file);
+  g_print ("%s -> [", input_file);
 
   n_output_files_left = n_output_files;
+
+  /* Set up controller for rate measurement */
+
+  controller = flow_controller_new ();
 
   /* Set up packet repeater */
 
@@ -131,16 +145,18 @@ copy_file_cb (const gchar *input_file, const gchar **output_files, gint n_output
   packet = flow_packet_new_take_object (detailed_event, 0);
   flow_pad_push (FLOW_PAD (flow_simplex_element_get_input_pad (FLOW_SIMPLEX_ELEMENT (connector))), packet);
 
-  /* Connect input file's output to repeater's input */
+  /* Connect input file's output to repeater's input, with controller in the middle */
 
   flow_pad_connect (FLOW_PAD (flow_simplex_element_get_output_pad (FLOW_SIMPLEX_ELEMENT (connector))),
+                    FLOW_PAD (flow_simplex_element_get_input_pad (FLOW_SIMPLEX_ELEMENT (controller))));
+  flow_pad_connect (FLOW_PAD (flow_simplex_element_get_output_pad (FLOW_SIMPLEX_ELEMENT (controller))),
                     FLOW_PAD (flow_splitter_get_input_pad (splitter)));
 
   /* Create output files and connect their inputs to repeater's outputs */
 
   for (i = 0; i < n_output_files; i++)
   {
-    g_print (" -> %s\n", output_files [i]);
+    g_print ("%s%s", output_files [i], i + 1 < n_output_files ? ", " : "");
 
     connector = flow_file_connector_new ();
     flow_connector_set_io_buffer_size (FLOW_CONNECTOR (connector), FILE_IO_BUFFER_SIZE);
@@ -160,6 +176,12 @@ copy_file_cb (const gchar *input_file, const gchar **output_files, gint n_output
     flow_pad_connect (FLOW_PAD (flow_simplex_element_get_output_pad (FLOW_SIMPLEX_ELEMENT (connector))),
                       FLOW_PAD (flow_joiner_add_input_pad (joiner)));
   }
+
+  g_print ("]\n");
+
+  /* Set up statistics timer */
+
+  g_timeout_add_seconds (1, (GSourceFunc) print_statistics_cb, controller);
 
   /* Run until done */
 
@@ -185,5 +207,7 @@ main (gint argc, gchar **argv)
 
   main_loop = g_main_loop_new (NULL, FALSE);
   copy_file_cb (argv [1], (const gchar **) &argv [2], argc - 2);
+
+  g_printerr ("\n");
   return 0;
 }
