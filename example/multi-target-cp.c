@@ -23,6 +23,9 @@
  */
 
 #include "config.h"
+#include <stdio.h>  /* fflush */
+#include <string.h>  /* strcat */
+#include <sys/stat.h>  /* stat */
 #include <flow/flow.h>
 
 /* Size of the low-level I/O buffer employed by each file. Internally, this
@@ -41,6 +44,9 @@
 
 static GMainLoop *main_loop;
 static gint n_output_files_left;
+
+static guint64 current_input_file_size;
+static guint64 global_byte_total;
 
 static void
 output_file_message_cb (gpointer user_data)
@@ -71,13 +77,92 @@ output_file_message_cb (gpointer user_data)
   flow_packet_queue_clear (queue);
 }
 
+#define SECONDS_IN_MINUTE 60
+#define MINUTES_IN_HOUR 60
+#define HOURS_IN_DAY 24
+#define SECONDS_IN_HOUR ((SECONDS_IN_MINUTE) * (MINUTES_IN_HOUR))
+#define SECONDS_IN_DAY ((SECONDS_IN_HOUR) * (HOURS_IN_DAY))
+
+#define BUF_SIZE 1024
+
+static gchar *
+format_time_interval (gint64 interval)
+{
+  gchar s0 [BUF_SIZE] = "";
+  gchar s1 [BUF_SIZE];
+  gint64 days, hours, minutes, seconds;
+
+  /* Convert to seconds, with rounding */
+  interval = (interval + 500000) / 1000000;
+
+  days = interval / SECONDS_IN_DAY;
+  hours = (interval - days * SECONDS_IN_DAY) / SECONDS_IN_HOUR;
+  minutes = (interval - days * SECONDS_IN_DAY - hours * SECONDS_IN_HOUR) / SECONDS_IN_MINUTE;
+  seconds = (interval - days * SECONDS_IN_DAY - hours * SECONDS_IN_HOUR - minutes * SECONDS_IN_MINUTE);
+
+  if (days > 0)
+    g_snprintf (s0, BUF_SIZE, "%" G_GUINT64_FORMAT "d", days);
+
+  if (days > 0 || hours > 0)
+  {
+    g_snprintf (s1, BUF_SIZE, "%" G_GUINT64_FORMAT "h", hours);
+    strcat (s0, s1);
+  }
+
+  if (days > 0 || hours > 0 || minutes > 0)
+  {
+    g_snprintf (s1, BUF_SIZE, "%" G_GUINT64_FORMAT "m", minutes);
+    strcat (s0, s1);
+  }
+
+  g_snprintf (s1, BUF_SIZE, "%" G_GUINT64_FORMAT "s", seconds);
+  strcat (s0, s1);
+
+  return g_strdup (s0);
+}
+
+static void
+print_final_statistics (guint64 byte_total, guint64 time_interval)
+{
+  guint64 byte_rate = byte_total / (time_interval / G_GINT64_CONSTANT (1000000));
+  gchar *time_interval_s = format_time_interval (time_interval);
+
+  g_printerr ("\r%" G_GUINT64_FORMAT "MiB copied - %s elapsed - %" G_GUINT64_FORMAT "MiB/s\n",
+              byte_total / (G_GUINT64_CONSTANT (1024) * G_GUINT64_CONSTANT (1024)),
+              time_interval_s,
+              byte_rate / (G_GUINT64_CONSTANT (1024) * G_GUINT64_CONSTANT (1024)));
+
+  g_free (time_interval_s);
+}
+
 static gboolean
 print_statistics_cb (FlowController *controller)
 {
-  g_printerr ("\r%" G_GUINT64_FORMAT "MiB copied",
-              flow_controller_get_total_bytes (controller) / (G_GUINT64_CONSTANT (1024) * G_GUINT64_CONSTANT (1024)));
+  guint64 byte_rate = flow_controller_get_byte_rate (controller);
+  guint64 byte_total = flow_controller_get_byte_total (controller);
+  gchar *time_left_s = byte_rate > 0 ? format_time_interval (((current_input_file_size - byte_total) * 1000000) / byte_rate) : g_strdup ("?");
 
+  g_printerr ("\r%" G_GUINT64_FORMAT "MiB copied - %s left - %" G_GUINT64_FORMAT "MiB/s",
+              byte_total / (G_GUINT64_CONSTANT (1024) * G_GUINT64_CONSTANT (1024)),
+              time_left_s,
+              byte_rate / (G_GUINT64_CONSTANT (1024) * G_GUINT64_CONSTANT (1024)));
+  fflush (stderr);
+
+  g_free (time_left_s);
   return TRUE;
+}
+
+static gint64
+get_file_size (const gchar *path)
+{
+  struct stat st;
+
+  if (stat (path, &st) < 0) {
+    g_printerr ("Could not stat input file.\n");
+    return -1;
+  }
+
+  return st.st_size;
 }
 
 static void
@@ -179,6 +264,12 @@ copy_file_cb (const gchar *input_file, const gchar **output_files, gint n_output
 
   g_print ("]\n");
 
+  current_input_file_size = get_file_size (input_file);
+  if (current_input_file_size < 0)
+    return;
+
+  g_print ("Size: %" G_GUINT64_FORMAT "\n", current_input_file_size);
+
   /* Set up statistics timer */
 
   g_timeout_add_seconds (1, (GSourceFunc) print_statistics_cb, controller);
@@ -186,11 +277,14 @@ copy_file_cb (const gchar *input_file, const gchar **output_files, gint n_output
   /* Run until done */
 
   g_main_loop_run (main_loop);
+
+  global_byte_total = flow_controller_get_byte_total (controller);
 }
 
 gint
 main (gint argc, gchar **argv)
 {
+  gint64 start_time, now;
   gint i;
 
   /* Init */
@@ -203,11 +297,17 @@ main (gint argc, gchar **argv)
 
   g_type_init ();
 
+  start_time = g_get_monotonic_time ();
+
   /* Run */
 
   main_loop = g_main_loop_new (NULL, FALSE);
   copy_file_cb (argv [1], (const gchar **) &argv [2], argc - 2);
 
-  g_printerr ("\n");
+  /* Print statistics and exit */
+
+  now = g_get_monotonic_time ();
+  print_final_statistics (global_byte_total, now - start_time);
+
   return 0;
 }
