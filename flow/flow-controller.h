@@ -67,7 +67,8 @@ struct _FlowControllerClass
 
 FlowController *flow_controller_new                   (void);
 
-guint64         flow_controller_get_total_bytes       (FlowController *controller);
+guint64         flow_controller_get_byte_total        (FlowController *controller);
+guint64         flow_controller_get_byte_rate         (FlowController *controller);
 
 G_END_DECLS
 
