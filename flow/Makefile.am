@@ -78,6 +78,8 @@ libflow_la_SOURCES = \
 	flow-shunt.c \
 	flow-simplex-element.c \
 	flow-splitter.c \
+	flow-ssh-connect-op.c \
+	flow-ssh-runner.c \
 	flow-tcp-connect-op.c \
 	flow-tcp-connector.c \
 	flow-tcp-io.c \
@@ -137,6 +139,8 @@ pkginclude_HEADERS = \
 	flow-shunt.h \
 	flow-simplex-element.h \
 	flow-splitter.h \
+	flow-ssh-connect-op.h \
+	flow-ssh-runner.h \
 	flow-tcp-connect-op.h \
 	flow-tcp-connector.h \
 	flow-tcp-io.h \

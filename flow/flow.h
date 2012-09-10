@@ -59,6 +59,8 @@
 #include <flow/flow-shunt.h>
 #include <flow/flow-simplex-element.h>
 #include <flow/flow-splitter.h>
+#include <flow/flow-ssh-connect-op.h>
+#include <flow/flow-ssh-runner.h>
 #include <flow/flow-tcp-connect-op.h>
 #include <flow/flow-tcp-connector.h>
 #include <flow/flow-tcp-io.h>
