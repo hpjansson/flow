@@ -56,6 +56,7 @@
 #include <flow/flow-position.h>
 #include <flow/flow-property-event.h>
 #include <flow/flow-segment-request.h>
+#include <flow/flow-shell-op.h>
 #include <flow/flow-shunt.h>
 #include <flow/flow-simplex-element.h>
 #include <flow/flow-splitter.h>

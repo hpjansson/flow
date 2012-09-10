@@ -75,6 +75,7 @@ libflow_la_SOURCES = \
 	flow-position.c \
 	flow-property-event.c \
 	flow-segment-request.c \
+	flow-shell-op.c \
 	flow-shunt.c \
 	flow-simplex-element.c \
 	flow-splitter.c \
@@ -136,6 +137,7 @@ pkginclude_HEADERS = \
 	flow-position.h \
 	flow-property-event.h \
 	flow-segment-request.h \
+	flow-shell-op.h \
 	flow-shunt.h \
 	flow-simplex-element.h \
 	flow-splitter.h \
