@@ -1,6 +1,7 @@
 noinst_PROGRAMS = \
 	list-interfaces \
-	multi-target-cp
+	multi-target-cp \
+	ssh-runner
 
 INCLUDES = \
 	-I$(top_srcdir) \
