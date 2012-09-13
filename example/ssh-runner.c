@@ -23,6 +23,7 @@
  */
 
 #include "config.h"
+#include <stdio.h>
 #include <flow/flow.h>
 
 static GMainLoop *main_loop;
@@ -36,16 +37,27 @@ incoming_message_cb (gpointer user_data)
 
   queue = flow_user_adapter_get_input_queue (user_adapter);
 
-  while ((packet = flow_packet_queue_pop_first_object (queue)))
+  while ((packet = flow_packet_queue_pop_packet (queue)))
   {
-    gpointer obj = flow_packet_get_data (packet);
-    if (!obj)
-      continue;
-
-    if (FLOW_IS_DETAILED_EVENT (obj) &&
-        flow_detailed_event_matches (FLOW_DETAILED_EVENT (obj), FLOW_STREAM_DOMAIN, FLOW_STREAM_END))
+    if (flow_packet_get_format (packet) == FLOW_PACKET_FORMAT_OBJECT)
     {
-      g_main_loop_quit (main_loop);
+      gpointer obj = flow_packet_get_data (packet);
+      if (!obj)
+        continue;
+
+      if (FLOW_IS_DETAILED_EVENT (obj) &&
+          flow_detailed_event_matches (FLOW_DETAILED_EVENT (obj), FLOW_STREAM_DOMAIN, FLOW_STREAM_END))
+      {
+        g_main_loop_quit (main_loop);
+      }
+    }
+    else
+    {
+      gpointer buf = flow_packet_get_data (packet);
+      if (!buf)
+        continue;
+
+      fwrite (buf, 1, flow_packet_get_size (packet), stdout);
     }
 
     flow_packet_unref (packet);  /* Also releases the object */
@@ -55,7 +67,7 @@ incoming_message_cb (gpointer user_data)
 }
 
 static void
-run (void)
+run (const gchar *remote_name)
 {
   FlowIPService *ip_service;
   FlowUserAdapter *user_adapter;
@@ -63,14 +75,15 @@ run (void)
   FlowSshConnectOp *op;
   FlowDetailedEvent *detailed_event;
   FlowPacket *packet;
+  FlowShellOp *shell_op;
 
   ip_service = flow_ip_service_new ();
-  flow_ip_service_set_name (ip_service, "mayak.nanosleep.org");
+  flow_ip_service_set_name (ip_service, remote_name);
 
   /* FIXME: Is this necessary? */
   flow_ip_service_sync_resolve (ip_service, NULL);
 
-  /* Set up input file */
+  /* Set up runner */
 
   runner = flow_ssh_runner_new ();
 
@@ -95,16 +108,26 @@ run (void)
   packet = flow_packet_new_take_object (detailed_event, 0);
   flow_pad_push (FLOW_PAD (flow_simplex_element_get_input_pad (FLOW_SIMPLEX_ELEMENT (runner))), packet);
 
+  shell_op = flow_shell_op_new ("ls");
+  packet = flow_packet_new_take_object (shell_op, 0);
+  flow_pad_push (FLOW_PAD (flow_simplex_element_get_input_pad (FLOW_SIMPLEX_ELEMENT (runner))), packet);
+
+  shell_op = flow_shell_op_new ("ls");
+  packet = flow_packet_new_take_object (shell_op, 0);
+  flow_pad_push (FLOW_PAD (flow_simplex_element_get_input_pad (FLOW_SIMPLEX_ELEMENT (runner))), packet);
+
 #if 0
   seg_req = flow_segment_request_new (-1);
   packet = flow_packet_new_take_object (seg_req, 0);
   flow_pad_push (FLOW_PAD (flow_simplex_element_get_input_pad (FLOW_SIMPLEX_ELEMENT (runner))), packet);
 #endif
 
+#if 1
   detailed_event = flow_detailed_event_new (NULL);
   flow_detailed_event_add_code (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END);
   packet = flow_packet_new_take_object (detailed_event, 0);
   flow_pad_push (FLOW_PAD (flow_simplex_element_get_input_pad (FLOW_SIMPLEX_ELEMENT (runner))), packet);
+#endif
 
   /* Run until done */
 
@@ -116,9 +139,9 @@ main (gint argc, gchar **argv)
 {
   /* Init */
 
-  if (argc < 3)
+  if (argc < 2)
   {
-    g_printerr ("Usage: %s\n", argv [0]);
+    g_printerr ("Usage: %s <remote-name>\n", argv [0]);
     return 1;
   }
 
@@ -127,7 +150,7 @@ main (gint argc, gchar **argv)
   /* Run */
 
   main_loop = g_main_loop_new (NULL, FALSE);
-  run ();
+  run (argv [1]);
 
   return 0;
 }
