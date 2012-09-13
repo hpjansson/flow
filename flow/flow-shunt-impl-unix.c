@@ -51,6 +51,7 @@
 #include <sys/types.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <sys/prctl.h>
 
 #include <glib.h>
 
@@ -2315,6 +2316,12 @@ file_shunt_main (FileShuntParams *params)
  * Construction *
  * ------------ */
 
+static void
+child_setup (void)
+{
+  prctl (PR_SET_PDEATHSIG, SIGHUP);
+}
+
 static FileShuntParams *
 create_file_shunt_params (const gchar *path, FlowAccessMode access_mode)
 {
@@ -2566,6 +2573,8 @@ flow_shunt_impl_spawn_process (FlowWorkerFunc func, gpointer user_data)
       pipe_shunt->read_fd  = down_fds [0];
       pipe_shunt->write_fd = up_fds [1];
 
+      child_setup ();
+
       func ((FlowSyncShunt *) pipe_shunt, user_data);
       exit (0);
     }
@@ -2678,7 +2687,7 @@ flow_shunt_impl_spawn_command_line (const gchar *command_line)
                                       argv,
                                       NULL,                 /* envp */
                                       G_SPAWN_SEARCH_PATH,  /* flags */
-                                      NULL,                 /* GSpawnChildSetupFunc */
+                                      (GSpawnChildSetupFunc) child_setup,
                                       NULL,                 /* user_data */
                                       &pid,
                                       &stdin_fd,
