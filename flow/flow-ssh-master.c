@@ -204,9 +204,6 @@ connect_begin (FlowSshMaster *ssh_master)
   remote_name = flow_ip_service_get_name (priv->remote_ip_service);
   g_assert (remote_name != NULL);
 
-  if (!priv->control_path)
-    priv->control_path = generate_control_path (ssh_master);
-
   if (remote_port > 0)
   {
     cmd = g_strdup_printf ("ssh " EXTRA_SSH_MASTER_OPTIONS " -o 'ControlPath %s' -p %d %s%s%s",
