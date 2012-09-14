@@ -233,11 +233,14 @@ static gboolean
 confirm_already_connected (FlowSshMaster *ssh_master)
 {
   FlowSshMasterPrivate *priv = ssh_master->priv;
+  gboolean is_connecting = FALSE;
   gboolean reconnect = FALSE;
 
   g_mutex_lock (priv->mutex);
 
-  if (!priv->is_connected && !priv->is_connecting)
+  is_connected = priv->is_connected;
+
+  if (!is_connected && !priv->is_connecting)
   {
     /* The existing connection failed while waiting for this callback
      * to fire. We need to connect for real. */
@@ -248,7 +251,7 @@ confirm_already_connected (FlowSshMaster *ssh_master)
 
   if (reconnect)
     flow_ssh_master_connect (ssh_master);
-  else
+  else if (is_connected)
     g_signal_emit_by_name (ssh_master, "connect-finished");
 
   return FALSE;
