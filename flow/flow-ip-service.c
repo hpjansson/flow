@@ -385,10 +385,12 @@ flow_ip_service_sync_resolve (FlowIPService *ip_service, GError **error)
   }
   else
   {
+    GError *error_copy;
+
     g_assert (priv->resolve_error != NULL);
 
-    g_propagate_error (error, priv->resolve_error);
-    priv->resolve_error = NULL;
+    error_copy = g_error_copy (priv->resolve_error);
+    g_propagate_error (error, error_copy);
   }
 
   g_mutex_unlock (priv->mutex);
