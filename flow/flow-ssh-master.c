@@ -187,7 +187,7 @@ master_shunt_read (FlowShunt *shunt, FlowPacket *packet, FlowSshMaster *ssh_mast
       if (priv->connect_error)
         g_error_free (priv->connect_error);
       priv->connect_error = g_error_new_literal (FLOW_SSH_DOMAIN_QUARK, FLOW_SSH_MASTER_FAILED,
-                                                 "Could not start ssh master");
+                                                 "Could not start SSH master");
 
       priv->is_connecting = FALSE;
       signal_to_emit = "connect-finished";
