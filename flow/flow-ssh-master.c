@@ -233,7 +233,7 @@ static gboolean
 confirm_already_connected (FlowSshMaster *ssh_master)
 {
   FlowSshMasterPrivate *priv = ssh_master->priv;
-  gboolean is_connecting = FALSE;
+  gboolean is_connected;
   gboolean reconnect = FALSE;
 
   g_mutex_lock (priv->mutex);
