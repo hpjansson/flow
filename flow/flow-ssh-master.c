@@ -209,15 +209,19 @@ connect_begin (FlowSshMaster *ssh_master)
 
   if (remote_port > 0)
   {
-    cmd = g_strdup_printf ("ssh " EXTRA_SSH_MASTER_OPTIONS " -o 'ControlPath %s' -p %d %s",
+    cmd = g_strdup_printf ("ssh " EXTRA_SSH_MASTER_OPTIONS " -o 'ControlPath %s' -p %d %s%s%s",
                            priv->control_path,
                            remote_port,
+                           priv->remote_user ? priv->remote_user : "",
+                           priv->remote_user ? "@" : "",
                            remote_name);
   }
   else
   {
-    cmd = g_strdup_printf ("ssh " EXTRA_SSH_MASTER_OPTIONS " -o 'ControlPath %s' %s",
+    cmd = g_strdup_printf ("ssh " EXTRA_SSH_MASTER_OPTIONS " -o 'ControlPath %s' %s%s%s",
                            priv->control_path,
+                           priv->remote_user ? priv->remote_user : "",
+                           priv->remote_user ? "@" : "",
                            remote_name);
   }
 
