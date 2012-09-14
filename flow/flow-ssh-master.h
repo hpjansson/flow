@@ -65,14 +65,13 @@ struct _FlowSshMasterClass
 
 FlowSshMaster *flow_ssh_master_new                   (FlowIPService *remote_ip_service, const gchar *remote_user);
 
-gboolean       flow_ssh_master_get_is_connected      (FlowSshMaster *ssh_master);
 FlowIPService *flow_ssh_master_get_remote_ip_service (FlowSshMaster *ssh_master);
 const gchar   *flow_ssh_master_get_remote_user       (FlowSshMaster *ssh_master);
+gboolean       flow_ssh_master_get_is_connected      (FlowSshMaster *ssh_master);
+GError        *flow_ssh_master_get_last_error        (FlowSshMaster *ssh_master);
 
 void           flow_ssh_master_connect               (FlowSshMaster *ssh_master);
 gboolean       flow_ssh_master_sync_connect          (FlowSshMaster *ssh_master, GError **error);
-
-GError        *flow_ssh_master_get_last_error        (FlowSshMaster *ssh_master);
 
 G_END_DECLS
 

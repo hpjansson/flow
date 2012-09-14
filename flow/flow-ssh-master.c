@@ -350,6 +350,41 @@ flow_ssh_master_get_remote_user (FlowSshMaster *ssh_master)
   return flow_ssh_master_get_remote_user_internal (ssh_master);
 }
 
+gboolean
+flow_ssh_master_get_is_connected (FlowSshMaster *ssh_master)
+{
+  FlowSshMasterPrivate *priv;
+  gboolean is_connected;
+
+  g_return_val_if_fail (FLOW_IS_SSH_MASTER (ssh_master), FALSE);
+
+  priv = ssh_master->priv;
+
+  g_mutex_lock (priv->mutex);
+  is_connected = flow_ssh_master_get_is_connected_internal (ssh_master);
+  g_mutex_unlock (priv->mutex);
+
+  return is_connected;
+}
+
+GError *
+flow_ssh_master_get_last_error (FlowSshMaster *ssh_master)
+{
+  FlowSshMasterPrivate *priv;
+  GError               *error = NULL;
+
+  g_return_val_if_fail (FLOW_IS_SSH_MASTER (ssh_master), NULL);
+
+  priv = ssh_master->priv;
+
+  g_mutex_lock (priv->mutex);
+  if (priv->connect_error)
+    error = g_error_copy (priv->connect_error);
+  g_mutex_unlock (priv->mutex);
+
+  return error;
+}
+
 void
 flow_ssh_master_connect (FlowSshMaster *ssh_master)
 {
@@ -420,30 +455,4 @@ flow_ssh_master_sync_connect (FlowSshMaster *ssh_master, GError **error)
   g_mutex_unlock (priv->mutex);
 
   return result;
-}
-
-gboolean
-flow_ssh_master_get_is_connected (FlowSshMaster *ssh_master)
-{
-  g_return_val_if_fail (FLOW_IS_SSH_MASTER (ssh_master), FALSE);
-
-  return flow_ssh_master_get_is_connected_internal (ssh_master);
-}
-
-GError *
-flow_ssh_master_get_last_error (FlowSshMaster *ssh_master)
-{
-  FlowSshMasterPrivate *priv;
-  GError               *error = NULL;
-
-  g_return_val_if_fail (FLOW_IS_SSH_MASTER (ssh_master), NULL);
-
-  priv = ssh_master->priv;
-
-  g_mutex_lock (priv->mutex);
-  if (priv->connect_error)
-    error = g_error_copy (priv->connect_error);
-  g_mutex_unlock (priv->mutex);
-
-  return error;
 }
