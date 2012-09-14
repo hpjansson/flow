@@ -111,7 +111,8 @@ FlowLookupEventCode;
 
 typedef enum
 {
-  FLOW_SSH_MASTER_FAILED
+  FLOW_SSH_MASTER_FAILED,
+  FLOW_SSH_MASTER_NOT_CONNECTED
 }
 FlowSshEventCode;
 

@@ -25,7 +25,8 @@
 #ifndef _FLOW_SSH_MASTER_H
 #define _FLOW_SSH_MASTER_H
 
-#include <glib-object.h>
+#include <flow/flow-ip-service.h>
+#include <flow/flow-shunt.h>
 
 G_BEGIN_DECLS
 
@@ -74,6 +75,8 @@ gchar         *flow_ssh_master_get_control_path      (FlowSshMaster *ssh_master)
 
 void           flow_ssh_master_connect               (FlowSshMaster *ssh_master);
 gboolean       flow_ssh_master_sync_connect          (FlowSshMaster *ssh_master, GError **error);
+
+FlowShunt     *flow_ssh_master_run_command           (FlowSshMaster *ssh_master, const gchar *command, GError **error);
 
 G_END_DECLS
 

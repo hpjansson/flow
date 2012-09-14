@@ -32,6 +32,7 @@
 #include "flow-ssh-master.h"
 
 #define EXTRA_SSH_MASTER_OPTIONS "-q -M -N -o 'ServerAliveInterval 10' -o 'ServerAliveCountMax 6'"
+#define EXTRA_SSH_OP_OPTIONS     "-q"
 
 /* --- FlowSshMaster private data --- */
 
@@ -480,4 +481,60 @@ flow_ssh_master_sync_connect (FlowSshMaster *ssh_master, GError **error)
   g_mutex_unlock (priv->mutex);
 
   return result;
+}
+
+FlowShunt *
+flow_ssh_master_run_command (FlowSshMaster *ssh_master, const gchar *remote_command, GError **error)
+{
+  FlowSshMasterPrivate *priv;
+  gchar *remote_name = NULL;
+  gint remote_port;
+  gchar *cmd = NULL;
+  FlowShunt *shunt = NULL;
+
+  g_return_val_if_fail (FLOW_IS_SSH_MASTER (ssh_master), NULL);
+
+  priv = ssh_master->priv;
+
+  g_mutex_lock (priv->mutex);
+
+  if (!priv->is_connected)
+  {
+    GError *my_error = g_error_new_literal (FLOW_SSH_DOMAIN_QUARK, FLOW_SSH_MASTER_NOT_CONNECTED,
+                                            "SSH master is not connected");
+    g_propagate_error (error, my_error);
+    goto out;
+  }
+
+  remote_port = flow_ip_service_get_port (priv->remote_ip_service);
+  remote_name = flow_ip_service_get_name (priv->remote_ip_service);
+  g_assert (remote_name != NULL);
+
+  if (remote_port > 0)
+  {
+    cmd = g_strdup_printf ("ssh " EXTRA_SSH_OP_OPTIONS " -o 'ControlPath %s' -p %d %s%s%s %s",
+                           priv->control_path,
+                           remote_port,
+                           priv->remote_user ? priv->remote_user : "",
+                           priv->remote_user ? "@" : "",
+                           remote_name,
+                           remote_command);
+  }
+  else
+  {
+    cmd = g_strdup_printf ("ssh " EXTRA_SSH_OP_OPTIONS " -o 'ControlPath %s' %s%s%s %s",
+                           priv->control_path,
+                           priv->remote_user ? priv->remote_user : "",
+                           priv->remote_user ? "@" : "",
+                           remote_name,
+                           remote_command);
+  }
+
+  shunt = flow_spawn_command_line (cmd);
+
+out:
+  g_mutex_unlock (priv->mutex);
+  g_free (cmd);
+  g_free (remote_name);
+  return shunt;
 }
