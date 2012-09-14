@@ -53,3 +53,9 @@ flow_lookup_domain_quark (void)
 {
   return g_quark_from_static_string (FLOW_LOOKUP_DOMAIN);
 }
+
+GQuark
+flow_ssh_domain_quark (void)
+{
+  return g_quark_from_static_string (FLOW_SSH_DOMAIN);
+}

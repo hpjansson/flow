@@ -34,12 +34,14 @@ G_BEGIN_DECLS
 #define FLOW_EXEC_DOMAIN   "flow-exec"
 #define FLOW_SOCKET_DOMAIN "flow-socket"
 #define FLOW_LOOKUP_DOMAIN "flow-lookup"
+#define FLOW_SSH_DOMAIN    "flow-ssh"
 
 #define FLOW_STREAM_DOMAIN_QUARK flow_stream_domain_quark ()
 #define FLOW_FILE_DOMAIN_QUARK   flow_file_domain_quark ()
 #define FLOW_EXEC_DOMAIN_QUARK   flow_exec_domain_quark ()
 #define FLOW_SOCKET_DOMAIN_QUARK flow_socket_domain_quark ()
 #define FLOW_LOOKUP_DOMAIN_QUARK flow_lookup_domain_quark ()
+#define FLOW_SSH_DOMAIN_QUARK    flow_ssh_domain_quark ()
 
 typedef enum
 {
@@ -107,11 +109,18 @@ typedef enum
 }
 FlowLookupEventCode;
 
+typedef enum
+{
+  FLOW_SSH_MASTER_FAILED
+}
+FlowSshEventCode;
+
 GQuark flow_stream_domain_quark (void);
 GQuark flow_file_domain_quark   (void);
 GQuark flow_exec_domain_quark   (void);
 GQuark flow_socket_domain_quark (void);
 GQuark flow_lookup_domain_quark (void);
+GQuark flow_ssh_domain_quark    (void);
 
 G_END_DECLS
 
