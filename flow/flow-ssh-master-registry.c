@@ -29,12 +29,16 @@
 #include "flow-gobject-util.h"
 #include "flow-ssh-master-registry.h"
 
-/* --- Class properties --- */
+/* --- FlowSshMasterRegistry properties --- */
+
 FLOW_GOBJECT_PROPERTIES_BEGIN (flow_ssh_master_registry)
 FLOW_GOBJECT_PROPERTIES_END   ()
 
-/* --- Class definition --- */
+/* --- FlowSshMasterRegistry definition --- */
+
 FLOW_GOBJECT_MAKE_IMPL_NO_PRIVATE (flow_ssh_master_registry, FlowSshMasterRegistry, G_TYPE_OBJECT, 0)
+
+/* --- FlowSshMasterRegistry implementation --- */
 
 static void
 flow_ssh_master_registry_type_init (GType type)
