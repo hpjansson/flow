@@ -70,8 +70,19 @@ flow_ssh_master_registry_finalize (FlowSshMasterRegistry *ssh_master_registry)
 {
 }
 
-FlowSshMasterRegistry *
-flow_ssh_master_registry_new (void)
+static FlowSshMasterRegistry *
+instantiate_singleton (void)
 {
   return g_object_new (FLOW_TYPE_SSH_MASTER_REGISTRY, NULL);
+}
+
+/* --- FlowSshMasterRegistry public API --- */
+
+FlowSshMasterRegistry *
+flow_ssh_master_registry_get_default (void)
+{
+  static GOnce my_once = G_ONCE_INIT;
+
+  g_once (&my_once, (GThreadFunc) instantiate_singleton, NULL);
+  return my_once.retval;
 }

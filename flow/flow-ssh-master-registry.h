@@ -63,7 +63,7 @@ struct _FlowSshMasterRegistryClass
   void (*_pad_4) (void);
 };
 
-FlowSshMasterRegistry       *flow_ssh_master_registry_new                     (void);
+FlowSshMasterRegistry      *flow_ssh_master_registry_get_default          (void);
 
 G_END_DECLS
 
