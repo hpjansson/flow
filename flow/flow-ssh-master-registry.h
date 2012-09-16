@@ -25,7 +25,7 @@
 #ifndef _FLOW_SSH_MASTER_REGISTRY_H
 #define _FLOW_SSH_MASTER_REGISTRY_H
 
-#include <glib-object.h>
+#include <flow/flow-ssh-master.h>
 
 G_BEGIN_DECLS
 
