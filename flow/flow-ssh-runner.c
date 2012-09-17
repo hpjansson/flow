@@ -31,18 +31,14 @@
 #include "flow-detailed-event.h"
 #include "flow-ssh-connect-op.h"
 #include "flow-shell-op.h"
+#include "flow-ssh-master-registry.h"
 #include "flow-ssh-runner.h"
-
-#define EXTRA_SSH_MASTER_OPTIONS "-q -M -N -o 'ServerAliveInterval 10' -o 'ServerAliveCountMax 6'"
-#define EXTRA_SSH_OP_OPTIONS "-q"
 
 #define MAX_BUFFER_PACKETS 16
 #define MAX_BUFFER_BYTES   4096
 
 static void        op_shunt_read  (FlowShunt *shunt, FlowPacket *packet, FlowSshRunner *ssh_runner);
 static FlowPacket *op_shunt_write (FlowShunt *shunt, FlowSshRunner *ssh_runner);
-static void        master_shunt_read  (FlowShunt *shunt, FlowPacket *packet, FlowSshRunner *ssh_runner);
-static FlowPacket *master_shunt_write (FlowShunt *shunt, FlowSshRunner *ssh_runner);
 
 /* --- FlowSshRunner private data --- */
 
@@ -70,26 +66,6 @@ FLOW_GOBJECT_MAKE_IMPL        (flow_ssh_runner, FlowSshRunner, FLOW_TYPE_CONNECT
 /* --- FlowSshRunner implementation --- */
 
 static void
-setup_master_shunt (FlowSshRunner *ssh_runner, FlowShunt *master_shunt)
-{
-  FlowSshRunnerPrivate *priv = ssh_runner->priv;
-  FlowPad              *output_pad;
-
-  g_assert (priv->master_shunt == NULL);
-  priv->master_shunt = master_shunt;
-
-  flow_shunt_set_read_func (master_shunt, (FlowShuntReadFunc *) master_shunt_read, ssh_runner);
-  flow_shunt_set_write_func (master_shunt, (FlowShuntWriteFunc *) master_shunt_write, ssh_runner);
-
-  output_pad = FLOW_PAD (flow_simplex_element_get_output_pad (FLOW_SIMPLEX_ELEMENT (ssh_runner)));
-
-  if (flow_pad_is_blocked (output_pad))
-  {
-    flow_shunt_block_reads (master_shunt);
-  }
-}
-
-static void
 setup_op_shunt (FlowSshRunner *ssh_runner, FlowShunt *op_shunt)
 {
   FlowSshRunnerPrivate *priv = ssh_runner->priv;
@@ -111,128 +87,26 @@ setup_op_shunt (FlowSshRunner *ssh_runner, FlowShunt *op_shunt)
   flow_shunt_block_writes (priv->master_shunt);
 }
 
-static gchar *
-generate_control_path (FlowSshRunner *ssh_runner)
-{
-  gchar *cache_dir;
-  gchar *path;
-
-  cache_dir = g_strdup_printf ("%s/flow", g_get_user_cache_dir ());
-  g_mkdir_with_parents (cache_dir, 0770);
-
-  path = g_strdup_printf ("%s/ssh-runner-%d-%016" G_GINT64_MODIFIER "x",
-                          cache_dir,
-                          getpid (),
-                          (guint64) ssh_runner);
-  g_remove (path);
-
-  g_free (cache_dir);
-  return path;
-}
-
-static void
-connect_to_remote_service (FlowSshRunner *ssh_runner)
-{
-  FlowSshRunnerPrivate *priv = ssh_runner->priv;
-  FlowIPService *remote_service;
-  gchar *remote_name;
-  gint remote_port;
-  gchar *cmd;
-
-  if (priv->master_shunt)
-  {
-    /* We already have an active shunt. This is an error - e.g. a STREAM_BEGIN
-     * within a STREAM_BEGIN. */
-    g_warning ("Tried to establish a master shunt, but we've already got one.");
-    return;
-  }
-
-  if (priv->next_op)
-  {
-    if (priv->op)
-      g_object_unref (priv->op);
-
-    priv->op = priv->next_op;
-    priv->next_op = NULL;
-  }
-
-  if (!priv->op)
-  {
-    g_warning ("FlowSshRunner got FLOW_STREAM_BEGIN before connect op.");
-    return;
-  }
-
-  remote_service = flow_ssh_connect_op_get_remote_service (priv->op);
-  g_assert (remote_service != NULL);
-
-  remote_port = flow_ip_service_get_port (remote_service);
-  remote_name = flow_ip_service_get_name (remote_service);
-  g_assert (remote_name != NULL);
-
-  if (!priv->control_path)
-    priv->control_path = generate_control_path (ssh_runner);
-
-  if (remote_port > 0)
-  {
-    cmd = g_strdup_printf ("ssh " EXTRA_SSH_MASTER_OPTIONS " -o 'ControlPath %s' -p %d %s",
-                           priv->control_path,
-                           remote_port,
-                           remote_name);
-  }
-  else
-  {
-    cmd = g_strdup_printf ("ssh " EXTRA_SSH_MASTER_OPTIONS " -o 'ControlPath %s' %s",
-                           priv->control_path,
-                           remote_name);
-  }
-
-  setup_master_shunt (ssh_runner, flow_spawn_command_line (cmd));
-  flow_connector_set_state_internal (FLOW_CONNECTOR (ssh_runner), FLOW_CONNECTIVITY_CONNECTING);
-
-  g_free (cmd);
-  g_free (remote_name);
-}
-
 static void
 run_shell_op (FlowSshRunner *ssh_runner, FlowShellOp *shell_op)
 {
   FlowSshRunnerPrivate *priv = ssh_runner->priv;
+  FlowSshMaster *ssh_master;
   FlowIPService *remote_service;
-  gchar *remote_name;
-  gint remote_port;
-  gchar *cmd;
+  FlowShunt *shunt;
 
   priv->shell_op = g_object_ref (shell_op);
 
   remote_service = flow_ssh_connect_op_get_remote_service (priv->op);
   g_assert (remote_service != NULL);
 
-  remote_port = flow_ip_service_get_port (remote_service);
-  remote_name = flow_ip_service_get_name (remote_service);
-  g_assert (remote_name != NULL);
-
-  g_assert (priv->control_path != NULL);
-
-  if (remote_port > 0)
+  shunt = flow_ssh_master_run_command (ssh_master, flow_shell_op_get_cmd (shell_op), NULL);
+  if (!shunt)
   {
-    cmd = g_strdup_printf ("ssh " EXTRA_SSH_OP_OPTIONS " -o 'ControlPath %s' -p %d %s %s",
-                           priv->control_path,
-                           remote_port,
-                           remote_name,
-                           flow_shell_op_get_cmd (shell_op));
-  }
-  else
-  {
-    cmd = g_strdup_printf ("ssh " EXTRA_SSH_OP_OPTIONS " -o 'ControlPath %s' %s %s",
-                           priv->control_path,
-                           remote_name,
-                           flow_shell_op_get_cmd (shell_op));
+    /* TODO */
   }
 
-  setup_op_shunt (ssh_runner, flow_spawn_command_line (cmd));
-
-  g_free (cmd);
-  g_free (remote_name);
+  setup_op_shunt (ssh_runner, shunt);
 }
 
 static void
@@ -295,7 +169,9 @@ handle_outbound_packet (FlowSshRunner *ssh_runner, FlowPacket *packet)
 
       if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_BEGIN))
       {
+#if 0
         connect_to_remote_service (ssh_runner);
+#endif
       }
       else if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END))
       {
@@ -307,89 +183,6 @@ handle_outbound_packet (FlowSshRunner *ssh_runner, FlowPacket *packet)
       flow_handle_universal_events (FLOW_ELEMENT (ssh_runner), packet);
     }
   }
-
-  return packet;
-}
-
-static void
-master_shunt_read (FlowShunt *shunt, FlowPacket *packet, FlowSshRunner *ssh_runner)
-{
-  FlowSshRunnerPrivate *priv          = ssh_runner->priv;
-  FlowPacketFormat      packet_format = flow_packet_get_format (packet);
-  gpointer              packet_data   = flow_packet_get_data (packet);
-
-  if (packet_format == FLOW_PACKET_FORMAT_OBJECT)
-  {
-    if (FLOW_IS_DETAILED_EVENT (packet_data))
-    {
-      FlowDetailedEvent *detailed_event = (FlowDetailedEvent *) packet_data;
-
-      if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_BEGIN))
-      {
-        flow_connector_set_state_internal (FLOW_CONNECTOR (ssh_runner), FLOW_CONNECTIVITY_CONNECTED);
-      }
-      else if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END) ||
-               flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_DENIED))
-      {
-        if (priv->master_shunt)
-        {
-          flow_shunt_destroy (priv->master_shunt);
-          priv->master_shunt = NULL;
-        }
-
-        flow_connector_set_state_internal (FLOW_CONNECTOR (ssh_runner), FLOW_CONNECTIVITY_DISCONNECTED);
-      }
-    }
-    else
-    {
-      flow_handle_universal_events (FLOW_ELEMENT (ssh_runner), packet);
-    }
-  }
-
-  if (packet)
-  {
-    FlowPad *output_pad;
-
-    output_pad = FLOW_PAD (flow_simplex_element_get_output_pad (FLOW_SIMPLEX_ELEMENT (ssh_runner)));
-    flow_pad_push (output_pad, packet);
-  }
-}
-
-static FlowPacket *
-master_shunt_write (FlowShunt *shunt, FlowSshRunner *ssh_runner)
-{
-  FlowPad         *input_pad;
-  FlowPacketQueue *packet_queue;
-  FlowPacket      *packet;
-
-  /* FIXME: Don't actually write anything to master shunt, except for end-of-stream */
-
-  input_pad = FLOW_PAD (flow_simplex_element_get_input_pad (FLOW_SIMPLEX_ELEMENT (ssh_runner)));
-  packet_queue = flow_pad_get_packet_queue (input_pad);
-
-  if (!packet_queue ||
-      (flow_packet_queue_get_length_packets (packet_queue) < MAX_BUFFER_PACKETS &&
-       flow_packet_queue_get_length_bytes (packet_queue) < MAX_BUFFER_BYTES))
-  {
-    flow_pad_unblock (input_pad);
-    packet_queue = flow_pad_get_packet_queue (input_pad);
-  }
-
-  if (!packet_queue || flow_packet_queue_get_length_packets (packet_queue) == 0)
-  {
-    flow_shunt_block_writes (shunt);
-    return NULL;
-  }
-
-  do
-  {
-    packet = flow_packet_queue_pop_packet (packet_queue);
-    if (!packet)
-      break;
-
-    packet = handle_outbound_packet (ssh_runner, packet);
-  }
-  while (!packet);
 
   return packet;
 }
