@@ -104,6 +104,15 @@ flow_ssh_master_get_control_path_internal (FlowSshMaster *ssh_master)
   return g_strdup (priv->control_path);
 }
 
+static void
+flow_ssh_master_set_control_path_internal (FlowSshMaster *ssh_master, const gchar *control_path)
+{
+  FlowSshMasterPrivate *priv = ssh_master->priv;
+
+  g_free (priv->control_path);
+  priv->control_path = g_strdup (control_path);
+}
+
 FLOW_GOBJECT_PROPERTIES_BEGIN (flow_ssh_master)
 FLOW_GOBJECT_PROPERTY         (G_TYPE_OBJECT, "remote-service", "Remote service",
                                "Remote IP service", G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY,
@@ -121,9 +130,9 @@ FLOW_GOBJECT_PROPERTY_BOOLEAN ("is-connected", "Is connected", "If the master is
                                NULL,
                                FALSE)
 FLOW_GOBJECT_PROPERTY_STRING  ("control-path", "Control path", "SSH control path for connection multiplexing",
-                               G_PARAM_READABLE | G_PARAM_CONSTRUCT_ONLY,
+                               G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY,
                                flow_ssh_master_get_control_path_internal,
-                               NULL,
+                               flow_ssh_master_set_control_path_internal,
                                NULL)
 FLOW_GOBJECT_PROPERTIES_END   ()
 
@@ -307,12 +316,13 @@ flow_ssh_master_init (FlowSshMaster *ssh_master)
 {
   FlowSshMasterPrivate *priv = ssh_master->priv;
 
-  priv->control_path = generate_control_path (ssh_master);
+  priv->mutex = g_mutex_new ();
 }
 
 static void
 flow_ssh_master_construct (FlowSshMaster *ssh_master)
 {
+  flow_ssh_master_set_control_path_internal (ssh_master, generate_control_path (ssh_master));
 }
 
 static void
@@ -339,6 +349,8 @@ flow_ssh_master_finalize (FlowSshMaster *ssh_master)
     flow_shunt_destroy (priv->shunt);
   if (priv->connect_error)
     g_error_free (priv->connect_error);
+
+  g_mutex_free (priv->mutex);
 }
 
 /* --- FlowSshMaster public API --- */
