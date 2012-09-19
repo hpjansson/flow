@@ -65,6 +65,9 @@ struct _FlowSshMasterRegistryClass
 
 FlowSshMasterRegistry      *flow_ssh_master_registry_get_default          (void);
 
+FlowSshMaster              *flow_ssh_master_registry_get_master           (FlowSshMasterRegistry *ssh_master_registry,
+                                                                           FlowIPService *remote_ip_service, const gchar *remote_user);
+
 G_END_DECLS
 
 #endif /* _FLOW_IP_ADDR_H */
