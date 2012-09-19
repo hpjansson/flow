@@ -129,7 +129,7 @@ FLOW_GOBJECT_PROPERTIES_END   ()
 
 /* --- FlowSshMaster definition --- */
 
-FLOW_GOBJECT_MAKE_IMPL_NO_PRIVATE (flow_ssh_master, FlowSshMaster, G_TYPE_OBJECT, 0)
+FLOW_GOBJECT_MAKE_IMPL (flow_ssh_master, FlowSshMaster, G_TYPE_OBJECT, 0)
 
 /* --- FlowSshMaster implementation --- */
 
