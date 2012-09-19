@@ -4,3 +4,5 @@ flow-marshallers.c
 flow-marshallers.h
 stamp-flow-marshallers.h
 flow.pc
+flow-enum-types.c
+flow-enum-types.h
