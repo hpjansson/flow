@@ -31,7 +31,7 @@
 #include "flow-shunt.h"
 #include "flow-ssh-master.h"
 
-#define EXTRA_SSH_MASTER_OPTIONS "-q -M -N -o 'ServerAliveInterval 10' -o 'ServerAliveCountMax 6'"
+#define EXTRA_SSH_MASTER_OPTIONS "-q -M -N -o 'ServerAliveInterval 10' -o 'ServerAliveCountMax 6' -o 'PermitLocalCommand yes' -o 'LocalCommand echo'"
 #define EXTRA_SSH_OP_OPTIONS     "-q"
 
 /* --- FlowSshMaster private data --- */
@@ -177,17 +177,28 @@ master_shunt_read (FlowShunt *shunt, FlowPacket *packet, FlowSshMaster *ssh_mast
 
     if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_BEGIN))
     {
-      priv->is_connected = TRUE;
-      priv->is_connecting = FALSE;
-      signal_to_emit = "connect-finished";
+      /* Shell command is running, but not yet connected to remote end */
     }
     else if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END))
     {
       flow_shunt_destroy (priv->shunt);
       priv->shunt = NULL;
 
+      if (priv->is_connecting)
+      {
+        if (priv->connect_error)
+          g_error_free (priv->connect_error);
+        priv->connect_error = g_error_new_literal (FLOW_SSH_DOMAIN_QUARK, FLOW_SSH_MASTER_FAILED,
+                                                   "Could not connect SSH master");
+        signal_to_emit = "connect-finished";
+      }
+      else
+      {
+        signal_to_emit = "disconnected";
+      }
+
+      priv->is_connecting = FALSE;
       priv->is_connected = FALSE;
-      signal_to_emit = "disconnected";
     }
     else if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_DENIED))
     {
@@ -204,6 +215,14 @@ master_shunt_read (FlowShunt *shunt, FlowPacket *packet, FlowSshMaster *ssh_mast
     }
 
     g_mutex_unlock (priv->mutex);
+  }
+  else if (packet_format == FLOW_PACKET_FORMAT_BUFFER)
+  {
+    if (priv->is_connecting)
+      signal_to_emit = "connect-finished";
+
+    priv->is_connected = TRUE;
+    priv->is_connecting = FALSE;
   }
 
   flow_packet_unref (packet);
