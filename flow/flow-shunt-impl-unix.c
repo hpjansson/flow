@@ -51,7 +51,6 @@
 #include <sys/types.h>
 #include <fcntl.h>
 #include <errno.h>
-#include <sys/prctl.h>
 
 #include <glib.h>
 
@@ -2319,7 +2318,6 @@ file_shunt_main (FileShuntParams *params)
 static void
 child_setup (void)
 {
-  prctl (PR_SET_PDEATHSIG, SIGHUP);
 }
 
 static FileShuntParams *
