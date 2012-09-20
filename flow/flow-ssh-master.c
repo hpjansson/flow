@@ -290,6 +290,8 @@ confirm_already_connected (FlowSshMaster *ssh_master)
     reconnect = TRUE;
   }
 
+  priv->fake_connect_idle_id = 0;
+
   g_mutex_unlock (priv->mutex);
 
   if (reconnect)
@@ -458,8 +460,8 @@ flow_ssh_master_connect (FlowSshMaster *ssh_master)
 
   if (priv->is_connected)
   {
-    g_assert (priv->fake_connect_idle_id == 0);
-    priv->fake_connect_idle_id = flow_idle_add_to_current_thread ((GSourceFunc) confirm_already_connected, ssh_master);
+    if (priv->fake_connect_idle_id == 0)
+      priv->fake_connect_idle_id = flow_idle_add_to_current_thread ((GSourceFunc) confirm_already_connected, ssh_master);
   }
   else
   {
