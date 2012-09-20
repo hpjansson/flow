@@ -84,7 +84,6 @@ master_timeout_timed_out_cb (MasterTimeout *master_timeout)
   g_object_remove_toggle_ref ((GObject *) master_timeout->master, (GToggleNotify) toggle_ref_cb, master_timeout->registry);
   g_hash_table_remove (priv->masters, master_timeout->master);
   g_hash_table_remove (priv->timeouts, master_timeout->master);
-  master_timeout_destroy (master_timeout);
   return TRUE;
 }
 
