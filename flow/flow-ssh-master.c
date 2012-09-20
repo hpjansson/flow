@@ -169,11 +169,11 @@ master_shunt_read (FlowShunt *shunt, FlowPacket *packet, FlowSshMaster *ssh_mast
   gpointer              packet_data    = flow_packet_get_data (packet);
   const gchar          *signal_to_emit = NULL;
 
+  g_mutex_lock (priv->mutex);
+
   if (packet_format == FLOW_PACKET_FORMAT_OBJECT && FLOW_IS_DETAILED_EVENT (packet_data))
   {
     FlowDetailedEvent *detailed_event = (FlowDetailedEvent *) packet_data;
-
-    g_mutex_lock (priv->mutex);
 
     if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_BEGIN))
     {
@@ -213,8 +213,6 @@ master_shunt_read (FlowShunt *shunt, FlowPacket *packet, FlowSshMaster *ssh_mast
       priv->is_connecting = FALSE;
       signal_to_emit = "connect-finished";
     }
-
-    g_mutex_unlock (priv->mutex);
   }
   else if (packet_format == FLOW_PACKET_FORMAT_BUFFER)
   {
@@ -224,6 +222,8 @@ master_shunt_read (FlowShunt *shunt, FlowPacket *packet, FlowSshMaster *ssh_mast
     priv->is_connected = TRUE;
     priv->is_connecting = FALSE;
   }
+
+  g_mutex_unlock (priv->mutex);
 
   flow_packet_unref (packet);
 
