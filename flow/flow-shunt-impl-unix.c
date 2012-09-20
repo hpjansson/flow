@@ -2654,7 +2654,6 @@ flow_shunt_impl_spawn_command_line (const gchar *command_line)
   GPid        pid   = -1;
   gint        stdin_fd;
   gint        stdout_fd;
-  gint        stderr_fd;
 
   pipe_shunt = g_slice_new0 (PipeShunt);
   shunt = (FlowShunt *) pipe_shunt;
@@ -2690,7 +2689,11 @@ flow_shunt_impl_spawn_command_line (const gchar *command_line)
                                       &pid,
                                       &stdin_fd,
                                       &stdout_fd,
+#if 0
                                       &stderr_fd,
+#else
+                                      NULL,
+#endif
                                       &error))
   {
     FlowDetailedEvent *detailed_event;
@@ -2717,12 +2720,14 @@ flow_shunt_impl_spawn_command_line (const gchar *command_line)
 
     flow_pipe_set_nonblock (stdout_fd, TRUE);
     flow_pipe_set_nonblock (stdin_fd,  TRUE);
+#if 0
     flow_pipe_set_nonblock (stderr_fd, TRUE);
+#endif
 
     pipe_shunt->child_pid = pid;
     pipe_shunt->read_fd   = stdout_fd;
     pipe_shunt->write_fd  = stdin_fd;
-    /* TODO: error_fd? */
+    /* TODO: The caller might want to use stderr_fd for something */
   }
 
   if (pid < 0)
