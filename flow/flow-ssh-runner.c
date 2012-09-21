@@ -104,6 +104,8 @@ master_connect_finished (FlowSshRunner *ssh_runner)
 
     DEBUG (g_print ("Running command.\n"));
 
+    flow_connector_set_state_internal (FLOW_CONNECTOR (ssh_runner), FLOW_CONNECTIVITY_CONNECTED);
+
     shunt = flow_ssh_master_run_command (priv->master, flow_shell_op_get_cmd (priv->shell_op), NULL);
     if (!shunt)
     {
@@ -117,6 +119,7 @@ master_connect_finished (FlowSshRunner *ssh_runner)
   {
     /* TODO: Emit STREAM_DENIED */
     g_warning ("SSH master failed to connect.");
+    flow_connector_set_state_internal (FLOW_CONNECTOR (ssh_runner), FLOW_CONNECTIVITY_DISCONNECTED);
   }
 
   flow_pad_unblock (input_pad);
@@ -126,60 +129,19 @@ static void
 master_disconnected (FlowSshRunner *ssh_runner)
 {
   /* TODO: Emit STREAM_END */
+  flow_connector_set_state_internal (FLOW_CONNECTOR (ssh_runner), FLOW_CONNECTIVITY_DISCONNECTED);
 }
 
 static void
 shutdown_master (FlowSshRunner *ssh_runner, FlowSshMaster *ssh_master)
 {
+  FlowSshRunnerPrivate *priv = ssh_runner->priv;
+
   g_signal_handlers_disconnect_by_data (ssh_master, ssh_runner);
   g_object_unref (ssh_master);
-}
+  priv->master = NULL;
 
-static void
-run_next_shell_op (FlowSshRunner *ssh_runner)
-{
-  FlowSshRunnerPrivate *priv = ssh_runner->priv;
-  FlowSshMasterRegistry *registry = flow_ssh_master_registry_get_default ();
-  FlowSshMaster *ssh_master;
-
-  DEBUG (g_print ("run_next_shell_op\n"));
-
-  if (priv->shell_op)
-    flow_gobject_unref_clear (priv->shell_op);
-  priv->shell_op = priv->next_shell_op;
-  priv->next_shell_op = NULL;
-
-  ssh_master = flow_ssh_master_registry_get_master (registry,
-                                                    flow_ssh_connect_op_get_remote_service (priv->connect_op),
-                                                    NULL /* flow_ssh_connect_op_get_remote_user (priv->connect_op) */);
-
-  if (priv->master)
-    shutdown_master (ssh_runner, priv->master);
-
-  priv->master = g_object_ref (ssh_master);
-  g_signal_connect_swapped (ssh_master, "connect-finished", (GCallback) master_connect_finished, ssh_runner);
-  g_signal_connect_swapped (ssh_master, "disconnected", (GCallback) master_disconnected, ssh_runner);
-
-  flow_ssh_master_connect (ssh_master);
-}
-
-static void
-set_next_shell_op (FlowSshRunner *ssh_runner, FlowShellOp *shell_op)
-{
-  FlowSshRunnerPrivate *priv = ssh_runner->priv;
-  FlowPad *input_pad = FLOW_PAD (flow_simplex_element_get_input_pad (FLOW_SIMPLEX_ELEMENT (ssh_runner)));
-
-  DEBUG (g_print ("set_next_shell_op\n"));
-
-  g_assert (priv->next_shell_op == NULL);
-  priv->next_shell_op = g_object_ref (shell_op);
-
-  if (!priv->shell_op)
-    run_next_shell_op (ssh_runner);
-
-  flow_pad_block (input_pad);
-  if (priv->shunt)
-    flow_shunt_block_writes (priv->shunt);
+  flow_connector_set_state_internal (FLOW_CONNECTOR (ssh_runner), FLOW_CONNECTIVITY_DISCONNECTED);
 }
 
 static void
@@ -207,16 +169,84 @@ connect_to_remote_service (FlowSshRunner *ssh_runner)
   FlowSshMasterRegistry *registry;
 
   if (!priv->next_connect_op)
-  {
-    g_warning ("No connect op.");
     return;
-  }
-
-  disconnect_from_remote_service (ssh_runner);
 
   if (priv->connect_op)
     g_object_unref (priv->connect_op);
   priv->connect_op = priv->next_connect_op;
+  priv->next_connect_op = NULL;
+}
+
+static void
+run_next_shell_op (FlowSshRunner *ssh_runner)
+{
+  FlowSshRunnerPrivate *priv = ssh_runner->priv;
+  FlowSshMasterRegistry *registry = flow_ssh_master_registry_get_default ();
+  FlowSshMaster *ssh_master;
+
+  DEBUG (g_print ("run_next_shell_op\n"));
+
+  if (priv->shell_op)
+    flow_gobject_unref_clear (priv->shell_op);
+  priv->shell_op = priv->next_shell_op;
+  priv->next_shell_op = NULL;
+
+  ssh_master = flow_ssh_master_registry_get_master (registry,
+                                                    flow_ssh_connect_op_get_remote_service (priv->connect_op),
+                                                    NULL /* flow_ssh_connect_op_get_remote_user (priv->connect_op) */);
+
+  if (priv->master)
+    shutdown_master (ssh_runner, priv->master);
+
+  priv->master = g_object_ref (ssh_master);
+  g_signal_connect_swapped (ssh_master, "connect-finished", (GCallback) master_connect_finished, ssh_runner);
+  g_signal_connect_swapped (ssh_master, "disconnected", (GCallback) master_disconnected, ssh_runner);
+
+  flow_connector_set_state_internal (FLOW_CONNECTOR (ssh_runner), FLOW_CONNECTIVITY_CONNECTING);
+
+  if (priv->next_connect_op)
+    connect_to_remote_service (ssh_runner);
+
+  flow_ssh_master_connect (ssh_master);
+}
+
+static void
+set_next_shell_op (FlowSshRunner *ssh_runner, FlowShellOp *shell_op)
+{
+  FlowSshRunnerPrivate *priv = ssh_runner->priv;
+  FlowPad *input_pad = FLOW_PAD (flow_simplex_element_get_input_pad (FLOW_SIMPLEX_ELEMENT (ssh_runner)));
+
+  DEBUG (g_print ("set_next_shell_op\n"));
+
+  g_assert (priv->next_shell_op == NULL);
+  priv->next_shell_op = g_object_ref (shell_op);
+
+  if (!priv->shell_op)
+    run_next_shell_op (ssh_runner);
+
+  flow_pad_block (input_pad);
+  if (priv->shunt)
+    flow_shunt_block_writes (priv->shunt);
+}
+
+static void
+end_shell_op (FlowSshRunner *ssh_runner)
+{
+  FlowSshRunnerPrivate *priv = ssh_runner->priv;
+
+  disconnect_from_remote_service (ssh_runner);
+
+  g_assert (priv->shell_op != NULL);
+  g_object_unref (priv->shell_op);
+  priv->shell_op = NULL;
+
+  disconnect_from_remote_service (ssh_runner);
+
+  if (priv->next_connect_op)
+    connect_to_remote_service (ssh_runner);
+
+  if (priv->next_shell_op)
+    run_next_shell_op (ssh_runner);
 }
 
 static void
@@ -230,6 +260,9 @@ set_next_connect_op (FlowSshRunner *ssh_runner, FlowSshConnectOp *op)
     g_object_unref (priv->next_connect_op);
 
   priv->next_connect_op = op;
+
+  if (!priv->connect_op)
+    connect_to_remote_service (ssh_runner);
 }
 
 static FlowPacket *
@@ -251,19 +284,6 @@ handle_outbound_packet (FlowSshRunner *ssh_runner, FlowPacket *packet)
       set_next_shell_op (ssh_runner, FLOW_SHELL_OP (packet_data));
       flow_packet_unref (packet);
       packet = NULL;
-    }
-    else if (FLOW_IS_DETAILED_EVENT (packet_data))
-    {
-      FlowDetailedEvent *detailed_event = (FlowDetailedEvent *) packet_data;
-
-      if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_BEGIN))
-      {
-        connect_to_remote_service (ssh_runner);
-      }
-      else if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END))
-      {
-        flow_connector_set_state_internal (FLOW_CONNECTOR (ssh_runner), FLOW_CONNECTIVITY_DISCONNECTING);
-      }
     }
     else
     {
@@ -287,24 +307,12 @@ shunt_read (FlowShunt *shunt, FlowPacket *packet, FlowSshRunner *ssh_runner)
     {
       FlowDetailedEvent *detailed_event = (FlowDetailedEvent *) packet_data;
 
-      if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_BEGIN))
-      {
-        flow_connector_set_state_internal (FLOW_CONNECTOR (ssh_runner), FLOW_CONNECTIVITY_CONNECTED);
-      }
-      else if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END) ||
-               flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_DENIED))
+      if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END) ||
+          flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_DENIED))
       {
         DEBUG (g_print ("Shunt stream ended.\n"));
 
-        disconnect_from_remote_service (ssh_runner);
-
-        g_assert (priv->shell_op != NULL);
-        g_object_unref (priv->shell_op);
-        priv->shell_op = NULL;
-
-        if (priv->next_shell_op)
-          run_next_shell_op (ssh_runner);
-
+        end_shell_op (ssh_runner);
         flow_packet_unref (packet);
         packet = NULL;
       }
