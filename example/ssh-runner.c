@@ -76,6 +76,7 @@ run (const gchar *remote_name)
   FlowDetailedEvent *detailed_event;
   FlowPacket *packet;
   FlowShellOp *shell_op;
+  gint i;
 
   ip_service = flow_ip_service_new ();
   flow_ip_service_set_name (ip_service, remote_name);
@@ -101,33 +102,18 @@ run (const gchar *remote_name)
   flow_pad_connect (FLOW_PAD (flow_simplex_element_get_output_pad (FLOW_SIMPLEX_ELEMENT (runner))),
                     FLOW_PAD (flow_simplex_element_get_input_pad (FLOW_SIMPLEX_ELEMENT (user_adapter))));
 
-  /* Tell input file to stream itself from start to finish */
+  /* Perform a bunch of shell operations on the remote end */
 
-  detailed_event = flow_detailed_event_new (NULL);
-  flow_detailed_event_add_code (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_BEGIN);
-  packet = flow_packet_new_take_object (detailed_event, 0);
-  flow_pad_push (FLOW_PAD (flow_simplex_element_get_input_pad (FLOW_SIMPLEX_ELEMENT (runner))), packet);
+  for (i = 0; i < 10000; i++)
+  {
+    gchar *cmd;
 
-  shell_op = flow_shell_op_new ("ls");
-  packet = flow_packet_new_take_object (shell_op, 0);
-  flow_pad_push (FLOW_PAD (flow_simplex_element_get_input_pad (FLOW_SIMPLEX_ELEMENT (runner))), packet);
-
-  shell_op = flow_shell_op_new ("ls");
-  packet = flow_packet_new_take_object (shell_op, 0);
-  flow_pad_push (FLOW_PAD (flow_simplex_element_get_input_pad (FLOW_SIMPLEX_ELEMENT (runner))), packet);
-
-#if 0
-  seg_req = flow_segment_request_new (-1);
-  packet = flow_packet_new_take_object (seg_req, 0);
-  flow_pad_push (FLOW_PAD (flow_simplex_element_get_input_pad (FLOW_SIMPLEX_ELEMENT (runner))), packet);
-#endif
-
-#if 1
-  detailed_event = flow_detailed_event_new (NULL);
-  flow_detailed_event_add_code (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END);
-  packet = flow_packet_new_take_object (detailed_event, 0);
-  flow_pad_push (FLOW_PAD (flow_simplex_element_get_input_pad (FLOW_SIMPLEX_ELEMENT (runner))), packet);
-#endif
+    cmd = g_strdup_printf ("echo %d", i);
+    shell_op = flow_shell_op_new (cmd);
+    packet = flow_packet_new_take_object (shell_op, 0);
+    flow_pad_push (FLOW_PAD (flow_simplex_element_get_input_pad (FLOW_SIMPLEX_ELEMENT (runner))), packet);
+    g_free (cmd);
+  }
 
   /* Run until done */
 
