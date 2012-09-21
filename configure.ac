@@ -9,7 +9,7 @@ GNUTLS_REQUIRED=1.4.0
 
 dnl --- Package configuration ---
 
-AM_INIT_AUTOMAKE(flow, 0.1.1)
+AM_INIT_AUTOMAKE(flow, 0.2.0)
 AM_CONFIG_HEADER(config.h)
 
 AC_SUBST(VERSION)
