@@ -4,7 +4,7 @@ dnl ----------------------------
 dnl Automake/autoconf input file
 dnl ----------------------------
 
-GLIB_REQUIRED=2.10.0
+GLIB_REQUIRED=2.20.0
 GNUTLS_REQUIRED=1.4.0
 
 dnl --- Package configuration ---
