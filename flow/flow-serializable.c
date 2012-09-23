@@ -34,7 +34,7 @@ flow_serializable_default_init (FlowSerializableInterface *iface)
 }
 
 gpointer
-flow_serializable_begin (FlowSerializable *serializable)
+flow_serializable_serialize_begin (FlowSerializable *serializable)
 {
   FlowSerializableInterface *iface;
 
@@ -42,15 +42,15 @@ flow_serializable_begin (FlowSerializable *serializable)
 
   iface = FLOW_SERIALIZABLE_GET_IFACE (serializable);
 
-  if (iface->create_context)
-    return iface->create_context (serializable);
+  if (iface->create_serialize_context)
+    return iface->create_serialize_context (serializable);
 
   return NULL;
 }
 
 gboolean
-flow_serializable_step (FlowSerializable *serializable, FlowPad *target_pad,
-                        gpointer context)
+flow_serializable_serialize_step (FlowSerializable *serializable, FlowPad *target_pad,
+                                  gpointer context)
 {
   FlowSerializableInterface *iface;
   FlowPacket *packet;
@@ -60,7 +60,7 @@ flow_serializable_step (FlowSerializable *serializable, FlowPad *target_pad,
 
   iface = FLOW_SERIALIZABLE_GET_IFACE (serializable);
 
-  packet = iface->step (serializable, context);
+  packet = iface->serialize_step (serializable, context);
 
   if (packet)
   {
@@ -72,8 +72,8 @@ flow_serializable_step (FlowSerializable *serializable, FlowPad *target_pad,
 }
 
 void
-flow_serializable_finish (FlowSerializable *serializable, FlowPad *target_pad,
-                          gpointer context)
+flow_serializable_serialize_finish (FlowSerializable *serializable, FlowPad *target_pad,
+                                    gpointer context)
 {
   FlowSerializableInterface *iface;
   FlowPacket *packet;
@@ -83,15 +83,15 @@ flow_serializable_finish (FlowSerializable *serializable, FlowPad *target_pad,
 
   iface = FLOW_SERIALIZABLE_GET_IFACE (serializable);
 
-  while ((packet = iface->step (serializable, context)))
+  while ((packet = iface->serialize_step (serializable, context)))
     flow_pad_push (target_pad, packet);
 
-  if (iface->destroy_context)
-    iface->destroy_context (serializable, context);
+  if (iface->destroy_serialize_context)
+    iface->destroy_serialize_context (serializable, context);
 }
 
 void
-flow_serializable_abort (FlowSerializable *serializable, gpointer context)
+flow_serializable_serialize_abort (FlowSerializable *serializable, gpointer context)
 {
   FlowSerializableInterface *iface;
 
@@ -99,12 +99,12 @@ flow_serializable_abort (FlowSerializable *serializable, gpointer context)
 
   iface = FLOW_SERIALIZABLE_GET_IFACE (serializable);
 
-  if (iface->destroy_context)
-    iface->destroy_context (serializable, context);
+  if (iface->destroy_serialize_context)
+    iface->destroy_serialize_context (serializable, context);
 }
 
 void
-flow_serializable_serialize (FlowSerializable *serializable, FlowPad *target_pad)
+flow_serializable_serialize_all (FlowSerializable *serializable, FlowPad *target_pad)
 {
   FlowSerializableInterface *iface;
   gpointer context = NULL;
@@ -115,12 +115,71 @@ flow_serializable_serialize (FlowSerializable *serializable, FlowPad *target_pad
 
   iface = FLOW_SERIALIZABLE_GET_IFACE (serializable);
 
-  if (iface->create_context)
-    context = iface->create_context (serializable);
+  if (iface->create_serialize_context)
+    context = iface->create_serialize_context (serializable);
 
-  while ((packet = iface->step (serializable, context)))
+  while ((packet = iface->serialize_step (serializable, context)))
     flow_pad_push (target_pad, packet);
 
-  if (iface->destroy_context)
-    iface->destroy_context (serializable, context);
+  if (iface->destroy_serialize_context)
+    iface->destroy_serialize_context (serializable, context);
+}
+
+gpointer
+flow_serializable_deserialize_begin (GType type, FlowPacketQueue *packet_queue)
+{
+  GTypeClass *klass;
+  FlowSerializableInterface *iface;
+
+  g_return_val_if_fail (FLOW_IS_PACKET_QUEUE (packet_queue), NULL);
+
+  klass = g_type_class_ref (type);
+  iface = g_type_interface_peek (klass, FLOW_TYPE_SERIALIZABLE);
+
+  if (iface->create_deserialize_context)
+    return iface->create_deserialize_context ();
+
+  return NULL;
+}
+
+gboolean
+flow_serializable_deserialize_step (GType type, FlowPacketQueue *packet_queue, gpointer context,
+                                    FlowSerializable **serializable_out, GError **error)
+{
+  GTypeClass *klass;
+  FlowSerializableInterface *iface;
+  gboolean result;
+
+  g_return_val_if_fail (FLOW_IS_PACKET_QUEUE (packet_queue), FALSE);
+  g_return_val_if_fail (serializable_out != NULL, FALSE);
+
+  klass = g_type_class_peek (type);
+  iface = g_type_interface_peek (klass, FLOW_TYPE_SERIALIZABLE);
+
+  result = iface->deserialize_step (packet_queue, context, serializable_out, error);
+
+  if (*serializable_out)
+  {
+    if (iface->destroy_deserialize_context)
+      iface->destroy_deserialize_context (context);
+
+    g_type_class_unref (klass);
+  }
+
+  return result;
+}
+
+void
+flow_serializable_deserialize_abort (GType type, gpointer context)
+{
+  GTypeClass *klass;
+  FlowSerializableInterface *iface;
+
+  klass = g_type_class_peek (type);
+  iface = g_type_interface_peek (klass, FLOW_TYPE_SERIALIZABLE);
+
+  if (iface->destroy_deserialize_context)
+    iface->destroy_deserialize_context (context);
+
+  g_type_class_unref (klass);
 }

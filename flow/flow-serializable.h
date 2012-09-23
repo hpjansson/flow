@@ -46,19 +46,30 @@ struct _FlowSerializableInterface
 
   /* Virtual functions */
 
-  gpointer    (*create_context)  (FlowSerializable *serializable);
-  FlowPacket *(*step)            (FlowSerializable *serializable, gpointer context);
-  void        (*destroy_context) (FlowSerializable *serializable, gpointer context);
+  gpointer    (*create_serialize_context)    (FlowSerializable *serializable);
+  void        (*destroy_serialize_context)   (FlowSerializable *serializable, gpointer context);
+  FlowPacket *(*serialize_step)              (FlowSerializable *serializable, gpointer context);
+
+  gpointer    (*create_deserialize_context)  (void);
+  void        (*destroy_deserialize_context) (gpointer context);
+  gboolean    (*deserialize_step)            (FlowPacketQueue *packet_queue, gpointer context,
+                                              FlowSerializable **serializable_out, GError **error);
 };
 
-gpointer              flow_serializable_begin     (FlowSerializable *serializable);
-gboolean              flow_serializable_step      (FlowSerializable *serializable, FlowPad *target_pad,
-                                                   gpointer context);
-void                  flow_serializable_finish    (FlowSerializable *serializable, FlowPad *target_pad,
-                                                   gpointer context);
-void                  flow_serializable_abort     (FlowSerializable *serializable, gpointer context);
+gpointer          flow_serializable_serialize_begin     (FlowSerializable *serializable);
+gboolean          flow_serializable_serialize_step      (FlowSerializable *serializable, FlowPad *target_pad,
+                                                         gpointer context);
+void              flow_serializable_serialize_finish    (FlowSerializable *serializable, FlowPad *target_pad,
+                                                         gpointer context);
+void              flow_serializable_serialize_abort     (FlowSerializable *serializable, gpointer context);
 
-void                  flow_serializable_serialize (FlowSerializable *serializable, FlowPad *target_pad);
+void              flow_serializable_serialize_all       (FlowSerializable *serializable, FlowPad *target_pad);
+
+gpointer          flow_serializable_deserialize_begin   (GType type, FlowPacketQueue *packet_queue);
+gboolean          flow_serializable_deserialize_step    (GType type, FlowPacketQueue *packet_queue,
+                                                         gpointer context, FlowSerializable **serializable_out,
+                                                         GError **error);
+void              flow_serializable_deserialize_abort   (GType type, gpointer context);
 
 G_END_DECLS
 
