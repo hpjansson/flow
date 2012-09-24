@@ -84,6 +84,7 @@ libflow_la_SOURCES = \
 	flow-ssh-master.c \
 	flow-ssh-master-registry.c \
 	flow-ssh-runner.c \
+	flow-stdio-connector.c \
 	flow-tcp-connect-op.c \
 	flow-tcp-connector.c \
 	flow-tcp-io.c \
@@ -149,6 +150,7 @@ pkginclude_HEADERS = \
 	flow-ssh-master.h \
 	flow-ssh-master-registry.h \
 	flow-ssh-runner.h \
+	flow-stdio-connector.h \
 	flow-tcp-connect-op.h \
 	flow-tcp-connector.h \
 	flow-tcp-io.h \

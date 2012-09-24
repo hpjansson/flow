@@ -63,6 +63,7 @@
 #include <flow/flow-splitter.h>
 #include <flow/flow-ssh-connect-op.h>
 #include <flow/flow-ssh-runner.h>
+#include <flow/flow-stdio-connector.h>
 #include <flow/flow-tcp-connect-op.h>
 #include <flow/flow-tcp-connector.h>
 #include <flow/flow-tcp-io.h>
