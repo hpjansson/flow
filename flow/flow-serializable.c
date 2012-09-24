@@ -126,12 +126,10 @@ flow_serializable_serialize_all (FlowSerializable *serializable, FlowPad *target
 }
 
 gpointer
-flow_serializable_deserialize_begin (GType type, FlowPacketQueue *packet_queue)
+flow_serializable_deserialize_begin (GType type)
 {
   GTypeClass *klass;
   FlowSerializableInterface *iface;
-
-  g_return_val_if_fail (FLOW_IS_PACKET_QUEUE (packet_queue), NULL);
 
   klass = g_type_class_ref (type);
   iface = g_type_interface_peek (klass, FLOW_TYPE_SERIALIZABLE);

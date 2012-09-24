@@ -65,7 +65,7 @@ void              flow_serializable_serialize_abort     (FlowSerializable *seria
 
 void              flow_serializable_serialize_all       (FlowSerializable *serializable, FlowPad *target_pad);
 
-gpointer          flow_serializable_deserialize_begin   (GType type, FlowPacketQueue *packet_queue);
+gpointer          flow_serializable_deserialize_begin   (GType type);
 gboolean          flow_serializable_deserialize_step    (GType type, FlowPacketQueue *packet_queue,
                                                          gpointer context, FlowSerializable **serializable_out,
                                                          GError **error);
