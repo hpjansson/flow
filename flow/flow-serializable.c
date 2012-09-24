@@ -68,6 +68,9 @@ flow_serializable_serialize_step (FlowSerializable *serializable, FlowPad *targe
     return TRUE;
   }
 
+  if (iface->destroy_serialize_context)
+    iface->destroy_serialize_context (serializable, context);
+
   return FALSE;
 }
 
