@@ -48,6 +48,7 @@ typedef void        (FlowShuntReadFunc)   (FlowShunt *shunt, FlowPacket *packet,
 typedef FlowPacket *(FlowShuntWriteFunc)  (FlowShunt *shunt, gpointer user_data);
 typedef void        (FlowWorkerFunc)      (FlowSyncShunt *sync_shunt, gpointer user_data);
 
+FlowShunt  *flow_open_stdio             (void);
 FlowShunt  *flow_open_file              (const gchar *path, FlowAccessMode access_mode);
 FlowShunt  *flow_create_file            (const gchar *path, FlowAccessMode access_mode, gboolean destructive,
                                          FlowAccessMode creation_permissions_user,

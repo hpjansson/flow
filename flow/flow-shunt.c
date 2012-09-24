@@ -138,6 +138,7 @@ static void        flow_shunt_impl_finalize_shunt     (FlowShunt *shunt);
 
 /* Shunt initialization functions. */
 
+static FlowShunt  *flow_shunt_impl_open_stdio         (void);
 static FlowShunt  *flow_shunt_impl_open_file          (const gchar *path, FlowAccessMode access_mode);
 static FlowShunt  *flow_shunt_impl_create_file        (const gchar *path, FlowAccessMode access_mode,
                                                       gboolean destructive,
@@ -615,6 +616,12 @@ flow_shunt_write_state_changed (FlowShunt *shunt)
 /* -------------------- *
  * FlowShunt public API *
  * -------------------- */
+
+FlowShunt *
+flow_open_stdio (void)
+{
+  return flow_shunt_impl_open_stdio ();
+}
 
 FlowShunt *
 flow_open_file (const gchar *path, FlowAccessMode access_mode)

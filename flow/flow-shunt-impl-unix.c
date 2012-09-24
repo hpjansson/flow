@@ -2389,6 +2389,38 @@ create_file_shunt_thread (FileShuntParams *params)
 }
 
 static FlowShunt *
+flow_shunt_impl_open_stdio (void)
+{
+  FlowShunt *shunt;
+  PipeShunt *pipe_shunt;
+
+  pipe_shunt = g_slice_new0 (PipeShunt);
+  shunt = (FlowShunt *) pipe_shunt;
+
+  flow_shunt_impl_lock ();
+
+  flow_shunt_init_common (shunt, NULL);
+
+  shunt->shunt_type = SHUNT_TYPE_PIPE;
+
+  pipe_shunt->read_fd = STDIN_FILENO;
+  flow_pipe_set_nonblock (STDIN_FILENO, TRUE);
+
+  pipe_shunt->write_fd = STDOUT_FILENO;
+  flow_pipe_set_nonblock (STDOUT_FILENO, TRUE);
+
+  shunt->can_read  = TRUE;
+  shunt->can_write = TRUE;
+
+  flow_shunt_read_state_changed (shunt);
+  flow_shunt_write_state_changed (shunt);
+
+  flow_shunt_impl_unlock ();
+
+  return shunt;
+}
+
+static FlowShunt *
 flow_shunt_impl_open_file (const gchar *path, FlowAccessMode access_mode)
 {
   FileShuntParams *params;
