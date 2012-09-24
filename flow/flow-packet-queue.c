@@ -375,7 +375,7 @@ flow_packet_queue_push_packet_to_head (FlowPacketQueue *packet_queue, FlowPacket
  * 
  * Pops the next packet from @packet_queue. If flow_packet_queue_pop_bytes ()
  * was called previously, resulting in a partially popped packet, a new packet
- * is created and returned, containing the remainder of that's packet data.
+ * is created and returned, containing the remainder of that packet's data.
  * 
  * Return value: A packet, or %NULL if the queue is empty.
  **/
