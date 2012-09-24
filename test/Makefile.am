@@ -8,6 +8,7 @@ noinst_PROGRAMS = \
 	test-demux \
 	test-packet \
 	test-packet-queue \
+	test-serializable \
 	test-shunt-complex-file \
 	test-shunt-process \
 	test-shunt-simple-file \
