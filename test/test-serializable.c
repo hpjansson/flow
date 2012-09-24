@@ -86,7 +86,7 @@ flow_foo_set_test_int_internal (FlowFoo *foo, guint32 test_int)
 }
 
 FLOW_GOBJECT_PROPERTIES_BEGIN (flow_foo)
-FLOW_GOBJECT_PROPERTY_INT     (G_TYPE_UINT, "test", "Test", "Test integer",
+FLOW_GOBJECT_PROPERTY_INT     (G_TYPE_UINT, "test-int", "Test", "Test integer",
                                G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY,
                                flow_foo_get_test_int_internal,
                                flow_foo_set_test_int_internal,
@@ -127,6 +127,9 @@ flow_foo_serialize_step (FlowFoo *foo, gpointer data)
   }
   u;
 
+  if (context->n == 4)
+    return NULL;
+
   u.n_be = GUINT32_TO_BE (priv->test_int);
   packet = flow_packet_new (FLOW_PACKET_FORMAT_BUFFER, &u.b [context->n], 1);
   context->n++;
@@ -149,6 +152,7 @@ static gpointer
 flow_foo_create_deserialize_context (void)
 {
   DeserializeContext *context = g_slice_new (DeserializeContext);
+  context->n = 0;
   return context;
 }
 
@@ -170,7 +174,7 @@ flow_foo_deserialize_step (FlowPacketQueue *packet_queue, DeserializeContext *co
     return TRUE;
 
   *serializable_out = g_object_new (FLOW_TYPE_FOO,
-                                    "test", GUINT32_FROM_BE (context->u.n_be),
+                                    "test-int", GUINT32_FROM_BE (context->u.n_be),
                                     NULL);
   return TRUE;
 }
@@ -236,19 +240,64 @@ flow_foo_finalize (FlowFoo *foo)
 /* --- Test main --- */
 
 static void
+deserialize_and_check_one (FlowFoo *original_foo, FlowPacketQueue *packet_queue)
+{
+  FlowFoo *copy_foo;
+  gpointer context;
+  gint original_int;
+  gint copy_int;
+
+  copy_foo = NULL;
+
+  context = flow_serializable_deserialize_begin (FLOW_TYPE_FOO);
+  while (flow_serializable_deserialize_step (FLOW_TYPE_FOO, packet_queue, context,
+                                             (FlowSerializable **) &copy_foo, NULL) &&
+         !copy_foo)
+    ;
+
+  g_object_get (original_foo, "test-int", &original_int, NULL);
+  g_object_get (copy_foo, "test-int", &copy_int, NULL);
+  if (copy_int != original_int)
+    test_end (TEST_RESULT_FAILED, "deserialized object does not correspond to original");
+
+  g_object_unref (copy_foo);
+}
+
+static void
 test_run (void)
 {
+  FlowSimplexElement *controller;
+  FlowPad *input_pad, *output_pad;
   FlowFoo *foo;
   gint i;
 
+  controller = FLOW_SIMPLEX_ELEMENT (flow_controller_new ());
+  input_pad = FLOW_PAD (flow_simplex_element_get_input_pad (controller));
+  output_pad = FLOW_PAD (flow_simplex_element_get_output_pad (controller));
+
   for (i = 0; i < 1000; i++)
   {
+    gpointer context;
+    gint j;
+
     foo = g_object_new (FLOW_TYPE_FOO,
-                        "test", i,
+                        "test-int", i,
                         NULL);
 
+    flow_serializable_serialize_all (FLOW_SERIALIZABLE (foo), input_pad);
 
+    context = flow_serializable_serialize_begin (FLOW_SERIALIZABLE (foo));
+    flow_serializable_serialize_finish (FLOW_SERIALIZABLE (foo), input_pad, context);
+
+    context = flow_serializable_serialize_begin (FLOW_SERIALIZABLE (foo));
+    while (flow_serializable_serialize_step (FLOW_SERIALIZABLE (foo), input_pad, context))
+      ;
+
+    for (j = 0; j < 3; j++)
+      deserialize_and_check_one (foo, flow_pad_get_packet_queue (output_pad));
 
     g_object_unref (foo);
   }
+
+  g_object_unref (controller);
 }
