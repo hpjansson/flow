@@ -1,6 +1,7 @@
 test-packet
 test-packet-queue
 # test-ip-resolver
+test-serializable
 test-shunt-process
 test-shunt-simple-file
 test-shunt-complex-file
