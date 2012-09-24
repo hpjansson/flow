@@ -45,7 +45,7 @@
 static GMainLoop *main_loop;
 static gint n_output_files_left;
 
-static guint64 current_input_file_size;
+static gint64 current_input_file_size;
 static guint64 global_byte_total;
 
 static void
@@ -143,7 +143,10 @@ print_statistics_cb (FlowController *controller)
 {
   guint64 byte_rate = flow_controller_get_byte_rate (controller);
   guint64 byte_total = flow_controller_get_byte_total (controller);
-  gchar *time_left_s = byte_rate > 0 ? format_time_interval (((current_input_file_size - byte_total) * 1000000) / byte_rate) : g_strdup ("?");
+  gchar *time_left_s =
+    (byte_rate > 0 && current_input_file_size > 0) ?
+    format_time_interval (((current_input_file_size - byte_total) * 1000000) / byte_rate) :
+    g_strdup ("?");
 
   g_printerr ("\r%" G_GUINT64_FORMAT "MiB copied - %s left - %" G_GUINT64_FORMAT "MiB/s          ",
               byte_total / (G_GUINT64_CONSTANT (1024) * G_GUINT64_CONSTANT (1024)),
@@ -160,6 +163,9 @@ get_file_size (const gchar *path)
 {
   struct stat st;
 
+  if (path [0] == '-' && path [1] == '\0')
+    return -1;
+
   if (stat (path, &st) < 0) {
     g_printerr ("Could not stat input file.\n");
     return -1;
@@ -175,8 +181,7 @@ copy_file_cb (const gchar *input_file, const gchar **output_files, gint n_output
   FlowSplitter *splitter;
   FlowJoiner *joiner;
   FlowUserAdapter *user_adapter;
-  FlowFileConnector *connector;
-  FlowFileConnectOp *op;
+  FlowConnector *connector;
   FlowDetailedEvent *detailed_event;
   FlowSegmentRequest *seg_req;
   FlowPacket *packet;
@@ -207,15 +212,27 @@ copy_file_cb (const gchar *input_file, const gchar **output_files, gint n_output
 
   /* Set up input file */
 
-  connector = flow_file_connector_new ();
-  flow_connector_set_io_buffer_size (FLOW_CONNECTOR (connector), FILE_IO_BUFFER_SIZE);
-  flow_connector_set_read_queue_limit (FLOW_CONNECTOR (connector), FILE_QUEUE_SIZE);
-  flow_connector_set_write_queue_limit (FLOW_CONNECTOR (connector), FILE_QUEUE_SIZE);
+  if (input_file [0] == '-' && input_file [1] == '\0')
+  {
+    connector = FLOW_CONNECTOR (flow_stdio_connector_new ());
+    flow_connector_set_io_buffer_size (connector, FILE_IO_BUFFER_SIZE);
+    flow_connector_set_read_queue_limit (connector, FILE_QUEUE_SIZE);
+    flow_connector_set_write_queue_limit (connector, FILE_QUEUE_SIZE);
+  }
+  else
+  {
+    FlowFileConnectOp *op;
 
-  op = flow_file_connect_op_new (input_file, FLOW_READ_ACCESS, FALSE, FALSE,
-                                 FLOW_NO_ACCESS, FLOW_NO_ACCESS, FLOW_NO_ACCESS);
-  packet = flow_packet_new_take_object (op, 0);
-  flow_pad_push (FLOW_PAD (flow_simplex_element_get_input_pad (FLOW_SIMPLEX_ELEMENT (connector))), packet);
+    connector = FLOW_CONNECTOR (flow_file_connector_new ());
+    flow_connector_set_io_buffer_size (connector, FILE_IO_BUFFER_SIZE);
+    flow_connector_set_read_queue_limit (connector, FILE_QUEUE_SIZE);
+    flow_connector_set_write_queue_limit (connector, FILE_QUEUE_SIZE);
+
+    op = flow_file_connect_op_new (input_file, FLOW_READ_ACCESS, FALSE, FALSE,
+                                   FLOW_NO_ACCESS, FLOW_NO_ACCESS, FLOW_NO_ACCESS);
+    packet = flow_packet_new_take_object (op, 0);
+    flow_pad_push (FLOW_PAD (flow_simplex_element_get_input_pad (FLOW_SIMPLEX_ELEMENT (connector))), packet);
+  }
 
   /* Tell input file to stream itself from start to finish */
 
@@ -244,12 +261,14 @@ copy_file_cb (const gchar *input_file, const gchar **output_files, gint n_output
 
   for (i = 0; i < n_output_files; i++)
   {
+    FlowFileConnectOp *op;
+
     g_print ("%s%s", output_files [i], i + 1 < n_output_files ? ", " : "");
 
-    connector = flow_file_connector_new ();
-    flow_connector_set_io_buffer_size (FLOW_CONNECTOR (connector), FILE_IO_BUFFER_SIZE);
-    flow_connector_set_read_queue_limit (FLOW_CONNECTOR (connector), FILE_QUEUE_SIZE);
-    flow_connector_set_write_queue_limit (FLOW_CONNECTOR (connector), FILE_QUEUE_SIZE);
+    connector = FLOW_CONNECTOR (flow_file_connector_new ());
+    flow_connector_set_io_buffer_size (connector, FILE_IO_BUFFER_SIZE);
+    flow_connector_set_read_queue_limit (connector, FILE_QUEUE_SIZE);
+    flow_connector_set_write_queue_limit (connector, FILE_QUEUE_SIZE);
 
     op = flow_file_connect_op_new (output_files [i], FLOW_WRITE_ACCESS, TRUE, TRUE,
                                    FLOW_READ_ACCESS | FLOW_WRITE_ACCESS,
@@ -268,8 +287,6 @@ copy_file_cb (const gchar *input_file, const gchar **output_files, gint n_output
   g_print ("]\n");
 
   current_input_file_size = get_file_size (input_file);
-  if (current_input_file_size < 0)
-    return;
 
   /* Set up statistics timer */
 
