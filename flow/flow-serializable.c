@@ -148,6 +148,7 @@ flow_serializable_deserialize_step (GType type, FlowPacketQueue *packet_queue, g
 {
   GTypeClass *klass;
   FlowSerializableInterface *iface;
+  FlowSerializable *my_serializable_out = NULL;
   gboolean result;
 
   g_return_val_if_fail (FLOW_IS_PACKET_QUEUE (packet_queue), FALSE);
@@ -156,10 +157,12 @@ flow_serializable_deserialize_step (GType type, FlowPacketQueue *packet_queue, g
   klass = g_type_class_peek (type);
   iface = g_type_interface_peek (klass, FLOW_TYPE_SERIALIZABLE);
 
-  result = iface->deserialize_step (packet_queue, context, serializable_out, error);
+  result = iface->deserialize_step (packet_queue, context, &my_serializable_out, error);
 
-  if (*serializable_out)
+  if (my_serializable_out)
   {
+    *serializable_out = my_serializable_out;
+
     if (iface->destroy_deserialize_context)
       iface->destroy_deserialize_context (context);
 
