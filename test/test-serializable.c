@@ -109,17 +109,16 @@ flow_foo_create_serialize_context (FlowFoo *foo)
 }
 
 static void
-flow_foo_destroy_serialize_context (FlowFoo *foo, gpointer data)
+flow_foo_destroy_serialize_context (FlowFoo *foo, SerializeContext *context)
 {
-  g_slice_free (SerializeContext, data);
+  g_slice_free (SerializeContext, context);
 }
 
 static FlowPacket *
-flow_foo_serialize_step (FlowFoo *foo, gpointer data)
+flow_foo_serialize_step (FlowFoo *foo, SerializeContext *context)
 {
   FlowPacket *packet;
   FlowFooPrivate *priv = foo->priv;
-  SerializeContext *context = data;
   union
   {
     guint32 n_be;
@@ -157,9 +156,9 @@ flow_foo_create_deserialize_context (void)
 }
 
 static void
-flow_foo_destroy_deserialize_context (gpointer data)
+flow_foo_destroy_deserialize_context (DeserializeContext *context)
 {
-  g_slice_free (DeserializeContext, data);
+  g_slice_free (DeserializeContext, context);
 }
 
 static gboolean
