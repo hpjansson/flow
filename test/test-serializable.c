@@ -114,8 +114,8 @@ flow_foo_destroy_serialize_context (FlowFoo *foo, SerializeContext *context)
   g_slice_free (SerializeContext, context);
 }
 
-static FlowPacket *
-flow_foo_serialize_step (FlowFoo *foo, SerializeContext *context)
+static gboolean
+flow_foo_serialize_step (FlowFoo *foo, FlowPacketQueue *packet_queue, SerializeContext *context)
 {
   FlowPacket *packet;
   FlowFooPrivate *priv = foo->priv;
@@ -127,12 +127,14 @@ flow_foo_serialize_step (FlowFoo *foo, SerializeContext *context)
   u;
 
   if (context->n == 4)
-    return NULL;
+    return FALSE;
 
   u.n_be = GUINT32_TO_BE (priv->test_int);
   packet = flow_packet_new (FLOW_PACKET_FORMAT_BUFFER, &u.b [context->n], 1);
   context->n++;
-  return packet;
+
+  flow_packet_queue_push_packet (packet_queue, packet);
+  return TRUE;
 }
 
 typedef struct
@@ -187,7 +189,7 @@ flow_foo_serializable_iface_init (gpointer g_iface, gpointer iface_data)
     flow_foo_create_serialize_context;
   iface->destroy_serialize_context = (void (*) (FlowSerializable *, gpointer))
     flow_foo_destroy_serialize_context;
-  iface->serialize_step = (FlowPacket *(*) (FlowSerializable *, gpointer))
+  iface->serialize_step = (gboolean (*) (FlowSerializable *, FlowPacketQueue *, gpointer))
     flow_foo_serialize_step;
 
   iface->create_deserialize_context = (gpointer (*) (void))

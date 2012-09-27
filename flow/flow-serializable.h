@@ -48,7 +48,7 @@ struct _FlowSerializableInterface
 
   gpointer    (*create_serialize_context)    (FlowSerializable *serializable);
   void        (*destroy_serialize_context)   (FlowSerializable *serializable, gpointer context);
-  FlowPacket *(*serialize_step)              (FlowSerializable *serializable, gpointer context);
+  gboolean    (*serialize_step)              (FlowSerializable *serializable, FlowPacketQueue *packet_queue, gpointer context);
 
   gpointer    (*create_deserialize_context)  (void);
   void        (*destroy_deserialize_context) (gpointer context);

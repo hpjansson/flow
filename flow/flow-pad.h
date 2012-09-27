@@ -85,19 +85,20 @@ struct _FlowPadClass
   void (*_pad_4) (void);
 };
 
-void             flow_pad_push              (FlowPad *pad, FlowPacket *packet);
+void             flow_pad_push                (FlowPad *pad, FlowPacket *packet);
 
-void             flow_pad_connect           (FlowPad *pad, FlowPad *other_pad);
-void             flow_pad_disconnect        (FlowPad *pad);
+void             flow_pad_connect             (FlowPad *pad, FlowPad *other_pad);
+void             flow_pad_disconnect          (FlowPad *pad);
 
-void             flow_pad_block             (FlowPad *pad);
-void             flow_pad_unblock           (FlowPad *pad);
-gboolean         flow_pad_is_blocked        (FlowPad *pad);
+void             flow_pad_block               (FlowPad *pad);
+void             flow_pad_unblock             (FlowPad *pad);
+gboolean         flow_pad_is_blocked          (FlowPad *pad);
 
-FlowElement     *flow_pad_get_owner_element (FlowPad *pad);
-FlowPad         *flow_pad_get_connected_pad (FlowPad *pad);
+FlowElement     *flow_pad_get_owner_element   (FlowPad *pad);
+FlowPad         *flow_pad_get_connected_pad   (FlowPad *pad);
 
-FlowPacketQueue *flow_pad_get_packet_queue  (FlowPad *pad);
+FlowPacketQueue *flow_pad_get_packet_queue    (FlowPad *pad);
+FlowPacketQueue *flow_pad_ensure_packet_queue (FlowPad *pad);
 
 G_END_DECLS
 

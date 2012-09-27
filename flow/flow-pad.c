@@ -339,3 +339,14 @@ flow_pad_get_packet_queue (FlowPad *pad)
 
   return pad->packet_queue;
 }
+
+FlowPacketQueue *
+flow_pad_ensure_packet_queue (FlowPad *pad)
+{
+  g_return_val_if_fail (FLOW_IS_PAD (pad), NULL);
+
+  if (!pad->packet_queue)
+    pad->packet_queue = flow_packet_queue_new ();
+
+  return pad->packet_queue;
+}

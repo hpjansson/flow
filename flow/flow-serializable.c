@@ -53,20 +53,18 @@ flow_serializable_serialize_step (FlowSerializable *serializable, FlowPad *targe
                                   gpointer context)
 {
   FlowSerializableInterface *iface;
-  FlowPacket *packet;
+  gboolean call_again;
 
   g_return_val_if_fail (FLOW_IS_SERIALIZABLE (serializable), FALSE);
   g_return_val_if_fail (FLOW_IS_PAD (target_pad), FALSE);
 
   iface = FLOW_SERIALIZABLE_GET_IFACE (serializable);
 
-  packet = iface->serialize_step (serializable, context);
+  call_again = iface->serialize_step (serializable, flow_pad_ensure_packet_queue (target_pad), context);
+  flow_pad_push (target_pad, NULL);
 
-  if (packet)
-  {
-    flow_pad_push (target_pad, packet);
+  if (call_again)
     return TRUE;
-  }
 
   if (iface->destroy_serialize_context)
     iface->destroy_serialize_context (serializable, context);
@@ -79,15 +77,18 @@ flow_serializable_serialize_finish (FlowSerializable *serializable, FlowPad *tar
                                     gpointer context)
 {
   FlowSerializableInterface *iface;
-  FlowPacket *packet;
+  FlowPacketQueue *packet_queue;
 
   g_return_if_fail (FLOW_IS_SERIALIZABLE (serializable));
   g_return_if_fail (FLOW_IS_PAD (target_pad));
 
   iface = FLOW_SERIALIZABLE_GET_IFACE (serializable);
+  packet_queue = flow_pad_ensure_packet_queue (target_pad);
 
-  while ((packet = iface->serialize_step (serializable, context)))
-    flow_pad_push (target_pad, packet);
+  while (iface->serialize_step (serializable, packet_queue, context))
+    flow_pad_push (target_pad, NULL);
+
+  flow_pad_push (target_pad, NULL);
 
   if (iface->destroy_serialize_context)
     iface->destroy_serialize_context (serializable, context);
@@ -111,18 +112,21 @@ flow_serializable_serialize_all (FlowSerializable *serializable, FlowPad *target
 {
   FlowSerializableInterface *iface;
   gpointer context = NULL;
-  FlowPacket *packet;
+  FlowPacketQueue *packet_queue;
 
   g_return_if_fail (FLOW_IS_SERIALIZABLE (serializable));
   g_return_if_fail (FLOW_IS_PAD (target_pad));
 
   iface = FLOW_SERIALIZABLE_GET_IFACE (serializable);
+  packet_queue = flow_pad_ensure_packet_queue (target_pad);
 
   if (iface->create_serialize_context)
     context = iface->create_serialize_context (serializable);
 
-  while ((packet = iface->serialize_step (serializable, context)))
-    flow_pad_push (target_pad, packet);
+  while (iface->serialize_step (serializable, packet_queue, context))
+    flow_pad_push (target_pad, NULL);
+
+  flow_pad_push (target_pad, NULL);
 
   if (iface->destroy_serialize_context)
     iface->destroy_serialize_context (serializable, context);
