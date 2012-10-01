@@ -40,23 +40,28 @@ flow_pack_uint64 (guint64 n_in, guchar *buf_out)
   return buf_out;
 }
 
-const guchar *
-flow_unpack_uint64 (const guchar *buf_in, guint64 *n_out)
+gboolean
+flow_unpack_uint64 (const guchar **buf_ptr_inout, const guchar *buf_end, guint64 *n_out)
 {
   guint64 n = 0;
   guchar c;
   guint shift = 0;
+  const guchar *buf_in = *buf_ptr_inout;
 
   do
   {
+    if (buf_in == buf_end)
+      return FALSE;
+
     c = *(buf_in++);
     n |= (c & 0x7f) << shift;
     shift += 7;
   }
   while (c & 0x80);
 
+  *buf_ptr_inout = buf_in;
   *n_out = n;
-  return buf_in;
+  return TRUE;
 }
 
 guchar *
@@ -72,23 +77,28 @@ flow_pack_uint32 (guint32 n_in, guchar *buf_out)
   return buf_out;
 }
 
-const guchar *
-flow_unpack_uint32 (const guchar *buf_in, guint32 *n_out)
+gboolean
+flow_unpack_uint32 (const guchar **buf_ptr_inout, const guchar *buf_end, guint32 *n_out)
 {
-  guint64 n = 0;
+  guint32 n = 0;
   guchar c;
   guint shift = 0;
+  const guchar *buf_in = *buf_ptr_inout;
 
   do
   {
+    if (buf_in == buf_end)
+      return FALSE;
+
     c = *(buf_in++);
     n |= (c & 0x7f) << shift;
     shift += 7;
   }
   while (c & 0x80);
 
+  *buf_ptr_inout = buf_in;
   *n_out = n;
-  return buf_in;
+  return TRUE;
 }
 
 guchar *
@@ -103,14 +113,23 @@ flow_pack_string (const gchar *string_in, guchar *buf_out)
   return buf_out + len;
 }
 
-const guchar *
-flow_unpack_string (const guchar *buf_in, gchar *string_out)
+gboolean
+flow_unpack_string (const guchar **buf_ptr_inout, const guchar *buf_end, gchar **string_out)
 {
   guint32 len;
+  const guchar *buf_in = *buf_ptr_inout;
 
-  buf_in = flow_unpack_uint32 (buf_in, &len);
-  memcpy (string_out, buf_in, len);
-  string_out [len] = '\0';
+  if (!flow_unpack_uint32 (&buf_in, buf_end, &len))
+    return FALSE;
 
-  return buf_in;
+  if (buf_in + len > buf_end)
+    return FALSE;
+
+  *string_out = g_malloc (len + 1);
+
+  memcpy (*string_out, buf_in, len);
+  (*string_out) [len] = '\0';
+
+  *buf_ptr_inout += len;
+  return TRUE;
 }

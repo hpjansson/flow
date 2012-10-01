@@ -29,12 +29,12 @@
 
 G_BEGIN_DECLS
 
-guchar       *flow_pack_uint64 (guint64 n_in, guchar *buf_out);
-const guchar *flow_unpack_uint64 (const guchar *buf_in, guint64 *n_out);
-guchar       *flow_pack_uint32 (guint32 n_in, guchar *buf_out);
-const guchar *flow_unpack_uint32 (const guchar *buf_in, guint32 *n_out);
-guchar       *flow_pack_string (const gchar *string_in, guchar *buf_out);
-const guchar *flow_unpack_string (const guchar *buf_in, gchar *string_out);
+guchar         *flow_pack_uint32 (guint32 n_in, guchar *buf_out);
+gboolean        flow_unpack_uint32 (const guchar **buf_ptr_inout, const guchar *buf_end, guint32 *n_out);
+guchar         *flow_pack_uint64 (guint64 n_in, guchar *buf_out);
+gboolean        flow_unpack_uint64 (const guchar **buf_ptr_inout, const guchar *buf_end, guint64 *n_out);
+guchar         *flow_pack_string (const gchar *string_in, guchar *buf_out);
+gboolean        flow_unpack_string (const guchar **buf_ptr_inout, const guchar *buf_end, gchar **string_out);
 
 G_END_DECLS
 
