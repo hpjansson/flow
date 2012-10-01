@@ -79,6 +79,8 @@ gboolean          flow_serializable_deserialize_step    (GType type, FlowPacketQ
                                                          GError **error);
 void              flow_serializable_deserialize_abort   (GType type, gpointer context);
 
+GQuark            flow_serializable_error_quark         (void);
+
 G_END_DECLS
 
 #endif  /* _FLOW_SERIALIZABLE_H */
