@@ -29,6 +29,14 @@
 
 G_BEGIN_DECLS
 
+#define FLOW_SERIALIZABLE_ERROR flow_serializable_error_quark ()
+
+typedef enum
+{
+  FLOW_SERIALIZABLE_ERROR_INVALID_DATA
+}
+FlowSerializableError;
+
 #define FLOW_TYPE_SERIALIZABLE              (flow_serializable_get_type ())
 #define FLOW_SERIALIZABLE(inst)             (G_TYPE_CHECK_INSTANCE_CAST ((inst), \
                                              FLOW_TYPE_SERIALIZABLE, FlowSerializable))

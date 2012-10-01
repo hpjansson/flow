@@ -191,3 +191,9 @@ flow_serializable_deserialize_abort (GType type, gpointer context)
 
   g_type_class_unref (klass);
 }
+
+GQuark
+flow_serializable_error_quark (void)
+{
+  return g_quark_from_static_string ("flow-serializable-error-quark");
+}
