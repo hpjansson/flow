@@ -50,6 +50,7 @@
 #include <flow/flow-mux-serializer.h>
 #include <flow/flow-network-util.h>
 #include <flow/flow-output-pad.h>
+#include <flow/flow-pack-util.h>
 #include <flow/flow-packet.h>
 #include <flow/flow-packet-queue.h>
 #include <flow/flow-pad.h>
