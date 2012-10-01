@@ -506,6 +506,9 @@ flow_packet_queue_peek_packet (FlowPacketQueue *packet_queue, FlowPacket **packe
 
   g_return_val_if_fail (FLOW_IS_PACKET_QUEUE (packet_queue), FALSE);
 
+  if (!offset_out)
+    consolidate_partial_packet (packet_queue);
+
   packet = peek_packet (packet_queue);
   if (!packet)
     return FALSE;
