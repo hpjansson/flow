@@ -60,6 +60,9 @@ flow_serializable_serialize_step (FlowSerializable *serializable, FlowPad *targe
 
   iface = FLOW_SERIALIZABLE_GET_IFACE (serializable);
 
+  if (!iface->serialize_step)
+    return FALSE;
+
   call_again = iface->serialize_step (serializable, flow_pad_ensure_packet_queue (target_pad), context);
   flow_pad_push (target_pad, NULL);
 
@@ -83,6 +86,10 @@ flow_serializable_serialize_finish (FlowSerializable *serializable, FlowPad *tar
   g_return_if_fail (FLOW_IS_PAD (target_pad));
 
   iface = FLOW_SERIALIZABLE_GET_IFACE (serializable);
+
+  if (!iface->serialize_step)
+    return;
+
   packet_queue = flow_pad_ensure_packet_queue (target_pad);
 
   while (iface->serialize_step (serializable, packet_queue, context))
@@ -118,6 +125,10 @@ flow_serializable_serialize_all (FlowSerializable *serializable, FlowPad *target
   g_return_if_fail (FLOW_IS_PAD (target_pad));
 
   iface = FLOW_SERIALIZABLE_GET_IFACE (serializable);
+
+  if (!iface->serialize_step)
+    return;
+
   packet_queue = flow_pad_ensure_packet_queue (target_pad);
 
   if (iface->create_serialize_context)
@@ -161,6 +172,12 @@ flow_serializable_deserialize_step (GType type, FlowPacketQueue *packet_queue, g
 
   klass = g_type_class_peek (type);
   iface = g_type_interface_peek (klass, FLOW_TYPE_SERIALIZABLE);
+
+  if (!iface->deserialize_step)
+  {
+    *serializable_out = g_object_new (type, NULL);
+    return FALSE;
+  }
 
   result = iface->deserialize_step (packet_queue, context, &my_serializable_out, error);
 
