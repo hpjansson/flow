@@ -42,11 +42,11 @@ PKG_CHECK_MODULES(BASE, \
 # The check is likely redundant, but this defines GLIB_GENMARSHAL,
 # GLIB_MKENUMS and GOBJECT_QUERY for us:
 
-AM_PATH_GLIB_2_0($GLIB_REQUIRED, :,
-  AC_MSG_ERROR([
-*** GLib $GLIB_REQUIRED or newer is required. The latest version of
-*** GLib is always available from ftp://ftp.gtk.org/pub/gtk/.]),
-  gobject gthread)
+dnl AM_PATH_GLIB_2_0($GLIB_REQUIRED, :,
+dnl   AC_MSG_ERROR([
+dnl *** GLib $GLIB_REQUIRED or newer is required. The latest version of
+dnl *** GLib is always available from ftp://ftp.gtk.org/pub/gtk/.]),
+dnl   gobject gthread)
 
 GTK_DOC_CHECK([1.4])
 
