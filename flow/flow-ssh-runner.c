@@ -28,6 +28,8 @@
 #include <glib/gstdio.h>
 #include "flow-util.h"
 #include "flow-gobject-util.h"
+#include "flow-messages.h"
+#include "flow-process-result.h"
 #include "flow-detailed-event.h"
 #include "flow-ssh-connect-op.h"
 #include "flow-shell-op.h"
@@ -95,16 +97,22 @@ master_connect_finished (FlowSshRunner *ssh_runner)
 {
   FlowSshRunnerPrivate *priv = ssh_runner->priv;
   FlowPad *input_pad = FLOW_PAD (flow_simplex_element_get_input_pad (FLOW_SIMPLEX_ELEMENT (ssh_runner)));
+  FlowPad *output_pad = FLOW_PAD (flow_simplex_element_get_output_pad (FLOW_SIMPLEX_ELEMENT (ssh_runner)));
 
   DEBUG (g_print ("Connect finished.\n"));
 
   if (flow_ssh_master_get_is_connected (priv->master))
   {
+    FlowConnectivity old_connectivity;
     FlowShunt *shunt;
 
     DEBUG (g_print ("Running command.\n"));
 
+    old_connectivity = flow_connector_get_state (FLOW_CONNECTOR (ssh_runner));
     flow_connector_set_state_internal (FLOW_CONNECTOR (ssh_runner), FLOW_CONNECTIVITY_CONNECTED);
+
+    if (old_connectivity != FLOW_CONNECTIVITY_CONNECTED)
+      flow_pad_push (output_pad, flow_create_simple_event_packet (FLOW_STREAM_DOMAIN, FLOW_STREAM_BEGIN));
 
     shunt = flow_ssh_master_run_command (priv->master, flow_shell_op_get_cmd (priv->shell_op), NULL);
     if (!shunt)
@@ -165,8 +173,6 @@ shutdown_master (FlowSshRunner *ssh_runner, FlowSshMaster *ssh_master)
   g_signal_handlers_disconnect_by_func (ssh_master, (GCallback) master_disconnected, ssh_runner);
   g_object_unref (ssh_master);
   priv->master = NULL;
-
-  flow_connector_set_state_internal (FLOW_CONNECTOR (ssh_runner), FLOW_CONNECTIVITY_DISCONNECTED);
 }
 
 static void
@@ -188,7 +194,7 @@ disconnect_from_remote_service (FlowSshRunner *ssh_runner)
 }
 
 static void
-connect_to_remote_service (FlowSshRunner *ssh_runner)
+install_next_remote_service (FlowSshRunner *ssh_runner)
 {
   FlowSshRunnerPrivate *priv = ssh_runner->priv;
   FlowSshMasterRegistry *registry;
@@ -227,10 +233,11 @@ run_next_shell_op (FlowSshRunner *ssh_runner)
   g_signal_connect_swapped (ssh_master, "connect-finished", (GCallback) master_connect_finished, ssh_runner);
   g_signal_connect_swapped (ssh_master, "disconnected", (GCallback) master_disconnected, ssh_runner);
 
-  flow_connector_set_state_internal (FLOW_CONNECTOR (ssh_runner), FLOW_CONNECTIVITY_CONNECTING);
-
   if (priv->next_connect_op)
-    connect_to_remote_service (ssh_runner);
+    install_next_remote_service (ssh_runner);
+
+  if (!flow_ssh_master_get_is_connected (ssh_master))
+    flow_connector_set_state_internal (FLOW_CONNECTOR (ssh_runner), FLOW_CONNECTIVITY_CONNECTING);
 
   flow_ssh_master_connect (ssh_master);
 }
@@ -268,7 +275,7 @@ end_shell_op (FlowSshRunner *ssh_runner)
   disconnect_from_remote_service (ssh_runner);
 
   if (priv->next_connect_op)
-    connect_to_remote_service (ssh_runner);
+    install_next_remote_service (ssh_runner);
 
   if (priv->next_shell_op)
     run_next_shell_op (ssh_runner);
@@ -287,7 +294,7 @@ set_next_connect_op (FlowSshRunner *ssh_runner, FlowSshConnectOp *op)
   priv->next_connect_op = op;
 
   if (!priv->connect_op)
-    connect_to_remote_service (ssh_runner);
+    install_next_remote_service (ssh_runner);
 }
 
 static FlowPacket *
@@ -310,6 +317,13 @@ handle_outbound_packet (FlowSshRunner *ssh_runner, FlowPacket *packet)
       flow_packet_unref (packet);
       packet = NULL;
     }
+    else if (FLOW_IS_DETAILED_EVENT (packet_data))
+    {
+      if (flow_detailed_event_matches (packet_data, FLOW_STREAM_DOMAIN, FLOW_STREAM_END))
+      {
+        flow_connector_set_state_internal (FLOW_CONNECTOR (ssh_runner), FLOW_CONNECTIVITY_DISCONNECTING);
+      }
+    }
     else
     {
       flow_handle_universal_events (FLOW_ELEMENT (ssh_runner), packet);
@@ -325,6 +339,7 @@ shunt_read (FlowShunt *shunt, FlowPacket *packet, FlowSshRunner *ssh_runner)
   FlowSshRunnerPrivate *priv          = ssh_runner->priv;
   FlowPacketFormat      packet_format = flow_packet_get_format (packet);
   gpointer              packet_data   = flow_packet_get_data (packet);
+  gboolean              end_stream    = FALSE;
 
   if (packet_format == FLOW_PACKET_FORMAT_OBJECT)
   {
@@ -332,14 +347,27 @@ shunt_read (FlowShunt *shunt, FlowPacket *packet, FlowSshRunner *ssh_runner)
     {
       FlowDetailedEvent *detailed_event = (FlowDetailedEvent *) packet_data;
 
-      if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END) ||
+      /* Throw away STREAM_BEGIN and STREAM_END; we use those for the master connection. The
+       * shunt will also generate STREAM_SEGMENT_BEGIN and STREAM_SEGMENT_END, which we
+       * pass on. */
+
+      if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_BEGIN) ||
+          flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END) ||
           flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_DENIED))
       {
-        DEBUG (g_print ("Shunt stream ended.\n"));
-
-        end_shell_op (ssh_runner);
         flow_packet_unref (packet);
         packet = NULL;
+      }
+    }
+    else if (FLOW_IS_PROCESS_RESULT (packet_data))
+    {
+      end_shell_op (ssh_runner);
+
+      if (flow_connector_get_state (FLOW_CONNECTOR (ssh_runner)) == FLOW_CONNECTIVITY_DISCONNECTING &&
+          priv->shell_op == NULL)
+      {
+        flow_connector_set_state_internal (FLOW_CONNECTOR (ssh_runner), FLOW_CONNECTIVITY_DISCONNECTED);
+        end_stream = TRUE;
       }
     }
     else
@@ -354,6 +382,9 @@ shunt_read (FlowShunt *shunt, FlowPacket *packet, FlowSshRunner *ssh_runner)
 
     output_pad = FLOW_PAD (flow_simplex_element_get_output_pad (FLOW_SIMPLEX_ELEMENT (ssh_runner)));
     flow_pad_push (output_pad, packet);
+
+    if (end_stream)
+      flow_pad_push (output_pad, flow_create_simple_event_packet (FLOW_STREAM_DOMAIN, FLOW_STREAM_END));
   }
 }
 
