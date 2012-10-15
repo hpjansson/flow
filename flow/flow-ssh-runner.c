@@ -117,8 +117,19 @@ master_connect_finished (FlowSshRunner *ssh_runner)
   }
   else
   {
-    /* TODO: Emit STREAM_DENIED */
-    g_warning ("SSH master failed to connect.");
+    FlowDetailedEvent *detailed_event;
+    GError *error = flow_ssh_master_get_last_error (priv->master);
+
+    /* Emit STREAM_DENIED */
+
+    detailed_event = flow_detailed_event_new (error ? error->message : flow_get_event_message (FLOW_STREAM_DOMAIN, FLOW_STREAM_DENIED));
+    flow_detailed_event_add_code (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_DENIED);
+    flow_detailed_event_add_code (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END);
+
+    if (error)
+      g_clear_error (&error);
+
+    flow_pad_push (output_pad, flow_packet_new_take_object (detailed_event, 0));
     flow_connector_set_state_internal (FLOW_CONNECTOR (ssh_runner), FLOW_CONNECTIVITY_DISCONNECTED);
   }
 
@@ -128,7 +139,20 @@ master_connect_finished (FlowSshRunner *ssh_runner)
 static void
 master_disconnected (FlowSshRunner *ssh_runner)
 {
-  /* TODO: Emit STREAM_END */
+  FlowSshRunnerPrivate *priv = ssh_runner->priv;
+  FlowDetailedEvent *detailed_event;
+  FlowPad *output_pad = FLOW_PAD (flow_simplex_element_get_output_pad (FLOW_SIMPLEX_ELEMENT (ssh_runner)));
+  GError *error = flow_ssh_master_get_last_error (priv->master);
+
+  /* Emit STREAM_END */
+
+  detailed_event = flow_detailed_event_new (error ? error->message : flow_get_event_message (FLOW_STREAM_DOMAIN, FLOW_STREAM_END));
+  flow_detailed_event_add_code (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END);
+
+  if (error)
+    g_clear_error (&error);
+
+  flow_pad_push (output_pad, flow_packet_new_take_object (detailed_event, 0));
   flow_connector_set_state_internal (FLOW_CONNECTOR (ssh_runner), FLOW_CONNECTIVITY_DISCONNECTED);
 }
 
