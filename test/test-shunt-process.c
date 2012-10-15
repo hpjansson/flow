@@ -59,6 +59,7 @@ static gboolean   started_reading;
 static gboolean   finished_reading;
 static gboolean   in_segment;
 static gboolean   reads_are_blocked;
+static gint       process_result_code = -1;
 
 static FlowShunt *worker_shunt;
 
@@ -112,6 +113,7 @@ read_from_shunt (FlowShunt *shunt, FlowPacket *packet, gpointer data)
   if (flow_packet_get_format (packet) == FLOW_PACKET_FORMAT_OBJECT)
   {
     FlowDetailedEvent *detailed_event = packet_data;
+    FlowProcessResult *process_result = packet_data;
 
     if (FLOW_IS_DETAILED_EVENT (detailed_event))
     {
@@ -175,6 +177,11 @@ read_from_shunt (FlowShunt *shunt, FlowPacket *packet, gpointer data)
 
         in_segment = FALSE;
       }
+    }
+    else if (FLOW_IS_PROCESS_RESULT (process_result))
+    {
+      process_result_code = flow_process_result_get_result (process_result);
+      test_print ("Read: Subprocess result code %d\n", process_result_code);
     }
     else if (!FLOW_IS_EVENT (detailed_event))
     {
@@ -346,6 +353,9 @@ test_run (void)
   /* Run */
 
   test_run_main_loop ();
+
+  if (process_result_code < 0)
+    test_end (TEST_RESULT_FAILED, "subprocess did not return a value");
 
   /* Cleanup */
 
