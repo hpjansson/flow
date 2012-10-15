@@ -2511,6 +2511,7 @@ create_thread_shunt (FlowWorkerFunc func, gpointer user_data, gboolean filter_ob
     shunt->can_write = TRUE;
 
     generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_BEGIN);
+    generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_SEGMENT_BEGIN);
     g_cond_wait (thread_shunt->cond, g_static_mutex_get_mutex (&global_mutex));
   }
   else
