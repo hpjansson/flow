@@ -55,6 +55,7 @@
 #include <flow/flow-packet-queue.h>
 #include <flow/flow-pad.h>
 #include <flow/flow-position.h>
+#include <flow/flow-process-result.h>
 #include <flow/flow-property-event.h>
 #include <flow/flow-segment-request.h>
 #include <flow/flow-serializable.h>
