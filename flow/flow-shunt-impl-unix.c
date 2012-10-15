@@ -1832,7 +1832,6 @@ file_shunt_read (FlowShunt *shunt)
   gint64        max_read;
   gint          result;
   gint          saved_errno;
-  ShuntType     shunt_type;
   FlowPacket   *packet;
   gpointer      packet_data;
   gint          fd;
@@ -1846,8 +1845,7 @@ file_shunt_read (FlowShunt *shunt)
     return;
   }
 
-  shunt_type = shunt->shunt_type;
-  fd         = file_shunt->fd;
+  fd = file_shunt->fd;
 
   flow_shunt_impl_unlock ();
 
