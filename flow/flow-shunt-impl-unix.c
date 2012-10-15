@@ -49,6 +49,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <fcntl.h>
 #include <errno.h>
 
@@ -212,6 +213,8 @@ static GStaticMutex    global_mutex       = G_STATIC_MUTEX_INIT;
 static FlowWakeupPipe  wakeup_pipe        = FLOW_WAKEUP_PIPE_INVALID;
 static GThread        *watch_thread;
 static GPtrArray      *active_socket_shunts;
+static GPtrArray      *pid_shunts;
+static GArray         *active_pids;
 static gpointer        socket_buffer      = NULL;
 
 /* --------------------------------------- *
@@ -732,6 +735,16 @@ report_position (FlowShunt *shunt, gint64 position)
   shunt->offset_changed = FALSE;
 }
 
+static void
+report_process_result (FlowShunt *shunt, gint result)
+{
+  FlowPacket *packet;
+
+  packet = flow_packet_new_take_object (flow_process_result_new (result), 0);
+  flow_packet_queue_push_packet (shunt->read_queue, packet);
+  flow_shunt_read_state_changed (shunt);
+}
+
 static gint
 anchor_to_whence (FlowOffsetAnchor anchor)
 {
@@ -917,6 +930,77 @@ tcp_socket_set_quality (gint fd, FlowQuality quality)
   }
 }
 
+/* Must be called after storing child PID */
+static void
+register_pipe_shunt (FlowShunt *shunt)
+{
+  PipeShunt *pipe_shunt = (PipeShunt *) shunt;
+
+  g_ptr_array_add (pid_shunts, shunt);
+
+  if (pipe_shunt->child_pid > 0)
+    g_array_append_val (active_pids, pipe_shunt->child_pid);
+}
+
+static void
+unregister_pipe_shunt (FlowShunt *shunt)
+{
+  g_ptr_array_remove_fast (pid_shunts, shunt);
+}
+
+static void
+child_exited (GPid pid, gint status)
+{
+  gint i;
+
+  for (i = 0; i < pid_shunts->len; i++)
+  {
+    FlowShunt *shunt = g_ptr_array_index (pid_shunts, i);
+    PipeShunt *pipe_shunt = (PipeShunt *) shunt;
+
+    if (pipe_shunt->child_pid == pid)
+    {
+      if (shunt->dispatched_begin && !shunt->dispatched_end)
+      {
+        generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_SEGMENT_END);
+        generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_END);
+        shunt->dispatched_end = TRUE;
+      }
+
+      /* FIXME: Use WEXITSTATUS only if WIFEXITED (status) is true, and report
+       * reason for termination. */
+      report_process_result (shunt, WEXITSTATUS (status));
+
+      pipe_shunt->child_pid = -1;
+      break;
+    }
+  }
+}
+
+static void
+handle_child_exits (void)
+{
+  gint i;
+
+  /* FIXME: We could use the Linux-specific option __WNOTHREAD to only wait for
+   * children of this thread, and call waitpid() only once. */
+
+  for (i = 0; i < active_pids->len; i++)
+  {
+    GPid pid = g_array_index (active_pids, GPid, i);
+    pid_t pid_out;
+    gint status;
+
+    pid_out = waitpid (pid, &status, WNOHANG);
+    if (pid_out == pid)
+    {
+      child_exited (pid, status);
+      g_array_remove_index_fast (active_pids, i);
+      i--;
+    }
+  }
+}
+
 /* -------------------- *
  * Global init/shutdown *
  * -------------------- */
@@ -937,6 +1021,8 @@ flow_shunt_impl_init (void)
   g_type_class_ref (FLOW_TYPE_POSITION);
 
   active_socket_shunts = g_ptr_array_new ();
+  pid_shunts = g_ptr_array_new ();
+  active_pids = g_array_new (FALSE, FALSE, sizeof (GPid));
   socket_buffer = g_malloc (IO_BUFFER_DEFAULT_SIZE);
 
   flow_wakeup_pipe_init (&wakeup_pipe);
@@ -953,6 +1039,12 @@ flow_shunt_impl_finalize (void)
 
   g_ptr_array_free (active_socket_shunts, TRUE);
   active_socket_shunts = NULL;
+
+  g_ptr_array_free (pid_shunts, TRUE);
+  pid_shunts = NULL;
+
+  g_array_free (active_pids, TRUE);
+  active_pids = NULL;
 
   g_free (socket_buffer);
   socket_buffer = NULL;
@@ -1001,6 +1093,9 @@ flow_shunt_impl_destroy_shunt (FlowShunt *shunt)
   else
   {
     g_ptr_array_remove_fast (active_socket_shunts, shunt);
+
+    if (shunt->shunt_type == SHUNT_TYPE_PIPE)
+      unregister_pipe_shunt (shunt);
   }
 }
 
@@ -1814,6 +1909,10 @@ socket_shunt_main (void)
           socket_shunt_exception (shunt);
       }
     }
+
+    /* Handle subprocess events */
+
+    handle_child_exits ();
   }
 
 out:
@@ -2665,6 +2764,7 @@ flow_shunt_impl_spawn_process (FlowWorkerFunc func, gpointer user_data)
 
   flow_shunt_impl_lock ();
 
+  register_pipe_shunt (shunt);
   flow_shunt_read_state_changed (shunt);
   flow_shunt_write_state_changed (shunt);
 
@@ -2714,7 +2814,8 @@ flow_shunt_impl_spawn_command_line (const gchar *command_line)
   else if (!g_spawn_async_with_pipes (NULL,                 /* cwd */
                                       argv,
                                       NULL,                 /* envp */
-                                      G_SPAWN_SEARCH_PATH,  /* flags */
+                                      G_SPAWN_SEARCH_PATH |
+                                      G_SPAWN_DO_NOT_REAP_CHILD,  /* flags */
                                       (GSpawnChildSetupFunc) child_setup,
                                       NULL,                 /* user_data */
                                       &pid,
@@ -2775,6 +2876,7 @@ flow_shunt_impl_spawn_command_line (const gchar *command_line)
 
   shunt->dispatched_begin = TRUE;
 
+  register_pipe_shunt (shunt);
   flow_shunt_read_state_changed (shunt);
   flow_shunt_write_state_changed (shunt);
 

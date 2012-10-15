@@ -28,6 +28,7 @@
 #include "flow-context-mgmt.h"
 #include "flow-detailed-event.h"
 #include "flow-position.h"
+#include "flow-process-result.h"
 #include "flow-segment-request.h"
 #include "flow-gobject-util.h"
 #include "flow-util.h"

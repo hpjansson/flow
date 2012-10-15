@@ -74,6 +74,7 @@ libflow_la_SOURCES = \
 	flow-packet-queue.c \
 	flow-pad.c \
 	flow-position.c \
+	flow-process-result.c \
 	flow-property-event.c \
 	flow-segment-request.c \
 	flow-serializable.c \
@@ -141,6 +142,7 @@ pkginclude_HEADERS = \
 	flow-packet-queue.h \
 	flow-pad.h \
 	flow-position.h \
+	flow-process-result.h \
 	flow-property-event.h \
 	flow-segment-request.h \
 	flow-serializable.h \
