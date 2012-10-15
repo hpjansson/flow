@@ -45,10 +45,29 @@ incoming_message_cb (gpointer user_data)
       if (!obj)
         continue;
 
-      if (FLOW_IS_DETAILED_EVENT (obj) &&
-          flow_detailed_event_matches (FLOW_DETAILED_EVENT (obj), FLOW_STREAM_DOMAIN, FLOW_STREAM_END))
+      if (FLOW_IS_DETAILED_EVENT (obj))
       {
-        g_main_loop_quit (main_loop);
+        if (flow_detailed_event_matches (obj, FLOW_STREAM_DOMAIN, FLOW_STREAM_BEGIN))
+        {
+          g_print ("--- Stream begin\n");
+        }
+        else if (flow_detailed_event_matches (obj, FLOW_STREAM_DOMAIN, FLOW_STREAM_SEGMENT_BEGIN))
+        {
+          g_print ("--- Segment begin\n");
+        }
+        else if (flow_detailed_event_matches (obj, FLOW_STREAM_DOMAIN, FLOW_STREAM_SEGMENT_END))
+        {
+          g_print ("--- Segment end\n");
+        }
+        else if (flow_detailed_event_matches (obj, FLOW_STREAM_DOMAIN, FLOW_STREAM_END))
+        {
+          g_print ("--- Stream end\n");
+          g_main_loop_quit (main_loop);
+        }
+      }
+      else if (FLOW_IS_PROCESS_RESULT (obj))
+      {
+        g_print ("--- Process result: %d\n", flow_process_result_get_result (obj));
       }
     }
     else
@@ -114,6 +133,9 @@ run (const gchar *remote_name)
     flow_pad_push (FLOW_PAD (flow_simplex_element_get_input_pad (FLOW_SIMPLEX_ELEMENT (runner))), packet);
     g_free (cmd);
   }
+
+  packet = flow_create_simple_event_packet (FLOW_STREAM_DOMAIN, FLOW_STREAM_END);
+  flow_pad_push (FLOW_PAD (flow_simplex_element_get_input_pad (FLOW_SIMPLEX_ELEMENT (runner))), packet);
 
   /* Run until done */
 
