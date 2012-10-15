@@ -1448,6 +1448,9 @@ socket_shunt_read (FlowShunt *shunt)
 
     shunt->dispatched_end = TRUE;
 
+    generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_SEGMENT_END);
+    generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_END);
+
     if (shunt->shunt_type == SHUNT_TYPE_PIPE)
     {
       PipeShunt *pipe_shunt = (PipeShunt *) shunt;
@@ -1459,9 +1462,6 @@ socket_shunt_read (FlowShunt *shunt)
         report_process_result (shunt, WEXITSTATUS (pipe_shunt->result));
       }
     }
-
-    generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_SEGMENT_END);
-    generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_END);
 
     close_read_fd (shunt);
   }
