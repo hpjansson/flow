@@ -161,6 +161,8 @@ typedef struct
 
   gint      read_fd;
   gint      write_fd;
+
+  gint      result;
 }
 PipeShunt;
 
@@ -960,18 +962,15 @@ child_exited (GPid pid, gint status)
 
     if (pipe_shunt->child_pid == pid)
     {
-      if (shunt->dispatched_begin && !shunt->dispatched_end)
-      {
-        generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_SEGMENT_END);
-        generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_END);
-        shunt->dispatched_end = TRUE;
-      }
-
-      /* FIXME: Use WEXITSTATUS only if WIFEXITED (status) is true, and report
-       * reason for termination. */
-      report_process_result (shunt, WEXITSTATUS (status));
-
+      pipe_shunt->result = status;
       pipe_shunt->child_pid = -1;
+
+      if (shunt->dispatched_end)
+      {
+        /* FIXME: Use WEXITSTATUS only if WIFEXITED (status) is true, and report
+         * reason for termination. */
+        report_process_result (shunt, WEXITSTATUS (status));
+      }
       break;
     }
   }
@@ -1448,6 +1447,19 @@ socket_shunt_read (FlowShunt *shunt)
     g_assert (shunt->dispatched_end == FALSE);
 
     shunt->dispatched_end = TRUE;
+
+    if (shunt->shunt_type == SHUNT_TYPE_PIPE)
+    {
+      PipeShunt *pipe_shunt = (PipeShunt *) shunt;
+
+      if (pipe_shunt->child_pid < 0)
+      {
+        /* FIXME: Use WEXITSTATUS only if WIFEXITED (status) is true, and report
+         * reason for termination. */
+        report_process_result (shunt, WEXITSTATUS (pipe_shunt->result));
+      }
+    }
+
     generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_SEGMENT_END);
     generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_END);
 
