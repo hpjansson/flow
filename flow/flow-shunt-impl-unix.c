@@ -1000,6 +1000,12 @@ handle_child_exits (void)
   }
 }
 
+static void
+handle_child_exits_signal (void)
+{
+  flow_wakeup_pipe_wakeup (&wakeup_pipe);
+}
+
 /* -------------------- *
  * Global init/shutdown *
  * -------------------- */
@@ -1768,6 +1774,20 @@ socket_shunt_exception (FlowShunt *shunt)
   flow_shunt_write_state_changed (shunt);
 }
 
+static void
+install_sigchld_handler (void)
+{
+  struct sigaction sa;
+
+  sa.sa_handler = (void (*)(int)) handle_child_exits_signal;
+  sa.sa_flags = SA_NOCLDSTOP;
+  sa.sa_restorer = NULL;
+
+  sigemptyset (&sa.sa_mask);
+
+  sigaction (SIGCHLD, &sa, NULL);
+}
+
 static gpointer
 socket_shunt_main (void)
 {
@@ -1854,6 +1874,8 @@ socket_shunt_main (void)
       i++;
     }
 
+    install_sigchld_handler ();
+
     flow_shunt_impl_unlock ();
 
     /* --- UNLOCKED CODE BEGINS --- */
@@ -1867,6 +1889,10 @@ socket_shunt_main (void)
     /* Implementation finalized? */
     if (!flow_wakeup_pipe_is_valid (&wakeup_pipe))
       break;
+
+    /* Handle subprocess events */
+
+    handle_child_exits ();
 
     if (result < 1)
     {
@@ -1921,10 +1947,6 @@ socket_shunt_main (void)
           socket_shunt_exception (shunt);
       }
     }
-
-    /* Handle subprocess events */
-
-    handle_child_exits ();
   }
 
 out:
