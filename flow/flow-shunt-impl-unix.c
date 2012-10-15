@@ -2768,6 +2768,8 @@ flow_shunt_impl_spawn_process (FlowWorkerFunc func, gpointer user_data)
     flow_detailed_event_add_code (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_ERROR);
     flow_detailed_event_add_code (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_DENIED);
     flow_packet_queue_push_packet (shunt->read_queue, flow_packet_new_take_object (detailed_event, 0));
+
+    report_process_result (shunt, -1);
   }
 
   pipe_shunt->child_pid = pid;
