@@ -114,14 +114,17 @@ master_connect_finished (FlowSshRunner *ssh_runner)
     if (old_connectivity != FLOW_CONNECTIVITY_CONNECTED)
       flow_pad_push (output_pad, flow_create_simple_event_packet (FLOW_STREAM_DOMAIN, FLOW_STREAM_BEGIN));
 
-    shunt = flow_ssh_master_run_command (priv->master, flow_shell_op_get_cmd (priv->shell_op), NULL);
-    if (!shunt)
+    if (priv->shell_op)
     {
-      /* TODO */
-      g_warning ("Did not get a shunt from flow_ssh_master_run_command ().");
-    }
+      shunt = flow_ssh_master_run_command (priv->master, flow_shell_op_get_cmd (priv->shell_op), NULL);
+      if (!shunt)
+      {
+        /* TODO */
+        g_warning ("Did not get a shunt from flow_ssh_master_run_command ().");
+      }
 
-    setup_shunt (ssh_runner, shunt);
+      setup_shunt (ssh_runner, shunt);
+    }
   }
   else
   {
@@ -216,6 +219,9 @@ run_next_shell_op (FlowSshRunner *ssh_runner)
   FlowSshMaster *ssh_master;
 
   DEBUG (g_print ("run_next_shell_op\n"));
+
+  if (!priv->connect_op)
+    return;
 
   if (priv->shell_op)
     flow_gobject_unref_clear (priv->shell_op);
@@ -319,7 +325,11 @@ handle_outbound_packet (FlowSshRunner *ssh_runner, FlowPacket *packet)
     }
     else if (FLOW_IS_DETAILED_EVENT (packet_data))
     {
-      if (flow_detailed_event_matches (packet_data, FLOW_STREAM_DOMAIN, FLOW_STREAM_END))
+      if (flow_detailed_event_matches (packet_data, FLOW_STREAM_DOMAIN, FLOW_STREAM_BEGIN))
+      {
+        run_next_shell_op (ssh_runner);
+      }
+      else if (flow_detailed_event_matches (packet_data, FLOW_STREAM_DOMAIN, FLOW_STREAM_END))
       {
         flow_connector_set_state_internal (FLOW_CONNECTOR (ssh_runner), FLOW_CONNECTIVITY_DISCONNECTING);
       }
