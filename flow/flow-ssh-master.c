@@ -31,7 +31,14 @@
 #include "flow-shunt.h"
 #include "flow-ssh-master.h"
 
-#define EXTRA_SSH_MASTER_OPTIONS "-q -M -N -o 'ServerAliveInterval 10' -o 'ServerAliveCountMax 6' -o 'PermitLocalCommand yes' -o 'LocalCommand echo'"
+#define EXTRA_SSH_MASTER_OPTIONS \
+  "-q -M -N" \
+  " -o 'ControlPersist 30'" \
+  " -o 'ServerAliveInterval 10'" \
+  " -o 'ServerAliveCountMax 6'" \
+  " -o 'PermitLocalCommand yes'" \
+  " -o 'LocalCommand echo'"
+
 #define EXTRA_SSH_OP_OPTIONS     "-q"
 
 /* --- FlowSshMaster private data --- */
