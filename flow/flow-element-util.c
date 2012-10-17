@@ -814,3 +814,60 @@ flow_replace_element (FlowElement *original, FlowElement *replacement)
       flow_pad_disconnect (replacement_pad);
   }
 }
+
+static void collect_pipeline_elements_recurse (FlowElement *element, GHashTable *visited);
+
+static void
+collect_pipeline_elements_from_pad_array (GPtrArray *pads, GHashTable *visited)
+{
+  gint i;
+
+  for (i = 0; i < pads->len; i++)
+  {
+    FlowPad *pad = g_ptr_array_index (pads, i);
+    FlowPad *connected_pad = flow_pad_get_connected_pad (pad);
+    FlowElement *connected_element = flow_pad_get_owner_element (connected_pad);
+
+    if (!g_hash_table_lookup (visited, connected_element))
+      collect_pipeline_elements_recurse (connected_element, visited);
+  }
+}
+
+static void
+collect_pipeline_elements_recurse (FlowElement *element, GHashTable *visited)
+{
+  g_hash_table_insert (visited, element, element);
+
+  collect_pipeline_elements_from_pad_array (flow_element_get_input_pads (element), visited);
+  collect_pipeline_elements_from_pad_array (flow_element_get_output_pads (element), visited);
+}
+
+typedef struct
+{
+  GFunc func;
+  gpointer data;
+}
+ForeachPipelineElementData;
+
+static void
+foreach_pipeline_element (FlowElement *element, gpointer value, ForeachPipelineElementData *data)
+{
+  data->func (element, data->data);
+}
+
+void
+flow_pipeline_foreach_element (FlowElement *element, GFunc func, gpointer data)
+{
+  GHashTable *visited;
+  ForeachPipelineElementData foreach_data;
+
+  visited = g_hash_table_new (g_direct_hash, g_direct_equal);
+
+  collect_pipeline_elements_recurse (element, visited);
+
+  foreach_data.func = func;
+  foreach_data.data = data;
+  g_hash_table_foreach (visited, (GHFunc) foreach_pipeline_element, &foreach_data);
+
+  g_hash_table_destroy (visited);
+}

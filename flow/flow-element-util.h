@@ -69,6 +69,8 @@ void         flow_insert_simplex_simplex__Iduplex  (FlowSimplexElement *downstre
                                                     FlowSimplexElement *downstream_simplex_input,
                                                     FlowDuplexElement *upstream_duplex_inserted);
 
+void         flow_pipeline_foreach_element         (FlowElement *element, GFunc func, gpointer data);
+
 G_END_DECLS
 
 #endif  /* _FLOW_ELEMENT_UTIL_H */
