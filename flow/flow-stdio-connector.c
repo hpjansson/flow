@@ -116,9 +116,9 @@ static void
 setup_shunt (FlowStdioConnector *stdio_connector)
 {
   FlowStdioConnectorPrivate *priv = stdio_connector->priv;
-  FlowConnector            *connector = FLOW_CONNECTOR (stdio_connector);
-  FlowPad                  *output_pad;
-  FlowPacketQueue          *packet_queue;
+  FlowConnector             *connector = FLOW_CONNECTOR (stdio_connector);
+  FlowPad                   *output_pad = FLOW_PAD (flow_simplex_element_get_output_pad (FLOW_SIMPLEX_ELEMENT (stdio_connector)));
+  FlowPacketQueue           *packet_queue;
 
   flow_shunt_set_read_func (priv->shunt, (FlowShuntReadFunc *) shunt_read, stdio_connector);
   flow_shunt_set_write_func (priv->shunt, (FlowShuntWriteFunc *) shunt_write, stdio_connector);
@@ -129,7 +129,9 @@ setup_shunt (FlowStdioConnector *stdio_connector)
   priv->reading_from_shunt = FALSE;
   priv->writing_to_shunt = FALSE;
 
-  output_pad = FLOW_PAD (flow_simplex_element_get_output_pad (FLOW_SIMPLEX_ELEMENT (stdio_connector)));
+  flow_shunt_block_reads (priv->shunt);
+  flow_shunt_block_writes (priv->shunt);
+
   packet_queue = flow_pad_get_packet_queue (FLOW_PAD (flow_simplex_element_get_input_pad (FLOW_SIMPLEX_ELEMENT (stdio_connector))));
 
   set_reading_from_shunt (stdio_connector, flow_pad_is_blocked (output_pad) ? FALSE : TRUE);
