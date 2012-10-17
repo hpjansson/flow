@@ -74,6 +74,7 @@ setup_shunt (FlowSshRunner *ssh_runner, FlowShunt *shunt)
   FlowSshRunnerPrivate *priv = ssh_runner->priv;
   FlowPad              *input_pad = FLOW_PAD (flow_simplex_element_get_input_pad (FLOW_SIMPLEX_ELEMENT (ssh_runner)));
   FlowPad              *output_pad = FLOW_PAD (flow_simplex_element_get_output_pad (FLOW_SIMPLEX_ELEMENT (ssh_runner)));
+  FlowPacketQueue      *packet_queue = flow_pad_get_packet_queue (input_pad);
 
   g_assert (priv->shunt == NULL);
   priv->shunt = shunt;
@@ -86,7 +87,7 @@ setup_shunt (FlowSshRunner *ssh_runner, FlowShunt *shunt)
     flow_shunt_block_reads (shunt);
   }
 
-  if (flow_pad_is_blocked (input_pad))
+  if (!packet_queue || flow_packet_queue_get_length_packets (packet_queue) == 0)
   {
     flow_shunt_block_writes (shunt);
   }
