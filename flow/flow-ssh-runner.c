@@ -176,7 +176,6 @@ shutdown_master (FlowSshRunner *ssh_runner, FlowSshMaster *ssh_master)
   g_signal_handlers_disconnect_by_func (ssh_master, (GCallback) master_connect_finished, ssh_runner);
   g_signal_handlers_disconnect_by_func (ssh_master, (GCallback) master_disconnected, ssh_runner);
   g_object_unref (ssh_master);
-  priv->master = NULL;
 }
 
 static void
