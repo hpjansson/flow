@@ -44,9 +44,9 @@ FLOW_GOBJECT_MAKE_IMPL_NO_PRIVATE (flow_packet_queue, FlowPacketQueue, G_TYPE_OB
  *
  * The special casing saves us having to allocate a GList node
  * in the common case where a single packet is pushed and then
- * immediately popped. This happens because elements may not
- * process on a per-packet basis, so we always queue to input
- * pads.
+ * immediately popped. This happens because elements don't
+ * necessarily process on a per-packet basis, so we always queue
+ * to input pads.
  *
  * For more details, see flow-input-pad.c. */
 
