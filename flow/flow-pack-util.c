@@ -130,6 +130,6 @@ flow_unpack_string (const guchar **buf_ptr_inout, const guchar *buf_end, gchar *
   memcpy (*string_out, buf_in, len);
   (*string_out) [len] = '\0';
 
-  *buf_ptr_inout += len;
+  *buf_ptr_inout = buf_in + len;
   return TRUE;
 }
