@@ -272,8 +272,6 @@ end_shell_op (FlowSshRunner *ssh_runner)
 {
   FlowSshRunnerPrivate *priv = ssh_runner->priv;
 
-  disconnect_from_remote_service (ssh_runner);
-
   g_assert (priv->shell_op != NULL);
   g_object_unref (priv->shell_op);
   priv->shell_op = NULL;
