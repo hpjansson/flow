@@ -304,6 +304,7 @@ set_next_connect_op (FlowSshRunner *ssh_runner, FlowSshConnectOp *op)
 static FlowPacket *
 handle_outbound_packet (FlowSshRunner *ssh_runner, FlowPacket *packet)
 {
+  FlowSshRunnerPrivate *priv = ssh_runner->priv;
   FlowPacketFormat packet_format = flow_packet_get_format (packet);
   gpointer         packet_data   = flow_packet_get_data (packet);
 
@@ -325,7 +326,8 @@ handle_outbound_packet (FlowSshRunner *ssh_runner, FlowPacket *packet)
     {
       if (flow_detailed_event_matches (packet_data, FLOW_STREAM_DOMAIN, FLOW_STREAM_BEGIN))
       {
-        run_next_shell_op (ssh_runner);
+        if (!priv->shell_op)
+          run_next_shell_op (ssh_runner);
       }
       else if (flow_detailed_event_matches (packet_data, FLOW_STREAM_DOMAIN, FLOW_STREAM_END))
       {
