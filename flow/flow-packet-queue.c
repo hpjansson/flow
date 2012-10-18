@@ -526,13 +526,17 @@ flow_packet_queue_peek_nth_packet (FlowPacketQueue *packet_queue, guint n)
 {
   g_return_val_if_fail (FLOW_IS_PACKET_QUEUE (packet_queue), FALSE);
 
-  if (n == 0)
+  consolidate_partial_packet (packet_queue);
+
+  if (packet_queue->first_packet)
   {
-    consolidate_partial_packet (packet_queue);
-    return packet_queue->first_packet;
+    if (n == 0)
+      return packet_queue->first_packet;
+
+    n--;
   }
 
-  return g_queue_peek_nth (packet_queue->queue, n - 1);
+  return g_queue_peek_nth (packet_queue->queue, n);
 }
 
 void
