@@ -101,6 +101,7 @@ master_connect_finished (FlowSshRunner *ssh_runner)
   FlowPad *output_pad = FLOW_PAD (flow_simplex_element_get_output_pad (FLOW_SIMPLEX_ELEMENT (ssh_runner)));
 
   DEBUG (g_print ("Connect finished.\n"));
+  g_signal_handlers_disconnect_by_func (priv->master, (GCallback) master_connect_finished, ssh_runner);
 
   if (flow_ssh_master_get_is_connected (priv->master))
   {
