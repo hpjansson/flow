@@ -449,7 +449,7 @@ flow_ssh_runner_process_input (FlowSshRunner *ssh_runner, FlowPad *input_pad)
   if (!packet_queue)
     return;
 
-  while (!priv->next_shell_op)
+  while (!priv->shell_op && !priv->next_shell_op)
   {
     FlowPacket *packet;
  
