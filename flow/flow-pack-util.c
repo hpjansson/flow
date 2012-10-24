@@ -133,3 +133,65 @@ flow_unpack_string (const guchar **buf_ptr_inout, const guchar *buf_end, gchar *
   *buf_ptr_inout = buf_in + len;
   return TRUE;
 }
+
+gboolean
+flow_unpack_uint32_from_iter (FlowPacketByteIter *iter, guint32 *n_out)
+{
+  guchar buf [5];
+  const guchar *p = buf;
+  gint len;
+
+  len = flow_packet_byte_iter_peek (iter, buf, 5);
+
+  if (flow_unpack_uint32 (&p, buf + len, n_out))
+  {
+    flow_packet_byte_iter_advance (iter, p - buf);
+    return TRUE;
+  }
+
+  return FALSE;
+}
+
+gboolean
+flow_unpack_uint64_from_iter (FlowPacketByteIter *iter, guint64 *n_out)
+{
+  guchar buf [9];
+  const guchar *p = buf;
+  gint len;
+
+  len = flow_packet_byte_iter_peek (iter, buf, 9);
+
+  if (flow_unpack_uint64 (&p, buf + len, n_out))
+  {
+    flow_packet_byte_iter_advance (iter, p - buf);
+    return TRUE;
+  }
+
+  return FALSE;
+}
+
+gboolean
+flow_unpack_string_from_iter (FlowPacketByteIter *iter, gchar **string_out)
+{
+  guchar buf [5];
+  const guchar *p = buf;
+  gint len;
+  guint32 n;
+
+  len = flow_packet_byte_iter_peek (iter, buf, 5);
+
+  if (!flow_unpack_uint32 (&p, buf + len, &n))
+    return FALSE;
+
+  flow_packet_byte_iter_advance (iter, p - buf);
+
+  if (flow_packet_byte_iter_get_remaining_bytes (iter) < n)
+    return FALSE;
+
+  *string_out = g_malloc (n + 1);
+  len = flow_packet_byte_iter_pop (iter, *string_out, n);
+  g_assert (len == n);
+  *(*string_out + n) = '\0';
+
+  return TRUE;
+}

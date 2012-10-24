@@ -26,6 +26,7 @@
 #define _FLOW_PACK_UTIL_H
 
 #include <glib.h>
+#include <flow/flow-packet-queue.h>
 
 G_BEGIN_DECLS
 
@@ -35,6 +36,10 @@ guchar         *flow_pack_uint64 (guint64 n_in, guchar *buf_out);
 gboolean        flow_unpack_uint64 (const guchar **buf_ptr_inout, const guchar *buf_end, guint64 *n_out);
 guchar         *flow_pack_string (const gchar *string_in, guchar *buf_out);
 gboolean        flow_unpack_string (const guchar **buf_ptr_inout, const guchar *buf_end, gchar **string_out);
+
+gboolean        flow_unpack_uint32_from_iter (FlowPacketByteIter *iter, guint32 *n_out);
+gboolean        flow_unpack_uint64_from_iter (FlowPacketByteIter *iter, guint64 *n_out);
+gboolean        flow_unpack_string_from_iter (FlowPacketByteIter *iter, gchar **string_out);
 
 G_END_DECLS
 
