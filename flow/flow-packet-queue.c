@@ -867,3 +867,224 @@ flow_packet_iter_next (FlowPacketQueue *packet_queue, FlowPacketIter *packet_ite
   return TRUE;
 }
 
+static gint
+byte_iter_peek_bytes (FlowPacketQueue *packet_queue, GList **packet_l_inout, gint *packet_position_inout,
+                      gpointer buf_out, gint buf_size, gboolean advance)
+{
+  GList *l = *packet_l_inout;
+  gint packet_position = *packet_position_inout;
+  gint n_peeked = 0;
+
+  while (n_peeked < buf_size)
+  {
+    FlowPacket *packet;
+    guint packet_size;
+    gint n_to_peek;
+    guchar *data;
+    GList *m;
+
+    if (l)
+    {
+      packet = l->data;
+    }
+    else
+    {
+      packet = packet_queue->first_packet;
+      if (!packet)
+      {
+        l = packet_queue->queue->head;
+        if (l)
+          packet = l->data;
+      }
+    }
+
+    if (!packet)
+      break;
+
+    if (flow_packet_get_format (packet) != FLOW_PACKET_FORMAT_BUFFER)
+      goto next_packet;
+
+    packet_size = flow_packet_get_size (packet);
+    data = flow_packet_get_data (packet);
+
+    n_to_peek = MIN ((buf_size - n_peeked), (packet_size - packet_position));
+
+    if (buf_out)
+      memcpy ((guchar *) buf_out + n_peeked, data + packet_position, n_to_peek);
+
+    n_peeked += n_to_peek;
+    packet_position += n_to_peek;
+
+    if (packet_position == packet_size)
+    {
+    next_packet:
+
+      if (l)
+        m = g_list_next (l);
+      else
+        m = packet_queue->queue->head;
+
+      if (!m)
+        break;
+
+      packet_position = 0;
+      l = m;
+    }
+  }
+
+  if (advance)
+  {
+    *packet_l_inout = l;
+    *packet_position_inout = packet_position;
+  }
+
+  return n_peeked;
+}
+
+static void
+byte_iter_drop_preceding (FlowPacketQueue *packet_queue, GList **packet_l_inout, gint *packet_position_inout)
+{
+  GList *iter_l = *packet_l_inout;
+  gint iter_packet_position = *packet_position_inout;
+  FlowPacket *packet;
+
+  packet = packet_queue->first_packet;
+
+  if (iter_l)
+  {
+    GList *l;
+
+    if (packet_queue->first_packet)
+    {
+      packet_queue->bytes_in_queue -= flow_packet_get_size (packet_queue->first_packet);
+      packet_queue->data_bytes_in_queue -= flow_packet_get_size (packet_queue->first_packet);
+      flow_packet_unref (packet_queue->first_packet);
+      packet_queue->first_packet = NULL;
+    }
+
+    for (l = packet_queue->queue->head; l != iter_l; )
+    {
+      GList *m;
+
+      if (flow_packet_get_format (l->data) != FLOW_PACKET_FORMAT_BUFFER)
+        continue;
+
+      packet_queue->bytes_in_queue -= flow_packet_get_size (l->data);
+      packet_queue->data_bytes_in_queue -= flow_packet_get_size (l->data);
+      flow_packet_unref (l->data);
+
+      m = g_list_next (l);
+      g_queue_delete_link (packet_queue->queue, l);
+      l = m;
+    }
+
+    g_assert (l == iter_l);
+
+    packet = l->data;
+  }
+
+  if (packet && flow_packet_get_format (packet) == FLOW_PACKET_FORMAT_BUFFER)
+  {
+    if (iter_packet_position == flow_packet_get_size (packet))
+    {
+      if (iter_l)
+      {
+        GList *l = g_list_next (iter_l);
+        g_queue_delete_link (packet_queue->queue, iter_l);
+        iter_l = l;
+      }
+
+      packet_queue->bytes_in_queue -= flow_packet_get_size (packet);
+      packet_queue->data_bytes_in_queue -= flow_packet_get_size (packet);
+
+      flow_packet_unref (packet);
+      packet_queue->first_packet = NULL;
+      iter_packet_position = 0;
+    }
+  }
+  else
+  {
+    iter_packet_position = 0;
+  }
+
+  packet_queue->bytes_in_queue += packet_queue->packet_position;
+  packet_queue->data_bytes_in_queue += packet_queue->packet_position;
+  packet_queue->bytes_in_queue -= iter_packet_position;
+  packet_queue->data_bytes_in_queue -= iter_packet_position;
+
+  packet_queue->packet_position = iter_packet_position;
+
+  *packet_l_inout = iter_l;
+  *packet_position_inout = iter_packet_position;
+}
+
+void
+flow_packet_byte_iter_init (FlowPacketQueue *packet_queue, FlowPacketByteIter *byte_iter)
+{
+  byte_iter->packet_queue = packet_queue;
+  byte_iter->packet_l = NULL;
+  byte_iter->packet_position = packet_queue->packet_position;
+  byte_iter->queue_position = 0;
+}
+
+gint
+flow_packet_byte_iter_peek (FlowPacketByteIter *byte_iter, gpointer dest, gint n_max)
+{
+  g_return_val_if_fail (byte_iter != NULL, 0);
+  g_return_val_if_fail (FLOW_IS_PACKET_QUEUE (byte_iter->packet_queue), 0);
+  g_return_val_if_fail (dest != NULL, 0);
+
+  return byte_iter_peek_bytes (byte_iter->packet_queue, &byte_iter->packet_l, &byte_iter->packet_position, dest, n_max, FALSE);
+}
+
+gint
+flow_packet_byte_iter_pop (FlowPacketByteIter *byte_iter, gpointer dest, gint n_max)
+{
+  gint n;
+
+  g_return_val_if_fail (byte_iter != NULL, 0);
+  g_return_val_if_fail (FLOW_IS_PACKET_QUEUE (byte_iter->packet_queue), 0);
+
+  n = byte_iter_peek_bytes (byte_iter->packet_queue, &byte_iter->packet_l, &byte_iter->packet_position, dest, n_max, TRUE);
+  byte_iter->queue_position += n;
+
+  g_assert (byte_iter->queue_position <= byte_iter->packet_queue->data_bytes_in_queue);
+
+  return n;
+}
+
+gint
+flow_packet_byte_iter_advance (FlowPacketByteIter *byte_iter, gint n_max)
+{
+  gint n;
+
+  g_return_val_if_fail (byte_iter != NULL, 0);
+  g_return_val_if_fail (FLOW_IS_PACKET_QUEUE (byte_iter->packet_queue), 0);
+
+  n = byte_iter_peek_bytes (byte_iter->packet_queue, &byte_iter->packet_l, &byte_iter->packet_position, NULL, n_max, TRUE);
+  byte_iter->queue_position += n;
+
+  g_assert (byte_iter->queue_position <= byte_iter->packet_queue->data_bytes_in_queue);
+
+  return n;
+}
+
+void
+flow_packet_byte_iter_drop_preceding_data (FlowPacketByteIter *byte_iter)
+{
+  g_return_if_fail (byte_iter != NULL);
+  g_return_if_fail (FLOW_IS_PACKET_QUEUE (byte_iter->packet_queue));
+
+  byte_iter_drop_preceding (byte_iter->packet_queue, &byte_iter->packet_l, &byte_iter->packet_position);
+
+  byte_iter->queue_position = 0;
+}
+
+gint
+flow_packet_byte_iter_get_remaining_bytes (FlowPacketByteIter *byte_iter)
+{
+  g_return_val_if_fail (byte_iter != NULL, 0);
+  g_return_val_if_fail (FLOW_IS_PACKET_QUEUE (byte_iter->packet_queue), 0);
+
+  return flow_packet_queue_get_length_data_bytes (byte_iter->packet_queue) - byte_iter->queue_position;
+}

@@ -69,6 +69,15 @@ struct _FlowPacketQueueClass
   void (*_pad_4) (void);
 };
 
+typedef struct
+{
+  FlowPacketQueue *packet_queue;
+  GList *packet_l;
+  gint packet_position;
+  gint queue_position;
+}
+FlowPacketByteIter;
+
 FlowPacketQueue  *flow_packet_queue_new                    (void);
 
 gint              flow_packet_queue_get_length_packets     (FlowPacketQueue *packet_queue);
@@ -100,6 +109,13 @@ gboolean          flow_packet_queue_skip_past_first_object (FlowPacketQueue *pac
 
 FlowPacket       *flow_packet_iter_peek_packet             (FlowPacketQueue *packet_queue, FlowPacketIter *packet_iter);
 gboolean          flow_packet_iter_next                    (FlowPacketQueue *packet_queue, FlowPacketIter *packet_iter);
+
+void              flow_packet_byte_iter_init                (FlowPacketQueue *packet_queue, FlowPacketByteIter *byte_iter);
+gint              flow_packet_byte_iter_get_remaining_bytes (FlowPacketByteIter *byte_iter);
+gint              flow_packet_byte_iter_peek                (FlowPacketByteIter *byte_iter, gpointer dest, gint n_max);
+gint              flow_packet_byte_iter_pop                 (FlowPacketByteIter *byte_iter, gpointer dest, gint n_max);
+gint              flow_packet_byte_iter_advance             (FlowPacketByteIter *byte_iter, gint n_max);
+void              flow_packet_byte_iter_drop_preceding_data (FlowPacketByteIter *byte_iter);
 
 G_END_DECLS
 
