@@ -264,7 +264,7 @@ flow_packet_queue_get_length_bytes (FlowPacketQueue *packet_queue)
 {
   g_return_val_if_fail (FLOW_IS_PACKET_QUEUE (packet_queue), 0);
 
-  return packet_queue->bytes_in_queue - packet_queue->packet_position;
+  return packet_queue->bytes_in_queue;
 }
 
 gint
@@ -272,7 +272,7 @@ flow_packet_queue_get_length_data_bytes (FlowPacketQueue *packet_queue)
 {
   g_return_val_if_fail (FLOW_IS_PACKET_QUEUE (packet_queue), 0);
 
-  return packet_queue->data_bytes_in_queue - packet_queue->packet_position;
+  return packet_queue->data_bytes_in_queue;
 }
 
 /**
