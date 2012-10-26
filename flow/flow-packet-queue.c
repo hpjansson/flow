@@ -48,7 +48,12 @@ FLOW_GOBJECT_MAKE_IMPL_NO_PRIVATE (flow_packet_queue, FlowPacketQueue, G_TYPE_OB
  * necessarily process on a per-packet basis, so we always queue
  * to input pads.
  *
- * For more details, see flow-input-pad.c. */
+ * For more details, see flow-input-pad.c.
+ *
+ * FIXME: The whole first_packet deal complicates the code too much. We
+ * should switch to using a circular pointer array instead of GQueue,
+ * obviating the need for a faster special case.
+ **/
 
 static inline FlowPacket *
 peek_packet (FlowPacketQueue *packet_queue)
