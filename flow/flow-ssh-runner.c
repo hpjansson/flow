@@ -536,6 +536,8 @@ flow_ssh_runner_dispose (FlowSshRunner *ssh_runner)
 
   flow_gobject_unref_clear (priv->connect_op);
   flow_gobject_unref_clear (priv->next_connect_op);
+  flow_gobject_unref_clear (priv->shell_op);
+  flow_gobject_unref_clear (priv->next_shell_op);
 }
 
 static void
