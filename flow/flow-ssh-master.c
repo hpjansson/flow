@@ -353,7 +353,10 @@ flow_ssh_master_init (FlowSshMaster *ssh_master)
 static void
 flow_ssh_master_construct (FlowSshMaster *ssh_master)
 {
-  flow_ssh_master_set_control_path_internal (ssh_master, generate_control_path (ssh_master));
+  gchar *control_path = generate_control_path (ssh_master);
+
+  flow_ssh_master_set_control_path_internal (ssh_master, control_path);
+  g_free (control_path);
 }
 
 static void
