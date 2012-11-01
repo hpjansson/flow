@@ -54,7 +54,7 @@ flow_unpack_uint64 (const guchar **buf_ptr_inout, const guchar *buf_end, guint64
       return FALSE;
 
     c = *(buf_in++);
-    n |= (c & 0x7f) << shift;
+    n |= ((guint64) c & 0x7f) << shift;
     shift += 7;
   }
   while (c & 0x80);
