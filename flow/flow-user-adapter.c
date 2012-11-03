@@ -488,7 +488,7 @@ flow_user_adapter_interrupt_input (FlowUserAdapter *user_adapter)
 {
   FlowUserAdapterPrivate *priv;
 
-  g_return_if_fail (user_adapter != NULL);
+  g_return_if_fail (FLOW_IS_USER_ADAPTER (user_adapter));
 
   priv = user_adapter->priv;
 
@@ -505,7 +505,7 @@ flow_user_adapter_interrupt_output (FlowUserAdapter *user_adapter)
 {
   FlowUserAdapterPrivate *priv;
 
-  g_return_if_fail (user_adapter != NULL);
+  g_return_if_fail (FLOW_IS_USER_ADAPTER (user_adapter));
 
   priv = user_adapter->priv;
 
@@ -516,3 +516,19 @@ flow_user_adapter_interrupt_output (FlowUserAdapter *user_adapter)
   if (g_main_loop_is_running (priv->output_loop))
     g_main_loop_quit (priv->output_loop);
 }
+
+gboolean
+flow_user_adapter_is_output_choked (FlowUserAdapter *user_adapter)
+{
+  FlowUserAdapterPrivate *priv;
+  FlowElement            *element;
+  FlowPad                *output_pad;
+
+  g_return_val_if_fail (FLOW_IS_USER_ADAPTER (user_adapter), FALSE);
+
+  element = (FlowElement *) user_adapter;
+  output_pad = g_ptr_array_index (element->output_pads, 0);
+
+  return flow_pad_is_blocked (output_pad);
+}
+
