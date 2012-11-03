@@ -260,10 +260,11 @@ set_next_shell_op (FlowSshRunner *ssh_runner, FlowShellOp *shell_op)
   g_assert (priv->next_shell_op == NULL);
   priv->next_shell_op = g_object_ref (shell_op);
 
+  flow_pad_block (input_pad);
+
   if (!priv->shell_op)
     run_next_shell_op (ssh_runner);
 
-  flow_pad_block (input_pad);
   if (priv->shunt)
     flow_shunt_block_writes (priv->shunt);
 }
@@ -272,6 +273,7 @@ static void
 end_shell_op (FlowSshRunner *ssh_runner)
 {
   FlowSshRunnerPrivate *priv = ssh_runner->priv;
+  FlowPad *input_pad = FLOW_PAD (flow_simplex_element_get_input_pad (FLOW_SIMPLEX_ELEMENT (ssh_runner)));
 
   g_assert (priv->shell_op != NULL);
   g_object_unref (priv->shell_op);
@@ -284,6 +286,8 @@ end_shell_op (FlowSshRunner *ssh_runner)
 
   if (priv->next_shell_op)
     run_next_shell_op (ssh_runner);
+  else
+    flow_pad_unblock (input_pad);
 }
 
 static void
@@ -372,6 +376,8 @@ shunt_read (FlowShunt *shunt, FlowPacket *packet, FlowSshRunner *ssh_runner)
     }
     else if (FLOW_IS_PROCESS_RESULT (packet_data))
     {
+      DEBUG (g_printerr ("Got process result.\n"));
+
       end_shell_op (ssh_runner);
 
       if (flow_connector_get_state (FLOW_CONNECTOR (ssh_runner)) == FLOW_CONNECTIVITY_DISCONNECTING &&
@@ -419,13 +425,13 @@ shunt_write (FlowShunt *shunt, FlowSshRunner *ssh_runner)
     packet_queue = flow_pad_get_packet_queue (input_pad);
   }
 
-  if (!packet_queue || flow_packet_queue_get_length_packets (packet_queue) == 0)
+  if (!packet_queue || flow_packet_queue_get_length_packets (packet_queue) == 0 || priv->next_shell_op)
   {
     flow_shunt_block_writes (shunt);
     return NULL;
   }
 
-  while (!flow_pad_is_blocked (input_pad))
+  while (!priv->next_shell_op)
   {
     packet = flow_packet_queue_pop_packet (packet_queue);
     if (!packet)
