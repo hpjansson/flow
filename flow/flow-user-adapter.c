@@ -248,6 +248,9 @@ do_scheduled_io (FlowUserAdapter *user_adapter)
   input_pad    = g_ptr_array_index (element->input_pads, 0);
   output_pad   = g_ptr_array_index (element->output_pads, 0);
 
+  if (!priv->input_is_blocked)
+    flow_pad_unblock (input_pad);
+
   if (!priv->waiting_for_input)
     flow_user_adapter_process_input (element, input_pad);
 
@@ -377,8 +380,6 @@ flow_user_adapter_unblock_input (FlowUserAdapter *user_adapter)
 
   element = FLOW_ELEMENT (user_adapter);
   input_pad = g_ptr_array_index (element->input_pads, 0);
-
-  flow_pad_unblock (input_pad);
 
   schedule_io (user_adapter);
 }
