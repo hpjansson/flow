@@ -794,6 +794,10 @@ flow_packet_queue_skip_past_first_object (FlowPacketQueue *packet_queue)
   {
     FlowPacketFormat format = flow_packet_get_format (packet);
 
+    packet_queue->bytes_in_queue -= flow_packet_get_size (packet);
+    if (format == FLOW_PACKET_FORMAT_BUFFER)
+      packet_queue->data_bytes_in_queue -= flow_packet_get_size (packet);
+
     flow_packet_unref (packet);
 
     if (format != FLOW_PACKET_FORMAT_BUFFER)
