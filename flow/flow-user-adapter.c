@@ -28,6 +28,9 @@
 #include "flow-context-mgmt.h"
 #include "flow-user-adapter.h"
 
+#define CHOKE_OUTBOUND_PACKETS 16
+#define CHOKE_OUTBOUND_BYTES   8192
+
 /* --- FlowUserAdapter private data --- */
 
 struct _FlowUserAdapterPrivate
@@ -70,6 +73,18 @@ FLOW_GOBJECT_MAKE_IMPL        (flow_user_adapter, FlowUserAdapter, FLOW_TYPE_SIM
 
 /* --- FlowUserAdapter implementation --- */
 
+static gboolean
+is_output_choked (FlowUserAdapter *user_adapter)
+{
+  FlowUserAdapterPrivate *priv = user_adapter->priv;
+
+  if (flow_packet_queue_get_length_packets (priv->output_queue) > CHOKE_OUTBOUND_PACKETS ||
+      flow_packet_queue_get_length_bytes (priv->output_queue) > CHOKE_OUTBOUND_BYTES)
+    return TRUE;
+
+  return FALSE;
+}
+
 static inline void
 notify_user_of_input (FlowUserAdapter *user_adapter)
 {
@@ -84,7 +99,7 @@ notify_user_of_output (FlowUserAdapter *user_adapter)
 {
   FlowUserAdapterPrivate *priv = user_adapter->priv;
 
-  if (!priv->output_is_blocked && priv->output_notify_func)
+  if (!priv->output_is_blocked && priv->output_notify_func && !is_output_choked (user_adapter))
     priv->output_notify_func (priv->output_notify_data);
 }
 
@@ -523,15 +538,8 @@ flow_user_adapter_interrupt_output (FlowUserAdapter *user_adapter)
 gboolean
 flow_user_adapter_is_output_choked (FlowUserAdapter *user_adapter)
 {
-  FlowUserAdapterPrivate *priv;
-  FlowElement            *element;
-  FlowPad                *output_pad;
-
   g_return_val_if_fail (FLOW_IS_USER_ADAPTER (user_adapter), FALSE);
 
-  element = (FlowElement *) user_adapter;
-  output_pad = g_ptr_array_index (element->output_pads, 0);
-
-  return flow_pad_is_blocked (output_pad);
+  return is_output_choked (user_adapter);
 }
 
