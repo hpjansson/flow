@@ -128,6 +128,7 @@ flow_user_adapter_process_input (FlowElement *element, FlowPad *input_pad)
   FlowUserAdapterPrivate *priv         = user_adapter->priv;
   FlowPacketQueue        *packet_queue;
   FlowPacket             *packet;
+  gboolean                received_something = FALSE;
 
   packet_queue = flow_pad_get_packet_queue (input_pad);
   if (!packet_queue)
@@ -137,6 +138,7 @@ flow_user_adapter_process_input (FlowElement *element, FlowPad *input_pad)
   {
     flow_handle_universal_events (element, packet);
     flow_packet_queue_push_packet (priv->input_queue, packet);
+    received_something = TRUE;
   }
 
   if (priv->waiting_for_input)
@@ -147,7 +149,8 @@ flow_user_adapter_process_input (FlowElement *element, FlowPad *input_pad)
   }
   else
   {
-    notify_user_of_input (user_adapter);
+    if (received_something)
+      notify_user_of_input (user_adapter);
   }
 }
 
