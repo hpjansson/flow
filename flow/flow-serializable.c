@@ -175,6 +175,9 @@ flow_serializable_deserialize_step (GType type, FlowPacketQueue *packet_queue, g
 
   if (!iface->deserialize_step)
   {
+    if (iface->destroy_deserialize_context)
+      iface->destroy_deserialize_context (context);
+
     *serializable_out = g_object_new (type, NULL);
     return FALSE;
   }
