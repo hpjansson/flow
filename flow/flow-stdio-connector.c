@@ -44,6 +44,8 @@ struct _FlowStdioConnectorPrivate
 
   guint              reading_from_shunt : 1;
   guint              writing_to_shunt   : 1;
+  guint              incoming_is_open   : 1;
+  guint              outgoing_is_open   : 1;
 };
 
 /* --- FlowStdioConnector properties --- */
@@ -140,11 +142,24 @@ setup_shunt (FlowStdioConnector *stdio_connector)
   maybe_unblock_input_pad (stdio_connector);
 }
 
+static void
+maybe_destroy_shunt (FlowStdioConnector *stdio_connector)
+{
+  FlowStdioConnectorPrivate *priv = stdio_connector->priv;
+
+  if (!priv->incoming_is_open && !priv->outgoing_is_open && priv->shunt)
+  {
+    flow_shunt_destroy (priv->shunt);
+    priv->shunt = NULL;
+  }
+}
+
 static FlowPacket *
 handle_outbound_packet (FlowStdioConnector *stdio_connector, FlowPacket *packet)
 {
-  FlowPacketFormat packet_format = flow_packet_get_format (packet);
-  gpointer         packet_data   = flow_packet_get_data (packet);
+  FlowStdioConnectorPrivate *priv          = stdio_connector->priv;
+  FlowPacketFormat           packet_format = flow_packet_get_format (packet);
+  gpointer                   packet_data   = flow_packet_get_data (packet);
 
   if (packet_format == FLOW_PACKET_FORMAT_OBJECT)
   {
@@ -154,11 +169,16 @@ handle_outbound_packet (FlowStdioConnector *stdio_connector, FlowPacket *packet)
 
       if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_BEGIN))
       {
-        flow_connector_set_state_internal (FLOW_CONNECTOR (stdio_connector), FLOW_CONNECTIVITY_CONNECTING);
+        priv->outgoing_is_open = TRUE;
+        flow_connector_set_state_internal (FLOW_CONNECTOR (stdio_connector),
+                                           priv->incoming_is_open ? FLOW_CONNECTIVITY_CONNECTED : FLOW_CONNECTIVITY_CONNECTING);
       }
       else if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END))
       {
-        flow_connector_set_state_internal (FLOW_CONNECTOR (stdio_connector), FLOW_CONNECTIVITY_DISCONNECTING);
+        priv->outgoing_is_open = FALSE;
+        maybe_destroy_shunt (stdio_connector);
+        flow_connector_set_state_internal (FLOW_CONNECTOR (stdio_connector),
+                                           priv->incoming_is_open ? FLOW_CONNECTIVITY_DISCONNECTING : FLOW_CONNECTIVITY_DISCONNECTED);
       }
     }
     else
@@ -173,7 +193,7 @@ handle_outbound_packet (FlowStdioConnector *stdio_connector, FlowPacket *packet)
 static FlowPacket *
 handle_inbound_packet (FlowStdioConnector *stdio_connector, FlowPacket *packet)
 {
-  FlowStdioConnectorPrivate *priv          = stdio_connector->priv;
+  FlowStdioConnectorPrivate *priv         = stdio_connector->priv;
   FlowPacketFormat          packet_format = flow_packet_get_format (packet);
   gpointer                  packet_data   = flow_packet_get_data (packet);
 
@@ -185,18 +205,17 @@ handle_inbound_packet (FlowStdioConnector *stdio_connector, FlowPacket *packet)
 
       if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_BEGIN))
       {
-        flow_connector_set_state_internal (FLOW_CONNECTOR (stdio_connector), FLOW_CONNECTIVITY_CONNECTED);
+        priv->incoming_is_open = TRUE;
+        flow_connector_set_state_internal (FLOW_CONNECTOR (stdio_connector),
+                                           priv->outgoing_is_open ? FLOW_CONNECTIVITY_CONNECTED : FLOW_CONNECTIVITY_CONNECTING);
       }
       else if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END) ||
                flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_DENIED))
       {
-        if (priv->shunt)
-        {
-          flow_shunt_destroy (priv->shunt);
-          priv->shunt = NULL;
-        }
-
-        flow_connector_set_state_internal (FLOW_CONNECTOR (stdio_connector), FLOW_CONNECTIVITY_DISCONNECTED);
+        priv->incoming_is_open = FALSE;
+        maybe_destroy_shunt (stdio_connector);
+        flow_connector_set_state_internal (FLOW_CONNECTOR (stdio_connector),
+                                           priv->outgoing_is_open ? FLOW_CONNECTIVITY_DISCONNECTING : FLOW_CONNECTIVITY_DISCONNECTED);
       }
     }
     else
