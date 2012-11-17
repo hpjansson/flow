@@ -231,7 +231,7 @@ run_next_shell_op (FlowSshRunner *ssh_runner)
 
   ssh_master = flow_ssh_master_registry_get_master (registry,
                                                     flow_ssh_connect_op_get_remote_service (priv->connect_op),
-                                                    NULL /* flow_ssh_connect_op_get_remote_user (priv->connect_op) */);
+                                                    flow_ssh_connect_op_get_remote_user (priv->connect_op));
 
   if (priv->master)
     shutdown_master (ssh_runner, priv->master);

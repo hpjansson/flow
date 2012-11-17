@@ -36,6 +36,7 @@
 struct _FlowSshConnectOpPrivate
 {
   FlowIPService *remote_ip_service;
+  gchar *remote_user;
 };
 
 /* --- FlowSshConnectOp properties --- */
@@ -62,6 +63,24 @@ flow_ssh_connect_op_set_remote_ip_service_internal (FlowSshConnectOp *ssh_connec
   priv->remote_ip_service = remote_ip_service;
 }
 
+static gchar *
+flow_ssh_connect_op_get_remote_user_internal (FlowSshConnectOp *ssh_connect_op)
+{
+  FlowSshConnectOpPrivate *priv = ssh_connect_op->priv;
+
+  return g_strdup (priv->remote_user);
+}
+
+static void
+flow_ssh_connect_op_set_remote_user_internal (FlowSshConnectOp *ssh_connect_op, const gchar *remote_user)
+{
+  FlowSshConnectOpPrivate *priv = ssh_connect_op->priv;
+
+  if (priv->remote_user)
+    g_free (priv->remote_user);
+  priv->remote_user = g_strdup (remote_user);
+}
+
 FLOW_GOBJECT_PROPERTIES_BEGIN (flow_ssh_connect_op)
 FLOW_GOBJECT_PROPERTY         (G_TYPE_OBJECT,
                                "remote-ip-service", "Remote IP Service", "Remote IP service to connect to",
@@ -69,6 +88,11 @@ FLOW_GOBJECT_PROPERTY         (G_TYPE_OBJECT,
                                flow_ssh_connect_op_get_remote_ip_service_internal,
                                flow_ssh_connect_op_set_remote_ip_service_internal,
                                flow_ip_service_get_type)
+FLOW_GOBJECT_PROPERTY_STRING  ("remote-user", "Remote User", "Remote user account to log in as",
+                               G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY,
+                               flow_ssh_connect_op_get_remote_user_internal,
+                               flow_ssh_connect_op_set_remote_user_internal,
+                               NULL)
 FLOW_GOBJECT_PROPERTIES_END   ()
 
 /* --- FlowSshConnectOp definition --- */
@@ -162,17 +186,19 @@ flow_ssh_connect_op_finalize (FlowSshConnectOp *ssh_connect_op)
   FlowSshConnectOpPrivate *priv = ssh_connect_op->priv;
 
   flow_gobject_unref_clear (priv->remote_ip_service);
+  g_free (priv->remote_user);
 }
 
 /* --- FlowSshConnectOp public API --- */
 
 FlowSshConnectOp *
-flow_ssh_connect_op_new (FlowIPService *remote_ip_service)
+flow_ssh_connect_op_new (FlowIPService *remote_ip_service, const gchar *remote_user)
 {
   g_return_val_if_fail (FLOW_IS_IP_SERVICE (remote_ip_service), NULL);
 
   return g_object_new (FLOW_TYPE_SSH_CONNECT_OP,
                        "remote-ip-service", remote_ip_service,
+                       "remote-user", remote_user,
                        NULL);
 }
 
@@ -186,3 +212,15 @@ flow_ssh_connect_op_get_remote_service (FlowSshConnectOp *ssh_connect_op)
   priv = ssh_connect_op->priv;
   return priv->remote_ip_service;
 }
+
+const gchar *
+flow_ssh_connect_op_get_remote_user (FlowSshConnectOp *ssh_connect_op)
+{
+  FlowSshConnectOpPrivate *priv;
+
+  g_return_val_if_fail (FLOW_IS_SSH_CONNECT_OP (ssh_connect_op), NULL);
+
+  priv = ssh_connect_op->priv;
+  return priv->remote_user;
+}
+

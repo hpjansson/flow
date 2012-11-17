@@ -62,8 +62,9 @@ struct _FlowSshConnectOpClass
   void (*_pad_4) (void);
 };
 
-FlowSshConnectOp *flow_ssh_connect_op_new                (FlowIPService *remote_ip_service);
+FlowSshConnectOp *flow_ssh_connect_op_new                (FlowIPService *remote_ip_service, const gchar *remote_user);
 
 FlowIPService    *flow_ssh_connect_op_get_remote_service (FlowSshConnectOp *ssh_connect_op);
+const gchar      *flow_ssh_connect_op_get_remote_user    (FlowSshConnectOp *ssh_connect_op);
 
 #endif /* _FLOW_SSH_CONNECT_OP_H */

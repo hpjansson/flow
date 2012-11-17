@@ -107,7 +107,7 @@ run (const gchar *remote_name)
 
   runner = flow_ssh_runner_new ();
 
-  op = flow_ssh_connect_op_new (ip_service);
+  op = flow_ssh_connect_op_new (ip_service, NULL);
   g_object_unref (ip_service);
 
   packet = flow_packet_new_take_object (op, 0);
