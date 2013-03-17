@@ -226,8 +226,7 @@ flow_gobject_get_property (GObject *object, gint prop_id, GValue *value, GParamS
       break;
 
     case G_TYPE_STRING:
-      /* FIXME: Use g_value_take_string () when GLib 2.4 is sufficiently common */
-      g_value_set_string_take_ownership (value, ((gchar *(*)(GObject *)) elem->value_getter) (object));
+      g_value_take_string (value, ((gchar *(*)(GObject *)) elem->value_getter) (object));
       break;
 
     case G_TYPE_POINTER:
@@ -235,13 +234,11 @@ flow_gobject_get_property (GObject *object, gint prop_id, GValue *value, GParamS
       break;
 
     case G_TYPE_BOXED:
-      /* FIXME: Use g_value_take_boxed () when GLib 2.4 is sufficiently common */
-      g_value_set_boxed_take_ownership (value, ((gconstpointer (*)(GObject *)) elem->value_getter) (object));
+      g_value_take_boxed (value, ((gconstpointer (*)(GObject *)) elem->value_getter) (object));
       break;
 
     case G_TYPE_PARAM:
-      /* FIXME: Use g_value_take_param () when GLib 2.4 is sufficiently common */
-      g_value_set_param_take_ownership (value, ((GParamSpec *(*)(GObject *)) elem->value_getter) (object));
+      g_value_take_param (value, ((GParamSpec *(*)(GObject *)) elem->value_getter) (object));
       break;
 
     case G_TYPE_OBJECT:
