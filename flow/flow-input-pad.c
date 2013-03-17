@@ -118,11 +118,12 @@ process_output (FlowPad *pad)
 
   while (owner_element->pending_inputs)
   {
-    pad = owner_element->pending_inputs->data;
+    FlowPad *pending_pad = owner_element->pending_inputs->data;
+
     owner_element->pending_inputs = g_slist_delete_link (owner_element->pending_inputs, owner_element->pending_inputs);
 
-    if (pad->packet_queue)
-      push_to_element (pad, owner_element);
+    if (pending_pad->packet_queue)
+      push_to_element (pending_pad, owner_element);
   }
 
   owner_element->current_input = NULL;
