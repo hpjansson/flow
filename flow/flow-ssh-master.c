@@ -37,12 +37,10 @@
   " -o 'ServerAliveInterval 10'" \
   " -o 'ServerAliveCountMax 6'" \
   " -o 'PermitLocalCommand yes'" \
-  " -o 'Compression no'" \
   " -o 'LocalCommand echo'"
 
 #define EXTRA_SSH_OP_OPTIONS \
-  "-q" \
-  " -o 'Compression no'"
+  "-q"
 
 /* --- FlowSshMaster private data --- */
 
