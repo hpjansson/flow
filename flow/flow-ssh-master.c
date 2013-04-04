@@ -53,6 +53,8 @@ struct _FlowSshMasterPrivate
   FlowShunt *shunt;
   GError *connect_error;
   guint fake_connect_idle_id;
+  guint checked_version : 1;
+  guint master_is_supported : 1;
   guint is_connecting : 1;
   guint is_connected : 1;
 };
@@ -149,6 +151,35 @@ FLOW_GOBJECT_PROPERTIES_END   ()
 FLOW_GOBJECT_MAKE_IMPL (flow_ssh_master, FlowSshMaster, G_TYPE_OBJECT, 0)
 
 /* --- FlowSshMaster implementation --- */
+
+static gboolean
+is_master_supported (FlowSshMaster *ssh_master)
+{
+  FlowSshMasterPrivate *priv = ssh_master->priv;
+  gchar *std_out = NULL;
+  gchar *err_out = NULL;
+
+  if (priv->checked_version)
+    return priv->master_is_supported;
+
+  priv->master_is_supported = FALSE;
+
+  if (g_spawn_command_line_sync ("ssh -V", &std_out, &err_out, NULL, NULL))
+  {
+    gint major, minor;
+
+    if (err_out && sscanf (err_out, "OpenSSH_%d.%d", &major, &minor) == 2)
+    {
+      /* Require first version supporting ControlPersist */
+      if ((major == 5 && minor >= 6) || major > 5)
+        priv->master_is_supported = TRUE;
+    }
+  }
+
+  g_free (std_out);
+  g_free (err_out);
+  return priv->master_is_supported;
+}
 
 static gchar *
 generate_control_path (FlowSshMaster *ssh_master)
@@ -469,6 +500,9 @@ flow_ssh_master_connect (FlowSshMaster *ssh_master)
   if (priv->is_connecting)
     goto out;
 
+  if (!is_master_supported (ssh_master))
+    priv->is_connected = TRUE;
+
   if (priv->is_connected)
   {
     if (priv->fake_connect_idle_id == 0)
@@ -554,24 +588,43 @@ flow_ssh_master_run_command (FlowSshMaster *ssh_master, const gchar *remote_comm
   remote_name = flow_ip_service_get_name (priv->remote_ip_service);
   g_assert (remote_name != NULL);
 
-  if (remote_port > 0)
+  if (is_master_supported (ssh_master))
   {
-    cmd = g_strdup_printf ("ssh " EXTRA_SSH_OP_OPTIONS " -o 'ControlPath %s' -p %d %s%s%s %s",
-                           priv->control_path,
-                           remote_port,
-                           priv->remote_user ? priv->remote_user : "",
-                           priv->remote_user ? "@" : "",
-                           remote_name,
-                           remote_command);
+    if (remote_port > 0)
+    {
+      cmd = g_strdup_printf ("ssh " EXTRA_SSH_OP_OPTIONS " -o 'ControlPath %s' -p %d %s%s%s %s",
+                             priv->control_path,
+                             remote_port,
+                             priv->remote_user ? priv->remote_user : "",
+                             priv->remote_user ? "@" : "",
+                             remote_name,
+                             remote_command);
+    }
+    else
+    {
+      cmd = g_strdup_printf ("ssh " EXTRA_SSH_OP_OPTIONS " -o 'ControlPath %s' %s%s%s %s",
+                             priv->control_path,
+                             priv->remote_user ? priv->remote_user : "",
+                             priv->remote_user ? "@" : "",
+                             remote_name,
+                             remote_command);
+    }
   }
   else
   {
-    cmd = g_strdup_printf ("ssh " EXTRA_SSH_OP_OPTIONS " -o 'ControlPath %s' %s%s%s %s",
-                           priv->control_path,
-                           priv->remote_user ? priv->remote_user : "",
-                           priv->remote_user ? "@" : "",
-                           remote_name,
-                           remote_command);
+    if (remote_port > 0)
+      cmd = g_strdup_printf ("ssh " EXTRA_SSH_OP_OPTIONS " -p %d %s%s%s %s",
+                             remote_port,
+                             priv->remote_user ? priv->remote_user : "",
+                             priv->remote_user ? "@" : "",
+                             remote_name,
+                             remote_command);
+    else
+      cmd = g_strdup_printf ("ssh " EXTRA_SSH_OP_OPTIONS " %s%s%s %s",
+                             priv->remote_user ? priv->remote_user : "",
+                             priv->remote_user ? "@" : "",
+                             remote_name,
+                             remote_command);
   }
 
   shunt = flow_spawn_command_line (cmd);
