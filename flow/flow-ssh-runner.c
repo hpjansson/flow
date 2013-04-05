@@ -336,7 +336,17 @@ handle_outbound_packet (FlowSshRunner *ssh_runner, FlowPacket *packet)
       }
       else if (flow_detailed_event_matches (packet_data, FLOW_STREAM_DOMAIN, FLOW_STREAM_END))
       {
-        flow_connector_set_state_internal (FLOW_CONNECTOR (ssh_runner), FLOW_CONNECTIVITY_DISCONNECTING);
+        if (priv->shell_op)
+        {
+          flow_connector_set_state_internal (FLOW_CONNECTOR (ssh_runner), FLOW_CONNECTIVITY_DISCONNECTING);
+        }
+        else if (flow_connector_get_state (FLOW_CONNECTOR (ssh_runner)) != FLOW_CONNECTIVITY_DISCONNECTED)
+        {
+          FlowPad *output_pad = FLOW_PAD (flow_simplex_element_get_output_pad (FLOW_SIMPLEX_ELEMENT (ssh_runner)));
+
+          flow_connector_set_state_internal (FLOW_CONNECTOR (ssh_runner), FLOW_CONNECTIVITY_DISCONNECTED);
+          flow_pad_push (output_pad, flow_create_simple_event_packet (FLOW_STREAM_DOMAIN, FLOW_STREAM_END));
+        }
       }
     }
     else
