@@ -826,7 +826,12 @@ collect_pipeline_elements_from_pad_array (GPtrArray *pads, GHashTable *visited)
   {
     FlowPad *pad = g_ptr_array_index (pads, i);
     FlowPad *connected_pad = flow_pad_get_connected_pad (pad);
-    FlowElement *connected_element = flow_pad_get_owner_element (connected_pad);
+    FlowElement *connected_element;
+
+    if (!connected_pad)
+      continue;
+
+    connected_element = flow_pad_get_owner_element (connected_pad);
 
     if (!g_hash_table_lookup (visited, connected_element))
       collect_pipeline_elements_recurse (connected_element, visited);
