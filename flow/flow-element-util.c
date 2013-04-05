@@ -847,6 +847,26 @@ collect_pipeline_elements_recurse (FlowElement *element, GHashTable *visited)
   collect_pipeline_elements_from_pad_array (flow_element_get_output_pads (element), visited);
 }
 
+static void
+listize_pipeline_element (FlowElement *element, gpointer value, GList **list)
+{
+  *list = g_list_prepend (*list, element);
+}
+
+GList *
+flow_pipeline_get_elements (FlowElement *element)
+{
+  GHashTable *visited;
+  GList *list = NULL;
+
+  visited = g_hash_table_new (g_direct_hash, g_direct_equal);
+
+  collect_pipeline_elements_recurse (element, visited);
+  g_hash_table_foreach (visited, (GHFunc) listize_pipeline_element, &list);
+
+  g_hash_table_destroy (visited);
+  return list;
+}
 typedef struct
 {
   GFunc func;
@@ -867,7 +887,6 @@ flow_pipeline_foreach_element (FlowElement *element, GFunc func, gpointer data)
   ForeachPipelineElementData foreach_data;
 
   visited = g_hash_table_new (g_direct_hash, g_direct_equal);
-
   collect_pipeline_elements_recurse (element, visited);
 
   foreach_data.func = func;
