@@ -1779,9 +1779,10 @@ install_sigchld_handler (void)
 {
   struct sigaction sa;
 
+  memset (&sa, 0, sizeof (sa));
+
   sa.sa_handler = (void (*)(int)) handle_child_exits_signal;
   sa.sa_flags = SA_NOCLDSTOP;
-  sa.sa_restorer = NULL;
 
   sigemptyset (&sa.sa_mask);
 
