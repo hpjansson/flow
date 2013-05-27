@@ -26,6 +26,7 @@
 
 #include <unistd.h>  /* getpid */
 #include <glib/gstdio.h>  /* g_remove */
+#include <sys/wait.h>  /* WIFEXITED, WEXITSTATUS */
 #include "flow-gobject-util.h"
 #include "flow-context-mgmt.h"
 #include "flow-shunt.h"
@@ -53,7 +54,8 @@ struct _FlowSshMasterPrivate
   FlowShunt *shunt;
   GError *connect_error;
   guint fake_connect_idle_id;
-  guint checked_version : 1;
+  guint checked_master_is_supported : 1;
+  guint checked_master_is_working : 1;
   guint master_is_supported : 1;
   guint is_connecting : 1;
   guint is_connected : 1;
@@ -159,7 +161,7 @@ is_master_supported (FlowSshMaster *ssh_master)
   gchar *std_out = NULL;
   gchar *err_out = NULL;
 
-  if (priv->checked_version)
+  if (priv->checked_master_is_supported)
     return priv->master_is_supported;
 
   priv->master_is_supported = FALSE;
@@ -176,8 +178,37 @@ is_master_supported (FlowSshMaster *ssh_master)
     }
   }
 
+  priv->checked_master_is_supported = TRUE;
+
   g_free (std_out);
   g_free (err_out);
+  return priv->master_is_supported;
+}
+
+static gboolean
+is_master_working (FlowSshMaster *ssh_master)
+{
+  FlowSshMasterPrivate *priv = ssh_master->priv;
+  gint exit_status = 255;
+  gchar *command;
+  gchar *std_out = NULL;
+  gchar *err_out = NULL;
+
+  if (priv->checked_master_is_working)
+    return priv->master_is_supported;
+
+  priv->master_is_supported = FALSE;
+
+  command = g_strdup_printf ("ssh -o 'ControlPath %s' -O check 0", priv->control_path);
+  g_spawn_command_line_sync (command, &std_out, &err_out, &exit_status, NULL);
+  g_free (command);
+
+  if (WIFEXITED (exit_status) && !WEXITSTATUS (exit_status))
+    priv->master_is_supported = TRUE;
+
+  g_free (std_out);
+  g_free (err_out);
+  priv->checked_master_is_working = TRUE;
   return priv->master_is_supported;
 }
 
@@ -260,6 +291,12 @@ master_shunt_read (FlowShunt *shunt, FlowPacket *packet, FlowSshMaster *ssh_mast
 
     priv->is_connected = TRUE;
     priv->is_connecting = FALSE;
+
+    if (!is_master_working (ssh_master))
+    {
+      flow_shunt_destroy (priv->shunt);
+      priv->shunt = NULL;
+    }
   }
 
   g_mutex_unlock (priv->mutex);
