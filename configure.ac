@@ -100,6 +100,7 @@ esac
 
 AC_CACHE_CHECK([for getaddrinfo], flow_cv_hasgetaddrinfo,[
     AC_COMPILE_IFELSE([AC_LANG_SOURCE([
+        #include <stddef.h>
         #include <sys/types.h>
         #include <sys/socket.h>
         #include <netdb.h>
