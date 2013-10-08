@@ -42,6 +42,76 @@ get_random_buffer_packet (void)
 }
 
 static void
+test_pack_unpack (FlowPacketQueue *packet_queue)
+{
+  FlowPacketByteIter iter;
+  guchar buf [256];
+  guchar *p;
+  guint64 t64;
+  guint32 t32;
+
+  p = flow_pack_uint64 (0xffffffffffffffff, buf);
+  if (p - buf != 9)
+    test_end (TEST_RESULT_FAILED, "high uint64 packing error");
+
+  flow_packet_queue_push_bytes (packet_queue, buf, p - buf);
+
+  p = flow_pack_uint64 (0, buf);
+  if (p - buf != 1)
+    test_end (TEST_RESULT_FAILED, "low uint64 packing error");
+
+  flow_packet_queue_push_bytes (packet_queue, buf, p - buf);
+
+  p = flow_pack_uint32 (0xffffffff, buf);
+  if (p - buf != 5)
+    test_end (TEST_RESULT_FAILED, "high uint32 packing error");
+
+  flow_packet_queue_push_bytes (packet_queue, buf, p - buf);
+
+  p = flow_pack_uint32 (0, buf);
+  if (p - buf != 1)
+    test_end (TEST_RESULT_FAILED, "low uint32 packing error");
+
+  flow_packet_queue_push_bytes (packet_queue, buf, p - buf);
+
+  flow_packet_byte_iter_init (packet_queue, &iter);
+  if (flow_packet_byte_iter_get_remaining_bytes (&iter) != 16)
+    test_end (TEST_RESULT_FAILED, "byte iter bad remaining length (should be 16)");
+
+  t64 = 42;
+  if (!flow_unpack_uint64_from_iter (&iter, &t64))
+    test_end (TEST_RESULT_FAILED, "high uint64 unpacking error");
+
+  if (t64 != 0xffffffffffffffff)
+    test_end (TEST_RESULT_FAILED, "high unpacked uint64 mismatch");
+
+  t64 = 42;
+  if (!flow_unpack_uint64_from_iter (&iter, &t64))
+    test_end (TEST_RESULT_FAILED, "low uint64 unpacking error");
+  
+  if (t64 != 0)
+    test_end (TEST_RESULT_FAILED, "low unpacked uint64 mismatch");
+
+  t32 = 42;
+  if (!flow_unpack_uint32_from_iter (&iter, &t32))
+    test_end (TEST_RESULT_FAILED, "high uint32 unpacking error");
+  
+  if (t32 != 0xffffffff)
+    test_end (TEST_RESULT_FAILED, "high unpacked uint32 mismatch");
+
+  t32 = 42;
+  if (!flow_unpack_uint32_from_iter (&iter, &t32))
+    test_end (TEST_RESULT_FAILED, "low uint32 unpacking error");
+  
+  if (t32 != 0)
+    test_end (TEST_RESULT_FAILED, "low unpacked uint32 mismatch");
+
+  flow_packet_byte_iter_drop_preceding_data (&iter);
+  if (flow_packet_byte_iter_get_remaining_bytes (&iter) != 0)
+    test_end (TEST_RESULT_FAILED, "byte iter bad remaining length (should be 0)");
+}
+
+static void
 test_run (void)
 {
   FlowPacketQueue  *packet_queue;
@@ -72,5 +142,8 @@ test_run (void)
     flow_packet_unref (packet);
   }
 
+  test_pack_unpack (packet_queue);
+
+  g_object_unref (packet_queue);
   g_free (packets);
 }
