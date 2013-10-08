@@ -60,6 +60,9 @@ flow_unpack_uint64 (const guchar **buf_ptr_inout, const guchar *buf_end, guint64
   guint shift = 0;
   const guchar *buf_in = *buf_ptr_inout;
 
+  if (buf_end - buf_in > 9)
+    buf_end = buf_in + 9;
+
   do
   {
     if (buf_in == buf_end)
@@ -102,6 +105,9 @@ flow_unpack_uint32 (const guchar **buf_ptr_inout, const guchar *buf_end, guint32
   guchar c;
   guint shift = 0;
   const guchar *buf_in = *buf_ptr_inout;
+
+  if (buf_end - buf_in > 5)
+    buf_end = buf_in + 5;
 
   do
   {
