@@ -30,13 +30,25 @@
 guchar *
 flow_pack_uint64 (guint64 n_in, guchar *buf_out)
 {
-  while (n_in > 0x7f)
+  if (n_in > 0x7fffffffffffffff)
   {
-    *(buf_out++) = 0x80 | (n_in & 0x7f);
-    n_in >>= 7;
+    while (n_in > 0x7f)
+    {
+      *(buf_out++) = 0x80 | (n_in & 0x7f);
+      n_in >>= 7;
+    }
+  }
+  else
+  {
+    while (n_in > 0x7f)
+    {
+      *(buf_out++) = 0x80 | (n_in & 0x7f);
+      n_in >>= 7;
+    }
+
+    *(buf_out++) = n_in;
   }
 
-  *(buf_out++) = n_in;
   return buf_out;
 }
 
@@ -51,7 +63,13 @@ flow_unpack_uint64 (const guchar **buf_ptr_inout, const guchar *buf_end, guint64
   do
   {
     if (buf_in == buf_end)
-      return FALSE;
+    {
+      if (shift <= (7 * 8))
+        return FALSE;
+
+      n |= ((guint64) 1) << 63;
+      break;
+    }
 
     c = *(buf_in++);
     n |= ((guint64) c & 0x7f) << shift;
