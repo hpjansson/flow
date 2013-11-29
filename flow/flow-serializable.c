@@ -25,6 +25,11 @@
 #include "config.h"
 #include "flow-serializable.h"
 
+/* Dummy struct */
+struct _FlowSerializable
+{
+};
+
 G_DEFINE_INTERFACE (FlowSerializable, flow_serializable, G_TYPE_OBJECT)
 
 void
