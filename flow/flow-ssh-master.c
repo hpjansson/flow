@@ -33,7 +33,9 @@
 #include "flow-ssh-master.h"
 
 #define EXTRA_SSH_MASTER_OPTIONS \
-  "-q -M -N" \
+  "-q -M -N -x" \
+  " -o 'ForwardAgent no'" \
+  " -o 'ClearAllForwardings yes'" \
   " -o 'ControlPersist 30'" \
   " -o 'ServerAliveInterval 10'" \
   " -o 'ServerAliveCountMax 6'" \
