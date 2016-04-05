@@ -163,7 +163,16 @@ flow_output_pad_push (FlowPad *pad, FlowPacket *packet)
   }
   else if G_LIKELY (!pad->is_blocked && pad->connected_pad)
   {
-    flow_pad_push (pad->connected_pad, packet);
+    if (pad->packet_queue && flow_packet_queue_get_length_packets (pad->packet_queue) > 0)
+    {
+      /* Found packets already queued on this pad */
+      flow_packet_queue_push_packet (pad->packet_queue, packet);
+      try_push_to_connected (pad);
+    }
+    else
+    {
+      flow_pad_push (pad->connected_pad, packet);
+    }
   }
   else
   {
