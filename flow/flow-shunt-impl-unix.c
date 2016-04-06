@@ -179,6 +179,7 @@ typedef struct
 
   FlowSockaddr remote_src_sa;
   FlowSockaddr remote_dest_sa;
+  gboolean remote_dest_is_valid;
 }
 UdpShunt;
 
@@ -1581,9 +1582,17 @@ socket_shunt_write (FlowShunt *shunt)
         SocketShunt *socket_shunt = (SocketShunt *) shunt;
         UdpShunt    *udp_shunt    = (UdpShunt *) shunt;
 
-        result = sendto (socket_shunt->fd, buffer, buffer_len, MSG_NOSIGNAL,
-                         (struct sockaddr *) &udp_shunt->remote_dest_sa,
-                         flow_sockaddr_get_len (&udp_shunt->remote_dest_sa));
+        if (udp_shunt->remote_dest_is_valid)
+        {
+          result = sendto (socket_shunt->fd, buffer, buffer_len, MSG_NOSIGNAL,
+                           (struct sockaddr *) &udp_shunt->remote_dest_sa,
+                           flow_sockaddr_get_len (&udp_shunt->remote_dest_sa));
+        }
+        else
+        {
+          g_warning ("Attempted write to UDP socket with no remote set.");
+          result = buffer_len;
+        }
       }
       else if (shunt->shunt_type == SHUNT_TYPE_PIPE)
       {
@@ -1687,9 +1696,10 @@ socket_shunt_write (FlowShunt *shunt)
           FlowIPService *ip_service = (FlowIPService *) object;
 
           flow_ip_service_get_sockaddr (ip_service, &udp_shunt->remote_dest_sa, 0);
+          udp_shunt->remote_dest_is_valid = TRUE;
           reconnect = TRUE;
         }
-        else if (FLOW_IS_IP_ADDR (object))
+        else if (FLOW_IS_IP_ADDR (object) && udp_shunt->remote_dest_is_valid)
         {
           FlowIPAddr *ip_addr = (FlowIPAddr *) object;
 
