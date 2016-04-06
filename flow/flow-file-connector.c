@@ -130,8 +130,8 @@ setup_shunt (FlowFileConnector *file_connector)
   flow_shunt_set_io_buffer_size (priv->shunt, flow_connector_get_io_buffer_size (connector));
   flow_shunt_set_queue_limit (priv->shunt, flow_connector_get_read_queue_limit (connector));
 
-  priv->reading_from_shunt = FALSE;
-  priv->writing_to_shunt = FALSE;
+  priv->reading_from_shunt = TRUE;
+  priv->writing_to_shunt = TRUE;
 
   output_pad = FLOW_PAD (flow_simplex_element_get_output_pad (FLOW_SIMPLEX_ELEMENT (file_connector)));
   packet_queue = flow_pad_get_packet_queue (FLOW_PAD (flow_simplex_element_get_input_pad (FLOW_SIMPLEX_ELEMENT (file_connector))));
