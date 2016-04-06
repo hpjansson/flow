@@ -1444,7 +1444,9 @@ socket_shunt_read (FlowShunt *shunt)
     packet = flow_packet_new (FLOW_PACKET_FORMAT_BUFFER, socket_buffer, result);
     flow_packet_queue_push_packet (shunt->read_queue, packet);
   }
-  else if (result == 0 || saved_errno != EINTR)
+  else if (result == 0
+           || (saved_errno != EINTR
+               && saved_errno != ECONNREFUSED /* For UDP destination unreachable */))
   {
     /* End stream */
 
