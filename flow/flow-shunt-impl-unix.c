@@ -1700,6 +1700,10 @@ socket_shunt_write (FlowShunt *shunt)
           reconnect = FALSE;
         }
 
+#if 0
+        /* Disabled: We don't want UDP sockets to ignore packets from other
+         * addresses. Instead, we filter them out later if desired. */
+
         if (reconnect)
         {
           if (connect (socket_shunt->fd, (struct sockaddr *) &udp_shunt->remote_dest_sa,
@@ -1718,6 +1722,7 @@ socket_shunt_write (FlowShunt *shunt)
             flow_packet_queue_push_packet (shunt->read_queue, flow_packet_new_take_object (detailed_event, 0));
           }
         }
+#endif
       }
 
       flow_packet_queue_drop_packet (shunt->write_queue);
