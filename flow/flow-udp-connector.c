@@ -30,8 +30,8 @@
 #include "flow-udp-connect-op.h"
 #include "flow-udp-connector.h"
 
-#define MAX_BUFFER_PACKETS 16
-#define MAX_BUFFER_BYTES   4096
+#define MAX_BUFFER_PACKETS 32
+#define MAX_BUFFER_BYTES   16384
 
 static void        shunt_read  (FlowShunt *shunt, FlowPacket *packet, FlowUdpConnector *udp_connector);
 static FlowPacket *shunt_write (FlowShunt *shunt, FlowUdpConnector *udp_connector);
@@ -63,10 +63,14 @@ static void
 setup_shunt (FlowUdpConnector *udp_connector)
 {
   FlowUdpConnectorPrivate *priv = udp_connector->priv;
+  FlowConnector           *connector = FLOW_CONNECTOR (udp_connector);
   FlowPad                 *output_pad;
 
   flow_shunt_set_read_func (priv->shunt, (FlowShuntReadFunc *) shunt_read, udp_connector);
   flow_shunt_set_write_func (priv->shunt, (FlowShuntWriteFunc *) shunt_write, udp_connector);
+
+  flow_shunt_set_io_buffer_size (priv->shunt, flow_connector_get_io_buffer_size (connector));
+  flow_shunt_set_queue_limit (priv->shunt, flow_connector_get_read_queue_limit (connector));
 
   output_pad = FLOW_PAD (flow_simplex_element_get_output_pad (FLOW_SIMPLEX_ELEMENT (udp_connector)));
 
