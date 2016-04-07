@@ -87,6 +87,11 @@
 
 #define THREAD_STACK_SIZE 16384
 
+/* Maximum number of packets to read from or write to a socket before
+ * doing some other work. It's like a cooperative multitasking time slice. */
+
+#define N_LOOP_ITERATIONS_MAX 32
+
 #ifdef G_DISABLE_ASSERT
 # define assert_non_fatal_errno(errnum, fatal_errnos) \
   G_STMT_START{ (void)0; }G_STMT_END
@@ -1344,10 +1349,77 @@ tcp_listener_shunt_read (FlowShunt *shunt)
 }
 
 static void
+udp_shunt_read (FlowShunt *shunt)
+{
+  SocketShunt *socket_shunt = (SocketShunt *) shunt;
+  UdpShunt *udp_shunt = (UdpShunt *) shunt;
+  gint i = 0;
+
+  for (i = 0; i < N_LOOP_ITERATIONS_MAX && !shunt->was_destroyed; i++)
+  {
+    FlowSockaddr sa;
+    guint sa_len = sizeof (FlowSockaddr);
+    gint result;
+    gint saved_errno;
+
+    result = recvfrom (socket_shunt->fd,
+                       socket_buffer, shunt->io_buffer_size,
+                       0,
+                       (struct sockaddr *) &sa, &sa_len);
+    saved_errno = errno;
+
+    if G_LIKELY (result >= 0)
+    {
+      FlowPacket *packet;
+
+      /* Data */
+
+      /* For UDP, dispatch source address first, but only if it changed */
+
+      if (memcmp (&udp_shunt->remote_src_sa, &sa, sa_len))
+      {
+        FlowIPService *ip_service;
+
+        memcpy (&udp_shunt->remote_src_sa, &sa, sa_len);
+
+        ip_service = flow_ip_service_new ();
+        flow_ip_service_set_sockaddr (ip_service, &udp_shunt->remote_src_sa);
+
+        flow_packet_queue_push_packet (shunt->read_queue, flow_packet_new_take_object (ip_service, 0));
+      }
+
+      packet = flow_packet_new (FLOW_PACKET_FORMAT_BUFFER, socket_buffer, result);
+      flow_packet_queue_push_packet (shunt->read_queue, packet);
+    }
+    else if (saved_errno == EINTR
+             || saved_errno == ECONNREFUSED  /* Destination/port unreachable */
+             || saved_errno == EAGAIN
+             || saved_errno == EWOULDBLOCK)
+    {
+      break;
+    }
+    else
+    {
+      /* End stream */
+
+      assert_non_fatal_errno (saved_errno, tcp_recv_fatal_errnos);
+
+      g_assert (shunt->dispatched_end == FALSE);
+
+      shunt->dispatched_end = TRUE;
+
+      generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_SEGMENT_END);
+      generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_END);
+      close_read_fd (shunt);
+    }
+  }
+
+  flow_shunt_read_state_changed (shunt);
+}
+
+static void
 socket_shunt_read (FlowShunt *shunt)
 {
-  FlowSockaddr sa;
-  guint        sa_len = sizeof (FlowSockaddr);
   gint         result;
   gint         saved_errno;
 
@@ -1382,6 +1454,11 @@ socket_shunt_read (FlowShunt *shunt)
     tcp_listener_shunt_read (shunt);
     return;
   }
+  else if (shunt->shunt_type == SHUNT_TYPE_UDP)
+  {
+    udp_shunt_read (shunt);
+    return;
+  }
 
   switch (shunt->shunt_type)
   {
@@ -1390,14 +1467,6 @@ socket_shunt_read (FlowShunt *shunt)
         SocketShunt *socket_shunt = (SocketShunt *) shunt;
 
         result = recv (socket_shunt->fd, socket_buffer, shunt->io_buffer_size, 0);
-      }
-      break;
-
-    case SHUNT_TYPE_UDP:
-      {
-        SocketShunt *socket_shunt = (SocketShunt *) shunt;
-
-        result = recvfrom (socket_shunt->fd, socket_buffer, shunt->io_buffer_size, 0, (struct sockaddr *) &sa, &sa_len);
       }
       break;
 
@@ -1423,31 +1492,10 @@ socket_shunt_read (FlowShunt *shunt)
 
     /* Data */
 
-    if (shunt->shunt_type == SHUNT_TYPE_UDP)
-    {
-      UdpShunt *udp_shunt = (UdpShunt *) shunt;
-
-      /* For UDP, dispatch source address first, but only if it changed */
-
-      if (memcmp (&udp_shunt->remote_src_sa, &sa, sa_len))
-      {
-        FlowIPService *ip_service;
-
-        memcpy (&udp_shunt->remote_src_sa, &sa, sa_len);
-
-        ip_service = flow_ip_service_new ();
-        flow_ip_service_set_sockaddr (ip_service, &udp_shunt->remote_src_sa);
-
-        flow_packet_queue_push_packet (shunt->read_queue, flow_packet_new_take_object (ip_service, 0));
-      }
-    }
-
     packet = flow_packet_new (FLOW_PACKET_FORMAT_BUFFER, socket_buffer, result);
     flow_packet_queue_push_packet (shunt->read_queue, packet);
   }
-  else if (result == 0
-           || (saved_errno != EINTR
-               && saved_errno != ECONNREFUSED /* For UDP destination unreachable */))
+  else if (result == 0 || (saved_errno != EINTR))
   {
     /* End stream */
 
@@ -1508,6 +1556,8 @@ get_connect_error_from_tcp_shunt (FlowShunt *shunt)
 static void
 socket_shunt_write (FlowShunt *shunt)
 {
+  gint i;
+
   if G_UNLIKELY (!shunt->dispatched_begin)
   {
     FlowDetailedEvent *detailed_event = NULL;
@@ -1545,7 +1595,7 @@ socket_shunt_write (FlowShunt *shunt)
     }
   }
 
-  while (!shunt->was_destroyed)
+  for (i = 0; i < N_LOOP_ITERATIONS_MAX && !shunt->was_destroyed; i++)
   {
     FlowPacket       *packet;
     gint              packet_offset;
