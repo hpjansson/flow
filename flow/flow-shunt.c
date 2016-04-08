@@ -22,6 +22,8 @@
  * Authors: Hans Petter Jansson <hpj@copyleft.no>
  */
 
+#define _GNU_SOURCE
+
 #include "config.h"
 
 #include <unistd.h>

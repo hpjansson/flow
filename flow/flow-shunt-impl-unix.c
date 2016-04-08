@@ -92,6 +92,13 @@
 
 #define N_LOOP_ITERATIONS_MAX 32
 
+/* Maximum number of packets to read from or write to a socket in a
+ * single sendmmsg() or recvmmsg() operation. Like N_LOOP_ITERATIONS_MAX,
+ * but also affects fixed-allocation buffer sizes. Since the operation
+ * is generally more efficient, this constant can be set higher. */
+
+#define MULTI_MSG_MAX 64
+
 #ifdef G_DISABLE_ASSERT
 # define assert_non_fatal_errno(errnum, fatal_errnos) \
   G_STMT_START{ (void)0; }G_STMT_END
@@ -99,6 +106,15 @@
 # define assert_non_fatal_errno(errnum, fatal_errnos) \
   real_assert_non_fatal_errno (errnum, fatal_errnos, __FILE__, __LINE__)
 #endif
+
+/* For recvmmsg() and sendmmsg() */
+typedef struct
+{
+  struct mmsghdr msgs [MULTI_MSG_MAX];
+  struct iovec iovecs [MULTI_MSG_MAX];  
+  FlowSockaddr sa [MULTI_MSG_MAX];
+}
+SocketMeta;
 
 typedef enum
 {
@@ -223,7 +239,9 @@ static GThread        *watch_thread;
 static GPtrArray      *active_socket_shunts;
 static GPtrArray      *pid_shunts;
 static GArray         *active_pids;
-static gpointer        socket_buffer      = NULL;
+static guint8         *socket_buffer      = NULL;
+static SocketMeta     *socket_meta        = NULL;
+static SocketMeta     *socket_meta_template = NULL;
 
 /* --------------------------------------- *
  * Errno maps for Linux 2.6.16 / glibc 2.4 *
@@ -721,6 +739,37 @@ generate_errno_event (gint errnum, const ErrnoMap *errno_map)
  * ----------------- */
 
 static void
+init_socket_meta_template (gint io_buffer_size)
+{
+  SocketMeta *m = socket_meta;
+  SocketMeta *t = socket_meta_template;
+  gint i;
+
+  for (i = 0; i < MULTI_MSG_MAX; i++)
+  {
+    t->iovecs [i].iov_base         = socket_buffer + (i * io_buffer_size);
+    t->iovecs [i].iov_len          = io_buffer_size;
+    t->msgs [i].msg_hdr.msg_iov    = &m->iovecs [i];
+    t->msgs [i].msg_hdr.msg_iovlen = 1;
+    t->msgs [i].msg_hdr.msg_name   = &m->sa [i];
+    t->msgs [i].msg_hdr.msg_namelen = sizeof (FlowSockaddr);
+  }
+}
+
+static void
+socket_buffer_check (FlowShunt *shunt)
+{
+  if (shunt->io_buffer_desired_size > shunt->io_buffer_size)
+  {
+    shunt->io_buffer_size = shunt->io_buffer_desired_size;
+    g_free (socket_buffer);
+    socket_buffer = g_malloc (shunt->io_buffer_size * MULTI_MSG_MAX);
+
+    init_socket_meta_template (shunt->io_buffer_size);
+  }
+}
+
+static void
 generate_simple_event (FlowShunt *shunt, const gchar *domain, gint code)
 {
   FlowPacket *packet;
@@ -1034,7 +1083,10 @@ flow_shunt_impl_init (void)
   active_socket_shunts = g_ptr_array_new ();
   pid_shunts = g_ptr_array_new ();
   active_pids = g_array_new (FALSE, FALSE, sizeof (GPid));
-  socket_buffer = g_malloc (IO_BUFFER_DEFAULT_SIZE);
+  socket_buffer = g_malloc (IO_BUFFER_DEFAULT_SIZE * MULTI_MSG_MAX);
+  socket_meta = g_new0 (SocketMeta, 1);
+  socket_meta_template = g_new0 (SocketMeta, 1);
+  init_socket_meta_template (IO_BUFFER_DEFAULT_SIZE);
 
   flow_wakeup_pipe_init (&wakeup_pipe);
 
@@ -1059,6 +1111,12 @@ flow_shunt_impl_finalize (void)
 
   g_free (socket_buffer);
   socket_buffer = NULL;
+
+  g_free (socket_meta);
+  socket_meta = NULL;
+
+  g_free (socket_meta_template);
+  socket_meta_template = NULL;
 
   /* FIXME: Do something about ShuntSources, but in flow-shunt.c */
 
@@ -1245,17 +1303,6 @@ flow_shunt_impl_need_writes (FlowShunt *shunt)
  * ----------------------------- */
 
 static void
-socket_buffer_check (FlowShunt *shunt)
-{
-  if (shunt->io_buffer_desired_size > shunt->io_buffer_size)
-  {
-    shunt->io_buffer_size = shunt->io_buffer_desired_size;
-    g_free (socket_buffer);
-    socket_buffer = g_malloc (shunt->io_buffer_size);
-  }
-}
-
-static void
 tcp_listener_shunt_read (FlowShunt *shunt)
 {
   FlowSockaddr      sa;
@@ -1348,6 +1395,83 @@ tcp_listener_shunt_read (FlowShunt *shunt)
   flow_shunt_read_state_changed (shunt);
 }
 
+#if 1
+
+/* Efficient recvmmsg() version */
+static void
+udp_shunt_read (FlowShunt *shunt)
+{
+  SocketMeta *sm = socket_meta;
+  SocketShunt *socket_shunt = (SocketShunt *) shunt;
+  UdpShunt *udp_shunt = (UdpShunt *) shunt;
+  gint i = 0;
+  guint sa_len = sizeof (FlowSockaddr);
+  gint result;
+  gint saved_errno;
+
+  memcpy (sm, socket_meta_template, sizeof (*sm));
+
+  result = recvmmsg (socket_shunt->fd,
+                     sm->msgs, MULTI_MSG_MAX,
+                     0,
+                     NULL);
+  saved_errno = errno;
+
+  if G_LIKELY (result >= 0)
+  {
+    for (i = 0; i < result; i++)
+    {
+      struct mmsghdr *msg = &sm->msgs [i];
+      FlowPacket *packet;
+
+      /* Data */
+
+      /* For UDP, dispatch source address first, but only if it changed */
+
+      if (memcmp (&udp_shunt->remote_src_sa, msg->msg_hdr.msg_name, msg->msg_hdr.msg_namelen))
+      {
+        FlowIPService *ip_service;
+
+        memcpy (&udp_shunt->remote_src_sa, msg->msg_hdr.msg_name, msg->msg_hdr.msg_namelen);
+
+        ip_service = flow_ip_service_new ();
+        flow_ip_service_set_sockaddr (ip_service, &udp_shunt->remote_src_sa);
+
+        flow_packet_queue_push_packet (shunt->read_queue, flow_packet_new_take_object (ip_service, 0));
+      }
+
+      packet = flow_packet_new (FLOW_PACKET_FORMAT_BUFFER, sm->iovecs [i].iov_base, msg->msg_len);
+      flow_packet_queue_push_packet (shunt->read_queue, packet);
+    }
+  }
+  else if (saved_errno == EINTR
+           || saved_errno == ECONNREFUSED  /* Destination/port unreachable */
+           || saved_errno == EAGAIN
+           || saved_errno == EWOULDBLOCK)
+  {
+    /* Do nothing */
+  }
+  else
+  {
+    /* End stream */
+
+    assert_non_fatal_errno (saved_errno, tcp_recv_fatal_errnos);
+
+    g_assert (shunt->dispatched_end == FALSE);
+
+    shunt->dispatched_end = TRUE;
+
+    generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_SEGMENT_END);
+    generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_END);
+    close_read_fd (shunt);
+  }
+
+  flow_shunt_read_state_changed (shunt);
+}
+
+#else
+
+/* Fallback recvfrom() version */
 static void
 udp_shunt_read (FlowShunt *shunt)
 {
@@ -1416,6 +1540,8 @@ udp_shunt_read (FlowShunt *shunt)
 
   flow_shunt_read_state_changed (shunt);
 }
+
+#endif
 
 static void
 socket_shunt_read (FlowShunt *shunt)
