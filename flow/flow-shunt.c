@@ -47,7 +47,7 @@
  * to main loop. Think of it as a time slice: Higher values reduce
  * overhead, but risk stalling the application's main thread. */
 
-#define MAX_DISPATCH_PACKETS 32
+#define MAX_DISPATCH_PACKETS 64
 
 typedef struct
 {
