@@ -30,8 +30,8 @@
 #include "flow-udp-connect-op.h"
 #include "flow-udp-connector.h"
 
-#define MAX_BUFFER_PACKETS 32
-#define MAX_BUFFER_BYTES   16384
+#define MAX_BUFFER_PACKETS (32 * 8)
+#define MAX_BUFFER_BYTES   (16384 * 8)
 
 static void        shunt_read  (FlowShunt *shunt, FlowPacket *packet, FlowUdpConnector *udp_connector);
 static FlowPacket *shunt_write (FlowShunt *shunt, FlowUdpConnector *udp_connector);
@@ -259,9 +259,8 @@ shunt_write (FlowShunt *shunt, FlowUdpConnector *udp_connector)
   input_pad = FLOW_PAD (flow_simplex_element_get_input_pad (FLOW_SIMPLEX_ELEMENT (udp_connector)));
   packet_queue = flow_pad_get_packet_queue (input_pad);
 
-  if (!packet_queue ||
-      (flow_packet_queue_get_length_packets (packet_queue) < MAX_BUFFER_PACKETS &&
-       flow_packet_queue_get_length_bytes (packet_queue) < MAX_BUFFER_BYTES))
+  if (!packet_queue
+      || flow_packet_queue_get_length_packets (packet_queue) == 0)
   {
     flow_pad_unblock (input_pad);
     packet_queue = flow_pad_get_packet_queue (input_pad);
