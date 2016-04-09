@@ -311,7 +311,7 @@ flow_sockaddr_init (FlowSockaddr *dest_sa, FlowAddrFamily family, const gchar *a
 
   if (family == FLOW_ADDR_FAMILY_IPV4)
   {
-    struct sockaddr_in in_sa;
+    struct sockaddr_in in_sa = { 0 };
 
     if (!addr_str || !strcmp (addr_str, "0.0.0.0"))
       in_sa.sin_addr.s_addr = INADDR_ANY;
@@ -327,7 +327,7 @@ flow_sockaddr_init (FlowSockaddr *dest_sa, FlowAddrFamily family, const gchar *a
 
   else if (family == FLOW_ADDR_FAMILY_IPV6)
   {
-    struct sockaddr_in6 in6_sa;
+    struct sockaddr_in6 in6_sa = { 0 };
 
     if (!addr_str)
       memset (&in6_sa.sin6_addr, 0, sizeof (in6_sa.sin6_addr));
