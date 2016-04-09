@@ -1680,6 +1680,164 @@ get_connect_error_from_tcp_shunt (FlowShunt *shunt)
 }
 
 static void
+udp_shunt_write (FlowShunt *shunt)
+{
+  SocketShunt *socket_shunt = (SocketShunt *) shunt;
+  UdpShunt    *udp_shunt    = (UdpShunt *) shunt;
+  SocketMeta *sm = socket_meta;
+  gint n_packets_sent = 0;
+  gint i = 0;
+
+  memcpy (sm, socket_meta_template, sizeof (*sm));
+
+  while (n_packets_sent < MULTI_MSG_MAX)
+  {
+    FlowPacketIter iter;
+    gint sockaddr_len;
+
+    for (;;)
+    {
+      gpointer object;
+      FlowPacket *packet;
+      gint offset;
+
+      if (!flow_packet_queue_peek_packet (shunt->write_queue, &packet, &offset))
+        goto out;
+
+      if (flow_packet_get_format (packet) != FLOW_PACKET_FORMAT_OBJECT)
+        break;
+
+      object = flow_packet_get_data (packet);
+
+      if (FLOW_IS_DETAILED_EVENT (object))
+      {
+        FlowDetailedEvent *detailed_event = (FlowDetailedEvent *) object;
+
+        if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END) ||
+            flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_DENIED))
+        {
+          /* User requested end-of-stream */
+          close_write_fd (shunt);
+        }
+
+        if (flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_END_CONVERSE) ||
+            flow_detailed_event_matches (detailed_event, FLOW_STREAM_DOMAIN, FLOW_STREAM_DENIED))
+        {
+          /* User wants to stop reading */
+          close_read_fd (shunt);
+
+          if (!shunt->dispatched_end)
+          {
+            generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_SEGMENT_END);
+            generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_END);
+            shunt->dispatched_end = TRUE;
+
+            flow_shunt_read_state_changed (shunt);
+          }
+        }
+      }
+      else
+      {
+        if (FLOW_IS_IP_SERVICE (object))
+        {
+          FlowIPService *ip_service = (FlowIPService *) object;
+
+          flow_ip_service_get_sockaddr (ip_service, &udp_shunt->remote_dest_sa, 0);
+          udp_shunt->remote_dest_is_valid = TRUE;
+        }
+        else if (FLOW_IS_IP_ADDR (object) && udp_shunt->remote_dest_is_valid)
+        {
+          FlowIPAddr *ip_addr = (FlowIPAddr *) object;
+
+          flow_ip_addr_get_sockaddr (ip_addr, &udp_shunt->remote_dest_sa,
+                                     flow_sockaddr_get_port (&udp_shunt->remote_dest_sa));
+        }
+      }
+
+      flow_packet_queue_drop_packet (shunt->write_queue);
+    }
+
+    /* FIXME: Break out if stream was closed, or eat packets */
+
+    iter = NULL;
+    sockaddr_len = flow_sockaddr_get_len (&udp_shunt->remote_dest_sa);
+
+    for (i = 0; n_packets_sent + i < MULTI_MSG_MAX; )
+    {
+      struct mmsghdr *msg = &sm->msgs [i];
+      FlowPacket *packet;
+
+      if (!flow_packet_iter_next (shunt->write_queue, &iter))
+        break;
+
+      packet = flow_packet_iter_peek_packet (shunt->write_queue, &iter);
+      if (flow_packet_get_format (packet) != FLOW_PACKET_FORMAT_BUFFER)
+        break;
+
+      if (udp_shunt->remote_dest_is_valid)
+      {
+        sm->iovecs [i].iov_base = flow_packet_get_data (packet);
+        sm->iovecs [i].iov_len = flow_packet_get_size (packet);
+        msg->msg_len = sm->iovecs [i].iov_len;
+        msg->msg_hdr.msg_name = &udp_shunt->remote_dest_sa;
+        msg->msg_hdr.msg_namelen = sockaddr_len;
+      }
+      else
+      {
+        g_warning ("Attempted write to UDP socket with no remote set.");
+        flow_packet_queue_drop_packet (shunt->write_queue);
+        iter = NULL;
+        i = 0;
+        continue;
+      }
+
+      i++;
+    }
+
+    if (i > 0)
+    {
+      gint result;
+      gint saved_errno;
+
+      result = sendmmsg (socket_shunt->fd,
+                         sm->msgs, i,
+                         MSG_NOSIGNAL);
+      saved_errno = errno;
+
+#if 0
+      g_printerr ("sendmmsg(%d) -> %d\n", i, result);
+#endif
+
+      if (result < 0)
+      {
+        FlowDetailedEvent *detailed_event;
+
+        if (saved_errno == EAGAIN || saved_errno == EINTR || saved_errno == ENOBUFS)
+          break;
+
+        assert_non_fatal_errno (saved_errno, socket_write_fatal_errnos);
+        break;
+      }
+
+      for (i = 0; i < result; i++)
+      {
+        /* FIXME: Batch this */
+        flow_packet_queue_drop_packet (shunt->write_queue);
+      }
+
+      n_packets_sent += result;
+    }
+  }
+
+out:
+#if 0
+  g_printerr ("done\n");
+#endif
+  flow_shunt_write_state_changed (shunt);
+  return;
+}
+
+static void
 socket_shunt_write (FlowShunt *shunt)
 {
   gint i;
@@ -1720,6 +1878,14 @@ socket_shunt_write (FlowShunt *shunt)
       return;
     }
   }
+
+#if 1
+  if (shunt->shunt_type == SHUNT_TYPE_UDP)
+  {
+    udp_shunt_write (shunt);
+    return;
+  }
+#endif
 
   for (i = 0; i < N_LOOP_ITERATIONS_MAX && !shunt->was_destroyed; i++)
   {
