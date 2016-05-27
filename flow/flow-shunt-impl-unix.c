@@ -2727,9 +2727,9 @@ file_shunt_open (FileShuntParams *params)
   }
   else
   {
-    if (params->proc_access && FLOW_READ_ACCESS)
+    if (params->proc_access & FLOW_READ_ACCESS)
       shunt->can_read  = TRUE;
-    if (params->proc_access && FLOW_WRITE_ACCESS)
+    if (params->proc_access & FLOW_WRITE_ACCESS)
       shunt->can_write = TRUE;
 
     generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_BEGIN);
