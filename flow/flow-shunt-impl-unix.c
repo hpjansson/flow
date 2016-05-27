@@ -110,8 +110,10 @@
 /* For recvmmsg() and sendmmsg() */
 typedef struct
 {
+#if defined(HAVE_RECVMMSG) || defined(HAVE_SENDMMSG)
   struct mmsghdr msgs [MULTI_MSG_MAX];
-  struct iovec iovecs [MULTI_MSG_MAX];  
+  struct iovec iovecs [MULTI_MSG_MAX];
+#endif
   FlowSockaddr sa [MULTI_MSG_MAX];
 }
 SocketMeta;
@@ -738,6 +740,8 @@ generate_errno_event (gint errnum, const ErrnoMap *errno_map)
  * Utility Functions *
  * ----------------- */
 
+#if defined(HAVE_RECVMMSG) || defined(HAVE_SENDMMSG)
+
 static void
 init_socket_meta_template (gint io_buffer_size)
 {
@@ -756,6 +760,8 @@ init_socket_meta_template (gint io_buffer_size)
   }
 }
 
+#endif
+
 static void
 socket_buffer_check (FlowShunt *shunt)
 {
@@ -765,7 +771,9 @@ socket_buffer_check (FlowShunt *shunt)
     g_free (socket_buffer);
     socket_buffer = g_malloc (shunt->io_buffer_size * MULTI_MSG_MAX);
 
+#if defined(HAVE_RECVMMSG) || defined(HAVE_SENDMMSG)
     init_socket_meta_template (shunt->io_buffer_size);
+#endif
   }
 }
 
