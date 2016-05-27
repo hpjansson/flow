@@ -740,11 +740,10 @@ generate_errno_event (gint errnum, const ErrnoMap *errno_map)
  * Utility Functions *
  * ----------------- */
 
-#if defined(HAVE_RECVMMSG) || defined(HAVE_SENDMMSG)
-
 static void
 init_socket_meta_template (gint io_buffer_size)
 {
+#if defined(HAVE_RECVMMSG) || defined(HAVE_SENDMMSG)
   SocketMeta *m = socket_meta;
   SocketMeta *t = socket_meta_template;
   gint i;
@@ -758,9 +757,8 @@ init_socket_meta_template (gint io_buffer_size)
     t->msgs [i].msg_hdr.msg_name   = &m->sa [i];
     t->msgs [i].msg_hdr.msg_namelen = sizeof (FlowSockaddr);
   }
-}
-
 #endif
+}
 
 static void
 socket_buffer_check (FlowShunt *shunt)
@@ -771,9 +769,7 @@ socket_buffer_check (FlowShunt *shunt)
     g_free (socket_buffer);
     socket_buffer = g_malloc (shunt->io_buffer_size * MULTI_MSG_MAX);
 
-#if defined(HAVE_RECVMMSG) || defined(HAVE_SENDMMSG)
     init_socket_meta_template (shunt->io_buffer_size);
-#endif
   }
 }
 
