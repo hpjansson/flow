@@ -162,6 +162,44 @@ case x$flow_cv_haspton in
     xyes) AC_DEFINE(HAVE_INET_PTON, 1, [Have inet_pton])
 esac
 
+# recvmmsg
+
+AC_CACHE_CHECK([for recvmmsg], flow_cv_hasrecvmmsg,[
+    AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
+        #define _GNU_SOURCE
+        #include <sys/socket.h>
+        int main () {
+        struct mmsghdr msgs [16];
+        int ret;
+        ret = recvmmsg (5, msgs, 16, 0, 0); }
+        ]])],
+    flow_cv_hasrecvmmsg=yes,
+    flow_cv_hasrecvmmsg=no,)
+])
+
+case x$flow_cv_hasrecvmmsg in
+    xyes) AC_DEFINE(HAVE_RECVMMSG, 1, [Have recvmmsg])
+esac
+
+# sendmmsg
+
+AC_CACHE_CHECK([for sendmmsg], flow_cv_hassendmmsg,[
+    AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
+        #define _GNU_SOURCE
+        #include <sys/socket.h>
+        int main () {
+        struct mmsghdr msgs [16] = { 0 };
+        int ret;
+        ret = sendmmsg (5, msgs, 16, 0); }
+        ]])],
+    flow_cv_hassendmmsg=yes,
+    flow_cv_hassendmmsg=no,)
+])
+
+case x$flow_cv_hassendmmsg in
+    xyes) AC_DEFINE(HAVE_SENDMMSG, 1, [Have sendmmsg])
+esac
+
 dnl --- Set compiler flags ---
 
 BASE_CFLAGS="$BASE_CFLAGS -Wall"
