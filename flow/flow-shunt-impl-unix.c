@@ -1395,7 +1395,7 @@ tcp_listener_shunt_read (FlowShunt *shunt)
   flow_shunt_read_state_changed (shunt);
 }
 
-#if 1
+#ifdef HAVE_RECVMMSG
 
 /* Efficient recvmmsg() version */
 static void
@@ -1679,6 +1679,8 @@ get_connect_error_from_tcp_shunt (FlowShunt *shunt)
   return detailed_event;
 }
 
+#ifdef HAVE_SENDMMSG
+
 static void
 udp_shunt_write (FlowShunt *shunt)
 {
@@ -1837,6 +1839,8 @@ out:
   return;
 }
 
+#endif
+
 static void
 socket_shunt_write (FlowShunt *shunt)
 {
@@ -1879,7 +1883,7 @@ socket_shunt_write (FlowShunt *shunt)
     }
   }
 
-#if 1
+#ifdef HAVE_SENDMMSG
   if (shunt->shunt_type == SHUNT_TYPE_UDP)
   {
     udp_shunt_write (shunt);
