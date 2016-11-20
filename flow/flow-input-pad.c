@@ -60,12 +60,18 @@ pad_dispatch_leave (FlowPad *pad)
 static inline void
 element_dispatch_enter (FlowElement *element)
 {
+  if (!element)
+    return;
+
   element->dispatch_depth++;
 }
 
 static inline void
 element_dispatch_leave (FlowElement *element)
 {
+  if (!element)
+    return;
+
   element->dispatch_depth--;
   if (element->was_disposed && element->dispatch_depth == 0)
     g_object_unref (element);
@@ -88,9 +94,7 @@ process_output (FlowPad *pad)
 {
   FlowElement *owner_element = pad->owner_element;
 
-  g_assert (owner_element != NULL);
-
-  if (!pad->packet_queue)
+  if (!pad->packet_queue || !owner_element)
     return;
 
   if G_UNLIKELY (owner_element->current_input)

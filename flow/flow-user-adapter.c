@@ -241,6 +241,9 @@ do_scheduled_io (FlowUserAdapter *user_adapter)
   FlowPad                *input_pad;
   FlowPad                *output_pad;
 
+  /* Ref while working to prevent adapter from going away */
+  g_object_ref (user_adapter);
+
   priv->io_callback_id = 0;
 
   input_queue  = priv->input_queue;
@@ -255,6 +258,8 @@ do_scheduled_io (FlowUserAdapter *user_adapter)
     flow_user_adapter_process_input (element, input_pad);
 
   flow_user_adapter_push_output (user_adapter);
+
+  g_object_unref (user_adapter);
 
   return FALSE;
 }
