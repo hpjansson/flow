@@ -1,16 +1,22 @@
-AC_INIT(configure.ac)
-
 dnl ----------------------------
 dnl Automake/autoconf input file
 dnl ----------------------------
 
-GLIB_REQUIRED=2.36.0
-GNUTLS_REQUIRED=2.12.0
-
 dnl --- Package configuration ---
 
-AM_INIT_AUTOMAKE(flow, 0.4.3)
+m4_define([flow_major_version], [0])
+m4_define([flow_minor_version], [4])
+m4_define([flow_micro_version], [3])
+
+m4_define([flow_version], [flow_major_version.flow_minor_version.flow_micro_version])
+
+AC_PREREQ([2.69])
+AC_INIT([flow],[flow_version],[hpj@hpjansson.org])
+AM_INIT_AUTOMAKE([1.9 foreign dist-xz no-dist-gzip -Wall])
+
 AM_CONFIG_HEADER(config.h)
+
+VERSION=flow_version
 
 AC_SUBST(VERSION)
 AC_SUBST(PACKAGE)
@@ -29,15 +35,19 @@ AC_ISC_POSIX
 AC_PROG_CC
 AC_PROG_INSTALL
 AM_DISABLE_STATIC
-AM_PROG_LIBTOOL
+AM_PROG_AR
+LT_INIT
 
 dnl --- Dependency checks ---
 
-PKG_CHECK_MODULES(BASE, \
-    glib-2.0 >= $GLIB_REQUIRED
-    gobject-2.0 >= $GLIB_REQUIRED
-    gthread-2.0 >= $GLIB_REQUIRED
-    gnutls >= $GNUTLS_REQUIRED)
+GLIB_REQUIRED=2.36.0
+GNUTLS_REQUIRED=2.12.0
+
+PKG_CHECK_MODULES([BASE],
+    [glib-2.0 >= $GLIB_REQUIRED
+     gobject-2.0 >= $GLIB_REQUIRED
+     gthread-2.0 >= $GLIB_REQUIRED
+     gnutls >= $GNUTLS_REQUIRED])
 
 # The check is likely redundant, but this defines GLIB_GENMARSHAL,
 # GLIB_MKENUMS and GOBJECT_QUERY for us:

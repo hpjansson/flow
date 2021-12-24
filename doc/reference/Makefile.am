@@ -21,7 +21,7 @@ IGNORE_HFILES=
 # CFLAGS and LDFLAGS for compiling scan program. Only needed
 # if $(DOC_MODULE).types is non-empty.
 
-INCLUDES = \
+AM_CFLAGS = \
 	-I$(srcdir) 			\
 	-I$(top_srcdir) 		\
 	-I$(top_srcdir)/flow 		\

@@ -17,13 +17,8 @@ noinst_PROGRAMS = \
 	test-tcp-io \
 	test-tls-tcp-io
 
-INCLUDES = \
-	-I$(top_srcdir) \
-	-I$(top_srcdir)/flow \
-	-I$(top_builddir)/flow
-
 AM_LDFLAGS = $(top_builddir)/flow/libflow.la
-AM_CFLAGS  = $(FLOW_CFLAGS) -I$(top_srcdir)/flow
+AM_CFLAGS  = $(FLOW_CFLAGS) -I$(top_srcdir)/flow -I$(top_builddir)/flow -I$(top_srcdir)
 
 EXTRA_DIST = \
 	benchmark-common.c \

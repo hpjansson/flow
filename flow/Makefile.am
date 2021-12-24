@@ -17,7 +17,7 @@ CLEANFILES         = flow.pc
 lib_LTLIBRARIES    = libflow.la
 libflow_la_LDFLAGS = -version-info 0:0:0
 
-INCLUDES = \
+AM_CFLAGS += \
 	-DG_LOG_DOMAIN=\"Flow\" \
 	-D_REENTRANT \
 	-I$(top_srcdir) \
