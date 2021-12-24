@@ -53,7 +53,7 @@ typedef enum
 }
 State;
 
-static GStaticMutex       gnutls_mutex                 = G_STATIC_MUTEX_INIT;
+static GMutex             gnutls_mutex;
 static gboolean           gnutls_is_initialized        = FALSE;
 static gboolean           gnutls_server_is_initialized = FALSE;
 static gnutls_dh_params_t gnutls_dh_parameters;
@@ -114,17 +114,32 @@ static void flow_tls_protocol_process_input (FlowElement *element, FlowPad *inpu
 
 /* Thread safety functions for GnuTLS */
 
+static GMutex *
+mutex_new (void)
+{
+  GMutex *mutex = g_new (GMutex, 1);
+  g_mutex_init (mutex);
+  return mutex;
+}
+
+static void
+mutex_free (GMutex *mutex)
+{
+  g_mutex_clear (mutex);
+  g_free (mutex);
+}
+
 static gint
 mutex_init_gnutls (void **mutex_ptr)
 {
-  *mutex_ptr = g_mutex_new ();
+  *mutex_ptr = mutex_new ();
   return 0;
 }
 
 static gint
 mutex_destroy_gnutls (void **mutex_ptr)
 {
-  g_mutex_free (*mutex_ptr);
+  mutex_free (*mutex_ptr);
   return 0;
 }
 
@@ -148,7 +163,7 @@ global_ref_gnutls (void)
   guchar buf [1];
   gint   result;
 
-  g_static_mutex_lock (&gnutls_mutex);
+  g_mutex_lock (&gnutls_mutex);
 
   if (!gnutls_is_initialized)
   {
@@ -170,19 +185,19 @@ global_ref_gnutls (void)
   if (result != GNUTLS_E_SUCCESS)
     g_error (G_STRLOC ": Failed to initialize GNU TLS: %s", gnutls_strerror (result));
 
-  g_static_mutex_unlock (&gnutls_mutex);
+  g_mutex_unlock (&gnutls_mutex);
 }
 
 static void
 global_unref_gnutls (void)
 {
-  g_static_mutex_lock (&gnutls_mutex);
+  g_mutex_lock (&gnutls_mutex);
 
   /* Decrease global init count by 1, possibly freeing GNU TLS global overhead */
 
   gnutls_global_deinit ();
 
-  g_static_mutex_unlock (&gnutls_mutex);
+  g_mutex_unlock (&gnutls_mutex);
 }
 
 /* Similar to send(2): ssize_t (*gnutls_push_func) (gnutls_transport_ptr_t, const void *, size_t) */
@@ -250,7 +265,7 @@ recv_for_gnutls (FlowTlsProtocol *tls_protocol, gpointer dest, size_t len)
 static void
 initialize_server_params (void)
 {
-  g_static_mutex_lock (&gnutls_mutex);
+  g_mutex_lock (&gnutls_mutex);
 
   if (!gnutls_server_is_initialized)
   {
@@ -260,7 +275,7 @@ initialize_server_params (void)
     gnutls_server_is_initialized = TRUE;
   }
 
-  g_static_mutex_unlock (&gnutls_mutex);
+  g_mutex_unlock (&gnutls_mutex);
 }
 
 static void
@@ -880,9 +895,6 @@ static void
 flow_tls_protocol_init (FlowTlsProtocol *tls_protocol)
 {
   FlowTlsProtocolPrivate *priv = tls_protocol->priv;
-
-  if (!g_thread_supported ())
-    g_thread_init (NULL);
 
   priv->agent_role = FLOW_AGENT_ROLE_CLIENT;
 

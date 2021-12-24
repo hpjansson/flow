@@ -173,7 +173,6 @@ test_begin (const gchar *name)
   g_print ("Testing %s%s", name, test_is_verbose ? "...\n\n" : ": ");
   fflush (stdout);
 
-  g_type_init ();
   g_log_set_always_fatal (G_LOG_LEVEL_WARNING | G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_ERROR);
 
   main_loop = g_main_loop_new (NULL, FALSE);

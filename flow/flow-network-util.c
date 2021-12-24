@@ -34,16 +34,16 @@ static GList      *flow_impl_get_network_interfaces   (void);
 #include "flow-network-util-impl-unix.c"
 
 static FlowIPAddrFamily preferred_ip_addr_family       = FLOW_IP_ADDR_IPV4;
-static GStaticMutex     preferred_ip_addr_family_mutex = G_STATIC_MUTEX_INIT;
+static GMutex           preferred_ip_addr_family_mutex;
 
 FlowIPAddrFamily
 flow_get_preferred_ip_addr_family (void)
 {
   FlowIPAddrFamily family;
 
-  g_static_mutex_lock (&preferred_ip_addr_family_mutex);
+  g_mutex_lock (&preferred_ip_addr_family_mutex);
   family = preferred_ip_addr_family;
-  g_static_mutex_unlock (&preferred_ip_addr_family_mutex);
+  g_mutex_unlock (&preferred_ip_addr_family_mutex);
 
   return family;
 }
@@ -51,9 +51,9 @@ flow_get_preferred_ip_addr_family (void)
 void
 flow_set_preferred_ip_addr_family (FlowIPAddrFamily family)
 {
-  g_static_mutex_lock (&preferred_ip_addr_family_mutex);
+  g_mutex_lock (&preferred_ip_addr_family_mutex);
   preferred_ip_addr_family = family;
-  g_static_mutex_unlock (&preferred_ip_addr_family_mutex);
+  g_mutex_unlock (&preferred_ip_addr_family_mutex);
 }
 
 GList *

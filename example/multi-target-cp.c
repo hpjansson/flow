@@ -313,8 +313,6 @@ main (gint argc, gchar **argv)
     return 1;
   }
 
-  g_type_init ();
-
   start_time = g_get_monotonic_time ();
 
   /* Run */

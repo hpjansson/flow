@@ -46,7 +46,7 @@
 
 struct _FlowIPResolverPrivate
 {
-  GMutex      *mutex;
+  GMutex       mutex;
   GThreadPool *thread_pool;
   GHashTable  *lookup_table;
 
@@ -138,9 +138,9 @@ lock_and_destroy_lookup (Lookup *lookup)
   FlowIPResolver        *resolver = lookup->resolver;
   FlowIPResolverPrivate *priv     = resolver->priv;
 
-  g_mutex_lock (priv->mutex);
+  g_mutex_lock (&priv->mutex);
   destroy_lookup (lookup);
-  g_mutex_unlock (priv->mutex);
+  g_mutex_unlock (&priv->mutex);
 }
 
 static gboolean
@@ -150,7 +150,7 @@ dispatch_lookup (Lookup *lookup)
   FlowIPResolverPrivate *priv     = resolver->priv;
 
   g_object_ref (resolver);
-  g_mutex_lock (priv->mutex);
+  g_mutex_lock (&priv->mutex);
 
   if (lookup->is_wanted)
   {
@@ -163,7 +163,7 @@ dispatch_lookup (Lookup *lookup)
     arg_list    = g_list_append (arg_list, lookup->arg);
     result_list = lookup->results;
 
-    g_mutex_unlock (priv->mutex);
+    g_mutex_unlock (&priv->mutex);
 
     if (is_reverse)
       lookup->user_func (arg_list, result_list, lookup->error, lookup->user_data);
@@ -173,12 +173,12 @@ dispatch_lookup (Lookup *lookup)
     /* This belongs to the user now */
     lookup->error = NULL;
 
-    g_mutex_lock (priv->mutex);
+    g_mutex_lock (&priv->mutex);
 
     g_list_free (arg_list);
   }
 
-  g_mutex_unlock (priv->mutex);
+  g_mutex_unlock (&priv->mutex);
   g_object_unref (resolver);
 
   /* Destroy notification will invoke lock_and_destroy_lookup () */
@@ -199,7 +199,7 @@ do_lookup (Lookup *lookup, FlowIPResolver *resolver)
 {
   FlowIPResolverPrivate *priv = resolver->priv;
 
-  g_mutex_lock (priv->mutex);
+  g_mutex_lock (&priv->mutex);
 
   if (lookup->is_wanted)
   {
@@ -213,7 +213,7 @@ do_lookup (Lookup *lookup, FlowIPResolver *resolver)
     is_reverse       = lookup->is_reverse;
     arg              = lookup->arg;
 
-    g_mutex_unlock (priv->mutex);
+    g_mutex_unlock (&priv->mutex);
 
     if (is_reverse)
     {
@@ -242,7 +242,7 @@ do_lookup (Lookup *lookup, FlowIPResolver *resolver)
   {
     g_main_context_unref (lookup->dispatch_context);
     destroy_lookup (lookup);
-    g_mutex_unlock (priv->mutex);
+    g_mutex_unlock (&priv->mutex);
   }
 }
 
@@ -267,7 +267,7 @@ create_lookup (FlowIPResolver *resolver, gboolean is_reverse, gpointer arg,
   lookup->user_func        = user_func;
   lookup->user_data        = user_data;
 
-  g_mutex_lock (priv->mutex);
+  g_mutex_lock (&priv->mutex);
 
   /* Assign an ID that is not 0 and not in use */
 
@@ -289,7 +289,7 @@ create_lookup (FlowIPResolver *resolver, gboolean is_reverse, gpointer arg,
   /* Queue request */
   g_thread_pool_push (priv->thread_pool, lookup, NULL);
 
-  g_mutex_unlock (priv->mutex);
+  g_mutex_unlock (&priv->mutex);
 
   return id;
 }
@@ -318,14 +318,11 @@ flow_ip_resolver_init (FlowIPResolver *ip_resolver)
 {
   FlowIPResolverPrivate *priv = ip_resolver->priv;
 
-  if (!g_thread_supported ())
-    g_thread_init (NULL);
-
   priv->thread_pool = g_thread_pool_new ((GFunc) do_lookup, ip_resolver, 4, FALSE, NULL);
   if (!priv->thread_pool)
     g_error ("Could not create thread pool for FlowIPResolver.");
 
-  priv->mutex = g_mutex_new ();
+  g_mutex_init (&priv->mutex);
   priv->lookup_table = g_hash_table_new (g_direct_hash, g_direct_equal);
 }
 
@@ -349,7 +346,7 @@ flow_ip_resolver_finalize (FlowIPResolver *ip_resolver)
   g_thread_pool_free (priv->thread_pool,
                       TRUE /* immediate (ignore queue) */,
                       TRUE /* wait (for workers to finish) */);
-  g_mutex_free (priv->mutex);
+  g_mutex_clear (&priv->mutex);
   g_hash_table_destroy (priv->lookup_table);
 }
 
@@ -404,11 +401,11 @@ flow_ip_resolver_cancel_resolution (FlowIPResolver *resolver, guint lookup_id)
 
   priv = resolver->priv;
 
-  g_mutex_lock (priv->mutex);
+  g_mutex_lock (&priv->mutex);
 
   lookup = g_hash_table_lookup (priv->lookup_table, GUINT_TO_POINTER (lookup_id));
   if (lookup)
     lookup->is_wanted = FALSE;
 
-  g_mutex_unlock (priv->mutex);
+  g_mutex_unlock (&priv->mutex);
 }

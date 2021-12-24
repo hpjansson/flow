@@ -162,7 +162,7 @@ spawn_subthread (void)
     return TRUE;
 
   test_print ("Spawning new subthread\n");
-  g_thread_create ((GThreadFunc) subthread_main, NULL, FALSE, NULL);
+  g_thread_new (NULL, (GThreadFunc) subthread_main, NULL);
 
   sockets_running++;
   return TRUE;

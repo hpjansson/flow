@@ -25,8 +25,6 @@
 #include "config.h"
 #include "flow-context-mgmt.h"
 
-static GStaticPrivate context_for_current_thread = G_STATIC_PRIVATE_INIT;
-
 static void
 main_context_destroy_notify (GMainContext *main_context)
 {
@@ -34,12 +32,14 @@ main_context_destroy_notify (GMainContext *main_context)
     g_main_context_unref (main_context);
 }
 
+static GPrivate context_for_current_thread = G_PRIVATE_INIT ((GDestroyNotify) main_context_destroy_notify);
+
 static GMainContext *
 get_main_context_for_current_thread (void)
 {
   GMainContext *main_context;
 
-  main_context = g_static_private_get (&context_for_current_thread);
+  main_context = g_private_get (&context_for_current_thread);
 
   if (!main_context)
   {
@@ -67,8 +67,7 @@ get_main_context_for_current_thread (void)
       main_context = g_main_context_new ();
     }
 
-    g_static_private_set (&context_for_current_thread, main_context,
-                          (GDestroyNotify) main_context_destroy_notify);
+    g_private_set (&context_for_current_thread, main_context);
   }
 
   return main_context;
@@ -79,7 +78,7 @@ set_main_context_for_current_thread (GMainContext *main_context)
 {
   GMainContext *old_main_context;
 
-  old_main_context = g_static_private_get (&context_for_current_thread);
+  old_main_context = g_private_get (&context_for_current_thread);
   if (old_main_context)
   {
     /* The thread has already been assigned a main context. This is an error. */
@@ -92,8 +91,7 @@ set_main_context_for_current_thread (GMainContext *main_context)
   }
 
   g_main_context_ref (main_context);
-  g_static_private_set (&context_for_current_thread, main_context,
-                        (GDestroyNotify) main_context_destroy_notify);
+  g_private_set (&context_for_current_thread, main_context);
 }
 
 /**

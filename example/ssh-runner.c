@@ -153,8 +153,6 @@ main (gint argc, gchar **argv)
     return 1;
   }
 
-  g_type_init ();
-
   /* Run */
 
   main_loop = g_main_loop_new (NULL, FALSE);

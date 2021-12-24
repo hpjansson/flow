@@ -36,7 +36,7 @@
 
 struct _FlowIPServicePrivate
 {
-  GMutex      *mutex;
+  GMutex       mutex;
   gchar       *name;
   GList       *addresses;
   gint         port;
@@ -65,9 +65,6 @@ flow_ip_service_type_init (GType type)
 static void
 flow_ip_service_class_init (FlowIPServiceClass *klass)
 {
-  if (!g_thread_supported ())
-    g_thread_init (NULL);
-
   g_signal_newv ("resolved",
                  G_TYPE_FROM_CLASS (klass),
                  G_SIGNAL_RUN_LAST | G_SIGNAL_NO_HOOKS,
@@ -83,7 +80,7 @@ flow_ip_service_init (FlowIPService *ip_service)
 {
   FlowIPServicePrivate *priv = ip_service->priv;
 
-  priv->mutex = g_mutex_new ();
+  g_mutex_init (&priv->mutex);
   priv->quality = FLOW_QUALITY_UNSPECIFIED;
 }
 
@@ -124,8 +121,7 @@ flow_ip_service_finalize (FlowIPService *ip_service)
   priv->addresses = NULL;
 
   g_clear_error (&priv->resolve_error);
-
-  g_mutex_free (priv->mutex);
+  g_mutex_clear (&priv->mutex);
 }
 
 static void
@@ -153,7 +149,7 @@ no_lookup_done (FlowIPService *ip_service)
 {
   FlowIPServicePrivate *priv = ip_service->priv;
 
-  g_mutex_lock (priv->mutex);
+  g_mutex_lock (&priv->mutex);
 
   priv->resolve_id = 0;
   g_object_ref (ip_service);
@@ -166,7 +162,7 @@ no_lookup_done (FlowIPService *ip_service)
                                                "Could not look up address");
   }
 
-  g_mutex_unlock (priv->mutex);
+  g_mutex_unlock (&priv->mutex);
 
   emit_resolved_signal (ip_service);
   g_object_unref (ip_service);
@@ -179,7 +175,7 @@ lookup_done (GList *addr_list, GList *name_list, GError *error, FlowIPService *i
   FlowIPServicePrivate *priv    = ip_service->priv;
   gboolean              success = FALSE;
 
-  g_mutex_lock (priv->mutex);
+  g_mutex_lock (&priv->mutex);
 
   if (!priv->name)
   {
@@ -237,7 +233,7 @@ lookup_done (GList *addr_list, GList *name_list, GError *error, FlowIPService *i
     g_error_free (error);
   }
 
-  g_mutex_unlock (priv->mutex);
+  g_mutex_unlock (&priv->mutex);
 
   emit_resolved_signal (ip_service);
   g_object_unref (ip_service);
@@ -261,12 +257,12 @@ flow_ip_service_have_name (FlowIPService *ip_service)
 
   priv = ip_service->priv;
 
-  g_mutex_lock (priv->mutex);
+  g_mutex_lock (&priv->mutex);
 
   if (priv->name)
     have_name = TRUE;
 
-  g_mutex_unlock (priv->mutex);
+  g_mutex_unlock (&priv->mutex);
   return have_name;
 }
 
@@ -280,12 +276,12 @@ flow_ip_service_get_name (FlowIPService *ip_service)
 
   priv = ip_service->priv;
 
-  g_mutex_lock (priv->mutex);
+  g_mutex_lock (&priv->mutex);
 
   if (priv->name)
     name = g_strdup (priv->name);
 
-  g_mutex_unlock (priv->mutex);
+  g_mutex_unlock (&priv->mutex);
   return name;
 }
 
@@ -298,12 +294,12 @@ flow_ip_service_set_name (FlowIPService *ip_service, const gchar *name)
 
   priv = ip_service->priv;
 
-  g_mutex_lock (priv->mutex);
+  g_mutex_lock (&priv->mutex);
 
   g_free (priv->name);
   priv->name = g_strdup (name);
 
-  g_mutex_unlock (priv->mutex);
+  g_mutex_unlock (&priv->mutex);
 }
 
 void
@@ -316,11 +312,11 @@ flow_ip_service_resolve (FlowIPService *ip_service)
 
   priv = ip_service->priv;
 
-  g_mutex_lock (priv->mutex);
+  g_mutex_lock (&priv->mutex);
 
   if (priv->resolve_id)
   {
-    g_mutex_unlock (priv->mutex);
+    g_mutex_unlock (&priv->mutex);
     return;
   }
 
@@ -352,7 +348,7 @@ flow_ip_service_resolve (FlowIPService *ip_service)
     priv->resolve_id_is_idle_id = TRUE;
   }
 
-  g_mutex_unlock (priv->mutex);
+  g_mutex_unlock (&priv->mutex);
 }
 
 gboolean
@@ -376,7 +372,7 @@ flow_ip_service_sync_resolve (FlowIPService *ip_service, GError **error)
   g_signal_handler_disconnect (ip_service, signal_id);
   g_main_loop_unref (main_loop);
 
-  g_mutex_lock (priv->mutex);
+  g_mutex_lock (&priv->mutex);
 
   if (priv->name && priv->addresses)
   {
@@ -393,7 +389,7 @@ flow_ip_service_sync_resolve (FlowIPService *ip_service, GError **error)
     g_propagate_error (error, error_copy);
   }
 
-  g_mutex_unlock (priv->mutex);
+  g_mutex_unlock (&priv->mutex);
 
   return result;
 }
@@ -408,9 +404,9 @@ flow_ip_service_have_addresses (FlowIPService *ip_service)
 
   priv = ip_service->priv;
 
-  g_mutex_lock (priv->mutex);
+  g_mutex_lock (&priv->mutex);
   have_addresses = priv->addresses ? TRUE : FALSE;
-  g_mutex_unlock (priv->mutex);
+  g_mutex_unlock (&priv->mutex);
 
   return have_addresses;
 }
@@ -425,9 +421,9 @@ flow_ip_service_get_n_addresses (FlowIPService *ip_service)
 
   priv = ip_service->priv;
 
-  g_mutex_lock (priv->mutex);
+  g_mutex_lock (&priv->mutex);
   n = g_list_length (priv->addresses);
-  g_mutex_unlock (priv->mutex);
+  g_mutex_unlock (&priv->mutex);
 
   return n;
 }
@@ -442,10 +438,10 @@ flow_ip_service_add_address (FlowIPService *ip_service, FlowIPAddr *ip_addr)
 
   priv = ip_service->priv;
 
-  g_mutex_lock (priv->mutex);
+  g_mutex_lock (&priv->mutex);
   g_object_ref (ip_addr);
   priv->addresses = g_list_append (priv->addresses, ip_addr);
-  g_mutex_unlock (priv->mutex);
+  g_mutex_unlock (&priv->mutex);
 }
 
 void
@@ -458,10 +454,10 @@ flow_ip_service_remove_address (FlowIPService *ip_service, FlowIPAddr *ip_addr)
 
   priv = ip_service->priv;
 
-  g_mutex_lock (priv->mutex);
+  g_mutex_lock (&priv->mutex);
   priv->addresses = g_list_remove (priv->addresses, ip_addr);
   g_object_unref (ip_addr);
-  g_mutex_unlock (priv->mutex);
+  g_mutex_unlock (&priv->mutex);
 }
 
 FlowIPAddr *
@@ -475,13 +471,13 @@ flow_ip_service_get_nth_address (FlowIPService *ip_service, gint n)
 
   priv = ip_service->priv;
 
-  g_mutex_lock (priv->mutex);
+  g_mutex_lock (&priv->mutex);
 
   ip_addr = g_list_nth_data (priv->addresses, n);
   if (ip_addr)
     g_object_ref (ip_addr);
 
-  g_mutex_unlock (priv->mutex);
+  g_mutex_unlock (&priv->mutex);
 
   return ip_addr;
 }
@@ -497,7 +493,7 @@ flow_ip_service_find_address (FlowIPService *ip_service, FlowIPAddrFamily family
 
   priv = ip_service->priv;
 
-  g_mutex_lock (priv->mutex);
+  g_mutex_lock (&priv->mutex);
 
   for (l = priv->addresses; !found_addr && l; l = g_list_next (l))
   {
@@ -511,7 +507,7 @@ flow_ip_service_find_address (FlowIPService *ip_service, FlowIPAddrFamily family
   if (found_addr)
     g_object_ref (found_addr);
 
-  g_mutex_unlock (priv->mutex);
+  g_mutex_unlock (&priv->mutex);
   return found_addr;
 }
 
@@ -526,7 +522,7 @@ flow_ip_service_list_addresses (FlowIPService *ip_service)
 
   priv = ip_service->priv;
 
-  g_mutex_lock (priv->mutex);
+  g_mutex_lock (&priv->mutex);
 
   for (l = priv->addresses; l; l = g_list_next (l))
   {
@@ -536,7 +532,7 @@ flow_ip_service_list_addresses (FlowIPService *ip_service)
 
   m = g_list_reverse (m);
 
-  g_mutex_unlock (priv->mutex);
+  g_mutex_unlock (&priv->mutex);
 
   return m;
 }
@@ -551,9 +547,9 @@ flow_ip_service_get_port (FlowIPService *ip_service)
 
   priv = ip_service->priv;
 
-  g_mutex_lock (priv->mutex);
+  g_mutex_lock (&priv->mutex);
   port = priv->port;
-  g_mutex_unlock (priv->mutex);
+  g_mutex_unlock (&priv->mutex);
 
   return port;
 }
@@ -568,9 +564,9 @@ flow_ip_service_set_port (FlowIPService *ip_service, gint port)
 
   priv = ip_service->priv;
 
-  g_mutex_lock (priv->mutex);
+  g_mutex_lock (&priv->mutex);
   priv->port = port;
-  g_mutex_unlock (priv->mutex);
+  g_mutex_unlock (&priv->mutex);
 }
 
 FlowQuality
@@ -583,9 +579,9 @@ flow_ip_service_get_quality (FlowIPService *ip_service)
 
   priv = ip_service->priv;
 
-  g_mutex_lock (priv->mutex);
+  g_mutex_lock (&priv->mutex);
   quality = priv->quality;
-  g_mutex_unlock (priv->mutex);
+  g_mutex_unlock (&priv->mutex);
 
   return quality;
 }
@@ -599,9 +595,9 @@ flow_ip_service_set_quality (FlowIPService *ip_service, FlowQuality quality)
 
   priv = ip_service->priv;
 
-  g_mutex_lock (priv->mutex);
+  g_mutex_lock (&priv->mutex);
   priv->quality = quality;
-  g_mutex_unlock (priv->mutex);
+  g_mutex_unlock (&priv->mutex);
 }
 
 GError *
@@ -614,10 +610,10 @@ flow_ip_service_get_last_error (FlowIPService *ip_service)
 
   priv = ip_service->priv;
 
-  g_mutex_lock (priv->mutex);
+  g_mutex_lock (&priv->mutex);
   if (priv->resolve_error)
     error = g_error_copy (priv->resolve_error);
-  g_mutex_unlock (priv->mutex);
+  g_mutex_unlock (&priv->mutex);
 
   return error;
 }

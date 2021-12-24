@@ -123,6 +123,7 @@ FlowGObjectPropElem;
 
 #define FLOW_GOBJECT_MAKE_IMPL(self_prefix, self_type, parent_type, reg_flags)    \
 static GObjectClass *self_prefix##_parent_class;                                  \
+static gint self_prefix##_private_offset;                                         \
                                                                                   \
 /* User funcs; user will have to define these */                                  \
 static void self_prefix##_type_init (GType type);                                 \
@@ -179,10 +180,10 @@ static void self_prefix##_simple_finalize (GObject *object)                     
                                                                                   \
 static void self_prefix##_class_simple_init (GObjectClass *object_class)          \
 {                                                                                 \
-  static GStaticMutex mutex          = G_STATIC_MUTEX_INIT;                       \
-  static gboolean     is_initialized = FALSE;                                     \
+  static GMutex   mutex;                                                          \
+  static gboolean is_initialized = FALSE;                                         \
                                                                                   \
-  g_static_mutex_lock (&mutex);                                                   \
+  g_mutex_lock (&mutex);                                                          \
                                                                                   \
   if (!is_initialized)                                                            \
   {                                                                               \
@@ -194,15 +195,15 @@ static void self_prefix##_class_simple_init (GObjectClass *object_class)        
     object_class->dispose = self_prefix##_simple_dispose;                         \
     object_class->finalize = self_prefix##_simple_finalize;                       \
                                                                                   \
-    if (sizeof (self_type##Private) > 0)                                          \
-      g_type_class_add_private (object_class, sizeof (self_type##Private));       \
+    if (self_prefix##_private_offset != 0)                                        \
+      g_type_class_adjust_private_offset (object_class, &self_prefix##_private_offset); \
                                                                                   \
     flow_gobject_class_install_properties (object_class, self_prefix##_prop_list, \
                                            G_N_ELEMENTS (self_prefix##_prop_list)); \
     self_prefix##_class_init ((self_type##Class *) object_class);  /* User func */ \
   }                                                                               \
                                                                                   \
-  g_static_mutex_unlock (&mutex);                                                 \
+  g_mutex_unlock (&mutex);                                                        \
 }                                                                                 \
                                                                                   \
 static void self_prefix##_simple_init (GObject *object)                           \
@@ -222,7 +223,7 @@ GType self_prefix##_get_type (void)                                             
                                                                                   \
   if (!g_atomic_int_get (&is_initialized))                                        \
   {                                                                               \
-    static GStaticMutex     mutex = G_STATIC_MUTEX_INIT;                          \
+    static GMutex           mutex;                                                \
     static GTypeInfo const  object_info =                                         \
     {                                                                             \
       sizeof (self_type##Class),                                                  \
@@ -240,16 +241,23 @@ GType self_prefix##_get_type (void)                                             
       NULL                                                                        \
     };                                                                            \
                                                                                   \
-    g_static_mutex_lock (&mutex);                                                 \
+    g_mutex_lock (&mutex);                                                        \
     if (!g_atomic_int_get (&is_initialized))                                      \
     {                                                                             \
       GType temp_type;                                                            \
       temp_type = g_type_register_static (parent_type, #self_type, &object_info, reg_flags); \
       self_prefix##_type_init (temp_type);  /* User func */                       \
       type = temp_type;                                                           \
+                                                                                  \
+      _Pragma("GCC diagnostic push");                                             \
+      _Pragma("GCC diagnostic ignored \"-Wdeprecated-declarations\"");            \
+      if (sizeof (self_type##Private) > 0)                                        \
+        self_prefix##_private_offset = g_type_add_instance_private (type, sizeof (self_type##Private)); \
+      _Pragma("GCC diagnostic pop");                                              \
+                                                                                  \
       g_atomic_int_set (&is_initialized, 1);                                      \
     }                                                                             \
-    g_static_mutex_unlock (&mutex);                                               \
+    g_mutex_unlock (&mutex);                                                      \
   }                                                                               \
   return type;                                                                    \
 }
@@ -314,10 +322,10 @@ static void self_prefix##_simple_finalize (GObject *object)                     
                                                                                   \
 static void self_prefix##_class_simple_init (GObjectClass *object_class)          \
 {                                                                                 \
-  static GStaticMutex mutex          = G_STATIC_MUTEX_INIT;                       \
-  static gboolean     is_initialized = FALSE;                                     \
+  static GMutex   mutex;                                                          \
+  static gboolean is_initialized = FALSE;                                         \
                                                                                   \
-  g_static_mutex_lock (&mutex);                                                   \
+  g_mutex_lock (&mutex);                                                          \
                                                                                   \
   if (!is_initialized)                                                            \
   {                                                                               \
@@ -333,7 +341,7 @@ static void self_prefix##_class_simple_init (GObjectClass *object_class)        
     self_prefix##_class_init ((self_type##Class *) object_class);  /* User func */ \
   }                                                                               \
                                                                                   \
-  g_static_mutex_unlock (&mutex);                                                 \
+  g_mutex_unlock (&mutex);                                                        \
 }                                                                                 \
                                                                                   \
 static void self_prefix##_simple_init (GObject *object)                           \
@@ -348,7 +356,7 @@ GType self_prefix##_get_type (void)                                             
                                                                                   \
   if (!g_atomic_int_get (&is_initialized))                                        \
   {                                                                               \
-    static GStaticMutex     mutex = G_STATIC_MUTEX_INIT;                          \
+    static GMutex           mutex;                                                \
     static GTypeInfo const  object_info =                                         \
     {                                                                             \
       sizeof (self_type##Class),                                                  \
@@ -366,7 +374,7 @@ GType self_prefix##_get_type (void)                                             
       NULL                                                                        \
     };                                                                            \
                                                                                   \
-    g_static_mutex_lock (&mutex);                                                 \
+    g_mutex_lock (&mutex);                                                        \
     if (!g_atomic_int_get (&is_initialized))                                      \
     {                                                                             \
       GType temp_type;                                                            \
@@ -375,7 +383,7 @@ GType self_prefix##_get_type (void)                                             
       type = temp_type;                                                           \
       g_atomic_int_set (&is_initialized, 1);                                      \
     }                                                                             \
-    g_static_mutex_unlock (&mutex);                                               \
+    g_mutex_unlock (&mutex);                                                      \
   }                                                                               \
   return type;                                                                    \
 }

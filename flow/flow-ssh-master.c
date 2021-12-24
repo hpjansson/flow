@@ -49,7 +49,7 @@
 
 struct _FlowSshMasterPrivate
 {
-  GMutex *mutex;
+  GMutex mutex;
   FlowIPService *remote_ip_service;
   gchar *remote_user;
   gchar *control_path;
@@ -241,7 +241,7 @@ master_shunt_read (FlowShunt *shunt, FlowPacket *packet, FlowSshMaster *ssh_mast
   gpointer              packet_data    = flow_packet_get_data (packet);
   const gchar          *signal_to_emit = NULL;
 
-  g_mutex_lock (priv->mutex);
+  g_mutex_lock (&priv->mutex);
 
   if (packet_format == FLOW_PACKET_FORMAT_OBJECT && FLOW_IS_DETAILED_EVENT (packet_data))
   {
@@ -301,7 +301,7 @@ master_shunt_read (FlowShunt *shunt, FlowPacket *packet, FlowSshMaster *ssh_mast
     }
   }
 
-  g_mutex_unlock (priv->mutex);
+  g_mutex_unlock (&priv->mutex);
 
   flow_packet_unref (packet);
 
@@ -357,7 +357,7 @@ confirm_already_connected (FlowSshMaster *ssh_master)
   gboolean is_connected;
   gboolean reconnect = FALSE;
 
-  g_mutex_lock (priv->mutex);
+  g_mutex_lock (&priv->mutex);
 
   is_connected = priv->is_connected;
 
@@ -370,7 +370,7 @@ confirm_already_connected (FlowSshMaster *ssh_master)
 
   priv->fake_connect_idle_id = 0;
 
-  g_mutex_unlock (priv->mutex);
+  g_mutex_unlock (&priv->mutex);
 
   if (reconnect)
     flow_ssh_master_connect (ssh_master);
@@ -388,9 +388,6 @@ flow_ssh_master_type_init (GType type)
 static void
 flow_ssh_master_class_init (FlowSshMasterClass *klass)
 {
-  if (!g_thread_supported ())
-    g_thread_init (NULL);
-
   g_signal_newv ("connect-finished",
                  G_TYPE_FROM_CLASS (klass),
                  G_SIGNAL_RUN_LAST | G_SIGNAL_NO_HOOKS,
@@ -415,7 +412,7 @@ flow_ssh_master_init (FlowSshMaster *ssh_master)
 {
   FlowSshMasterPrivate *priv = ssh_master->priv;
 
-  priv->mutex = g_mutex_new ();
+  g_mutex_init (&priv->mutex);
 }
 
 static void
@@ -452,7 +449,7 @@ flow_ssh_master_finalize (FlowSshMaster *ssh_master)
   if (priv->connect_error)
     g_error_free (priv->connect_error);
 
-  g_mutex_free (priv->mutex);
+  g_mutex_clear (&priv->mutex);
 }
 
 /* --- FlowSshMaster public API --- */
@@ -492,9 +489,9 @@ flow_ssh_master_get_is_connected (FlowSshMaster *ssh_master)
 
   priv = ssh_master->priv;
 
-  g_mutex_lock (priv->mutex);
+  g_mutex_lock (&priv->mutex);
   is_connected = flow_ssh_master_get_is_connected_internal (ssh_master);
-  g_mutex_unlock (priv->mutex);
+  g_mutex_unlock (&priv->mutex);
 
   return is_connected;
 }
@@ -509,10 +506,10 @@ flow_ssh_master_get_last_error (FlowSshMaster *ssh_master)
 
   priv = ssh_master->priv;
 
-  g_mutex_lock (priv->mutex);
+  g_mutex_lock (&priv->mutex);
   if (priv->connect_error)
     error = g_error_copy (priv->connect_error);
-  g_mutex_unlock (priv->mutex);
+  g_mutex_unlock (&priv->mutex);
 
   return error;
 }
@@ -534,7 +531,7 @@ flow_ssh_master_connect (FlowSshMaster *ssh_master)
 
   priv = ssh_master->priv;
 
-  g_mutex_lock (priv->mutex);
+  g_mutex_lock (&priv->mutex);
 
   if (priv->is_connecting)
     goto out;
@@ -554,7 +551,7 @@ flow_ssh_master_connect (FlowSshMaster *ssh_master)
   }
 
 out:
-  g_mutex_unlock (priv->mutex);
+  g_mutex_unlock (&priv->mutex);
 }
 
 gboolean
@@ -578,7 +575,7 @@ flow_ssh_master_sync_connect (FlowSshMaster *ssh_master, GError **error)
   g_signal_handler_disconnect (ssh_master, signal_id);
   g_main_loop_unref (main_loop);
 
-  g_mutex_lock (priv->mutex);
+  g_mutex_lock (&priv->mutex);
 
   if (priv->is_connected)
   {
@@ -595,7 +592,7 @@ flow_ssh_master_sync_connect (FlowSshMaster *ssh_master, GError **error)
     g_propagate_error (error, error_copy);
   }
 
-  g_mutex_unlock (priv->mutex);
+  g_mutex_unlock (&priv->mutex);
 
   return result;
 }
@@ -613,7 +610,7 @@ flow_ssh_master_run_command (FlowSshMaster *ssh_master, const gchar *remote_comm
 
   priv = ssh_master->priv;
 
-  g_mutex_lock (priv->mutex);
+  g_mutex_lock (&priv->mutex);
 
   if (!priv->is_connected)
   {
@@ -669,7 +666,7 @@ flow_ssh_master_run_command (FlowSshMaster *ssh_master, const gchar *remote_comm
   shunt = flow_spawn_command_line (cmd);
 
 out:
-  g_mutex_unlock (priv->mutex);
+  g_mutex_unlock (&priv->mutex);
   g_free (cmd);
   g_free (remote_name);
   return shunt;

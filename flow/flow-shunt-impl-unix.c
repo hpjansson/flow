@@ -83,7 +83,10 @@
 #define DEBUG(x)
 
 /* Stack size used for file shunt threads and the socket shunt thread. Not
- * to be used for user-implemented worker threads. */
+ * to be used for user-implemented worker threads.
+ *
+ * NOTE: This is no longer used, as GLib lost the ability to specify the
+ * stack size for new threads. */
 
 #define THREAD_STACK_SIZE 16384
 
@@ -136,7 +139,7 @@ typedef struct
   gint64          read_bytes_remaining;
   gint64          read_offset;
 
-  GCond          *cond;
+  GCond           cond;
   gint            fd;
 }
 FileShunt;
@@ -163,7 +166,7 @@ typedef struct
 {
   FlowShunt  shunt;
 
-  GCond     *cond;
+  GCond      cond;
 }
 ThreadShunt;
 
@@ -235,7 +238,7 @@ ErrnoMap;
 
 static gpointer socket_shunt_main (void);
 
-static GStaticMutex    global_mutex       = G_STATIC_MUTEX_INIT;
+static GMutex          global_mutex;
 static FlowWakeupPipe  wakeup_pipe        = FLOW_WAKEUP_PIPE_INVALID;
 static GThread        *watch_thread;
 static GPtrArray      *active_socket_shunts;
@@ -1072,9 +1075,6 @@ handle_child_exits_signal (void)
 static void
 flow_shunt_impl_init (void)
 {
-  if (!g_thread_supported ())
-    g_thread_init (NULL);
-
   /* For all types that are used in multiple threads, make sure they're
    * initialized in the main thread first. Otherwise, we get a race condition
    * which may result in two threads trying to initialize it simultaneously. */
@@ -1094,9 +1094,7 @@ flow_shunt_impl_init (void)
 
   flow_wakeup_pipe_init (&wakeup_pipe);
 
-  watch_thread = g_thread_create_full ((GThreadFunc) socket_shunt_main, NULL,
-                                       THREAD_STACK_SIZE, FALSE, FALSE,
-                                       G_THREAD_PRIORITY_NORMAL, NULL);
+  watch_thread = g_thread_new ("FlowShunt watch", (GThreadFunc) socket_shunt_main, NULL);
 }
 
 static void
@@ -1140,13 +1138,13 @@ flow_shunt_impl_finalize (void)
 static inline void
 flow_shunt_impl_lock (void)
 {
-  g_static_mutex_lock (&global_mutex);
+  g_mutex_lock (&global_mutex);
 }
 
 static inline void
 flow_shunt_impl_unlock (void)
 {
-  g_static_mutex_unlock (&global_mutex);
+  g_mutex_unlock (&global_mutex);
 }
 
 /* ----------- *
@@ -1161,7 +1159,7 @@ flow_shunt_impl_destroy_shunt (FlowShunt *shunt)
   {
     FileShunt *file_shunt = (FileShunt *) shunt;
 
-    g_cond_signal (file_shunt->cond);
+    g_cond_signal (&file_shunt->cond);
   }
   else
   {
@@ -1253,7 +1251,7 @@ flow_shunt_impl_need_reads (FlowShunt *shunt)
         if (file_shunt->read_bytes_remaining)
         {
           shunt->doing_reads = TRUE;
-          g_cond_signal (file_shunt->cond);
+          g_cond_signal (&file_shunt->cond);
         }
         else
         {
@@ -1295,7 +1293,7 @@ flow_shunt_impl_need_writes (FlowShunt *shunt)
         else
         { 
           shunt->doing_writes = TRUE;
-          g_cond_signal (file_shunt->cond);
+          g_cond_signal (&file_shunt->cond);
         }
       }
       break;
@@ -2755,9 +2753,7 @@ file_shunt_finalize (FileShunt *file_shunt)
 {
   flow_shunt_finalize_common ((FlowShunt *) file_shunt);
 
-  g_cond_free (file_shunt->cond);
-  file_shunt->cond = NULL;
-
+  g_cond_clear (&file_shunt->cond);
   g_slice_free (FileShunt, file_shunt);
 }
 
@@ -2771,7 +2767,7 @@ file_shunt_main (FileShuntParams *params)
   shunt->in_worker = TRUE;
 
   /* Tell main thread we're good to go */
-  g_cond_signal (file_shunt->cond);
+  g_cond_signal (&file_shunt->cond);
 
   file_shunt_open (params);
 
@@ -2784,7 +2780,7 @@ file_shunt_main (FileShuntParams *params)
 
     if (!shunt->doing_reads && !shunt->doing_writes)
     {
-      g_cond_wait (file_shunt->cond, g_static_mutex_get_mutex (&global_mutex));
+      g_cond_wait (&file_shunt->cond, &global_mutex);
       continue;
     }
 
@@ -2834,7 +2830,7 @@ create_file_shunt_params (const gchar *path, FlowAccessMode access_mode)
   shunt->shunt_type = SHUNT_TYPE_FILE;
 
   file_shunt->fd      = -1;
-  file_shunt->cond    = g_cond_new ();
+  g_cond_init (&file_shunt->cond);
 
   params = g_slice_new0 (FileShuntParams);
 
@@ -2856,16 +2852,14 @@ create_file_shunt_thread (FileShuntParams *params)
 
   flow_shunt_impl_lock ();
 
-  thread = g_thread_create_full ((GThreadFunc) file_shunt_main, params,
-                                 THREAD_STACK_SIZE, FALSE, FALSE,
-                                 G_THREAD_PRIORITY_NORMAL, &error);
+  thread = g_thread_new ("FlowShunt file", (GThreadFunc) file_shunt_main, params);
 
   if (thread)
   {
     flow_shunt_read_state_changed (shunt);
     flow_shunt_write_state_changed (shunt);
 
-    g_cond_wait (file_shunt->cond, g_static_mutex_get_mutex (&global_mutex));
+    g_cond_wait (&file_shunt->cond, &global_mutex);
   }
   else
   {
@@ -2957,7 +2951,7 @@ thread_shunt_main (ThreadShuntParams *params)
   g_slice_free (ThreadShuntParams, params);
 
   flow_shunt_impl_lock ();
-  g_cond_signal (thread_shunt->cond);
+  g_cond_signal (&thread_shunt->cond);
   flow_shunt_impl_unlock ();
 
   worker_func ((FlowSyncShunt *) thread_shunt, worker_data);
@@ -2968,11 +2962,11 @@ thread_shunt_main (ThreadShuntParams *params)
   flow_shunt_impl_lock ();
 
   while (!shunt->was_destroyed)
-    g_cond_wait (thread_shunt->cond, g_static_mutex_get_mutex (&global_mutex));
+    g_cond_wait (&thread_shunt->cond, &global_mutex);
 
   flow_shunt_impl_unlock ();
 
-  g_cond_free (thread_shunt->cond);
+  g_cond_clear (&thread_shunt->cond);
   g_slice_free (ThreadShunt, thread_shunt);
   return NULL;
 }
@@ -2993,7 +2987,7 @@ create_thread_shunt (FlowWorkerFunc func, gpointer user_data, gboolean filter_ob
   flow_shunt_init_common (shunt, NULL);
   shunt->shunt_type = SHUNT_TYPE_THREAD;
 
-  thread_shunt->cond = g_cond_new ();
+  g_cond_init (&thread_shunt->cond);
 
   params = g_slice_new (ThreadShuntParams);
 
@@ -3001,8 +2995,7 @@ create_thread_shunt (FlowWorkerFunc func, gpointer user_data, gboolean filter_ob
   params->worker_func  = func;
   params->worker_data  = user_data;
 
-  thread = g_thread_create ((GThreadFunc) thread_shunt_main, params,
-                            FALSE /* joinable */, &error);
+  thread = g_thread_new ("FlowShunt thread", (GThreadFunc) thread_shunt_main, params);
 
   if (thread)
   {
@@ -3011,7 +3004,7 @@ create_thread_shunt (FlowWorkerFunc func, gpointer user_data, gboolean filter_ob
 
     generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_BEGIN);
     generate_simple_event (shunt, FLOW_STREAM_DOMAIN, FLOW_STREAM_SEGMENT_BEGIN);
-    g_cond_wait (thread_shunt->cond, g_static_mutex_get_mutex (&global_mutex));
+    g_cond_wait (&thread_shunt->cond, &global_mutex);
   }
   else
   {
@@ -3837,7 +3830,7 @@ flow_sync_shunt_impl_read (FlowSyncShunt *sync_shunt, FlowPacket **packet_dest)
 
         while (!(packet = flow_packet_queue_pop_packet (shunt->write_queue)))
         {
-          g_cond_wait (thread_shunt->cond, g_static_mutex_get_mutex (&global_mutex));
+          g_cond_wait (&thread_shunt->cond, &global_mutex);
         }
 
         flow_shunt_write_state_changed (shunt);

@@ -174,7 +174,7 @@ flow_gobject_get_property (GObject *object, gint prop_id, GValue *value, GParamS
   switch (elem->fundamental_type)
   {
     case G_TYPE_CHAR:
-      g_value_set_char (value, ((gchar (*)(GObject *)) elem->value_getter) (object));
+      g_value_set_schar (value, ((gchar (*)(GObject *)) elem->value_getter) (object));
       break;
 
     case G_TYPE_UCHAR:
@@ -271,7 +271,7 @@ flow_gobject_set_property (GObject *object, gint prop_id, const GValue *value, G
   switch (elem->fundamental_type)
   {
     case G_TYPE_CHAR:
-      ((void (*)(GObject *, gchar)) elem->value_setter) (object, g_value_get_char (value));
+      ((void (*)(GObject *, gchar)) elem->value_setter) (object, g_value_get_schar (value));
       break;
 
     case G_TYPE_UCHAR:

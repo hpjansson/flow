@@ -60,7 +60,7 @@ TransferInfo;
 
 static guchar            *buffer                 = NULL;
 
-static GStaticMutex       global_mutex           = G_STATIC_MUTEX_INIT;
+static GMutex             global_mutex;
 
 static gint               threads_started        = 0;
 static gint               threads_running        = 0;
@@ -188,7 +188,7 @@ spawn_subthread (void)
 {
   gboolean run_again = TRUE;
 
-  g_static_mutex_lock (&global_mutex);
+  g_mutex_lock (&global_mutex);
 
   if (threads_ended == THREADS_TOTAL)
   {
@@ -206,10 +206,10 @@ spawn_subthread (void)
     threads_running++;
 
     test_print ("Spawning new subthread\n");
-    g_thread_create ((GThreadFunc) subthread_main, NULL, FALSE, NULL);
+    g_thread_new (NULL, (GThreadFunc) subthread_main, NULL);
   }
 
-  g_static_mutex_unlock (&global_mutex);
+  g_mutex_unlock (&global_mutex);
 
   return TRUE;
 }
@@ -232,9 +232,6 @@ static void
 test_run (void)
 {
   gint i;
-
-  if (!g_thread_supported ())
-    g_thread_init (NULL);
 
   g_random_set_seed (time (NULL));
 

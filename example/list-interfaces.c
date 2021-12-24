@@ -60,8 +60,6 @@ main (gint argc, gchar *argv [])
   GList *interface_list;
   GList *l;
 
-  g_type_init ();
-
   /* List active interfaces */
 
   interface_list = flow_get_network_interfaces ();
