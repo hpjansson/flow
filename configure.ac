@@ -5,8 +5,8 @@ dnl ----------------------------
 dnl --- Package configuration ---
 
 m4_define([flow_major_version], [0])
-m4_define([flow_minor_version], [4])
-m4_define([flow_micro_version], [3])
+m4_define([flow_minor_version], [5])
+m4_define([flow_micro_version], [0])
 
 m4_define([flow_version], [flow_major_version.flow_minor_version.flow_micro_version])
 
